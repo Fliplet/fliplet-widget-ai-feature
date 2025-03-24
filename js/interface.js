@@ -62,18 +62,26 @@ Fliplet.Widget.generateInterface({
     {
       type: "html",
       html: `
-        <div class="panel-group" id="promptAccordion">
-          <div class="panel panel-default">
-            <div class="panel-heading">
-              <h4 class="panel-title">
-                <a data-toggle="collapse" data-parent="#promptAccordion" href="#collapseOne">
-                  How to use the AI Feature Generator
-                </a>
-              </h4>
-            </div>
-            <div id="collapseOne" class="panel-collapse collapse">
-              <div class="panel-body">
-                You can instruct the AI to reference the names of your data sources, perform joins with other data sources, and access the screen names and column names associated with the logged-in user's data.
+        <div class="panel-group" id="accordion-1">
+          <div class="panel panel-default focus-outline" data-collapse-id="3543664" data-collapse-uuid="497033ba-6a63-4bdc-9180-80a7937f27e6" tabindex="0">
+            <h4 class="panel-title collapsed" data-target="#collapse-3543664" data-toggle="collapse" data-parent="#accordion-1">
+              What features are available?
+            </h4>
+            <div class="panel-collapse collapse" id="collapse-3543664">
+              <div class="panel-body"> 
+                The following features are available via your prompt:
+                <br>
+                1. Read, insert, update, delete, join data source names (ensure you configure the security rules)
+                <hr>
+                2. Load screen names or URLs
+                <hr>
+                3. User data based on the columns in the user data source
+                <hr>
+                4. Charts using eCharts library (Add echarts via Dev Tools > Libraries)
+                <hr>
+                5. Tables using DataTables (Add datatables via Dev Tools > Libraries)
+                <hr>
+                Note: Only the information in your prompt is shared with AI. AI cannot access your data or app.
               </div>
             </div>
           </div>

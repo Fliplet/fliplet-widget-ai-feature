@@ -786,7 +786,6 @@ If referencing data from a data source, the entry will be found under the "data"
 "dataSourceId": 1392773
 }
 
-These are the list of columns in the data source selected by the user: ${dataSourceColumns}, you must one of these when referencing data from a data source. 
 
 If you are asked to build a feature that requires navigating the user to another screen use the navigate JS API to do this: 
 

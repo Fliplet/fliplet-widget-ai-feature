@@ -72,15 +72,15 @@ Fliplet.Widget.generateInterface({
                 The following features are available via your prompt:
                 <br>
                 1. Read, insert, update, delete, join data source names (ensure you configure the security rules)
-                <hr>
+                <br>
                 2. Load screen names or URLs
-                <hr>
+                <br>
                 3. User data based on the columns in the user data source
-                <hr>
+                <br>
                 4. Charts using eCharts library (Add echarts via Dev Tools > Libraries)
-                <hr>
+                <br>
                 5. Tables using DataTables (Add datatables via Dev Tools > Libraries)
-                <hr>
+                <br>
                 Note: Only the information in your prompt is shared with AI. AI cannot access your data or app.
               </div>
             </div>

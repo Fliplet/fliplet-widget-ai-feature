@@ -225,7 +225,7 @@ The Data Source JS APIs allows you to interact and make any sort of change to yo
 
 ### Get the list of data sources in use by the current app
 
-Use the  "appId " and  "includeInUse " options together to get the list of data sources owned or in use by the current app.
+Use the "appId" and "includeInUse" options together to get the list of data sources owned or in use by the current app.
 
 
 Fliplet.DataSources.get({
@@ -238,7 +238,7 @@ Fliplet.DataSources.get({
 
 ### Get a data source by ID
 
-Use the  "getById " function to fetch details about a data source by its ID. You can optionally pass a list of  "attributes " to return.
+Use the "getById" function to fetch details about a data source by its ID. You can optionally pass a list of "attributes" to return.
 
 
 Fliplet.DataSources.getById(123, {
@@ -259,7 +259,7 @@ Once you get a **connection**, you can use the instance methods described below 
 
 ### Connect to a data source by Name
 
-You can also connect to a datas ource by its name (case-sensitive) using the  "connectByName " method.
+You can also connect to a datas ource by its name (case-sensitive) using the "connectByName" method.
 
 
 Fliplet.DataSources.connectByName("Attendees").then(function (connection) {
@@ -275,7 +275,7 @@ Fliplet.DataSources.connectByName("Attendees").then(function (connection) {
 #### Fetch all records
 
  
-// use "find" with no options to get all entries
+// use"find" with no options to get all entries
 connection.find().then(function (records) {
   // records is an array
 });
@@ -285,20 +285,20 @@ connection.find().then(function (records) {
 
 Querying options are based on the [Sift.js](https://github.com/Fliplet/sift.js) operators, which mimic MongoDB querying operators. Here are the supported operators from Sift.js:
 
-  -  "$in ",  "$nin ",  "$exists ",  "$gte ",  "$gt ",  "$lte ",  "$lt ",  "$eq ",  "$ne ",  "$iLike ",  "$mod ",  "$all ",  "$and ",  "$or ",  "$nor ",  "$not ",  "$size ",  "$type ",  "$regex ",  "$elemMatch "
+  - "$in", "$nin", "$exists", "$gte", "$gt", "$lte", "$lt", "$eq", "$ne", "$iLike", "$mod", "$all", "$and", "$or", "$nor", "$not", "$size", "$type", "$regex", "$elemMatch"
 
 The following operators and values are optimized to perform better with Fliplet's database.
 
-  - Operators:  "$or ",  "$and ",  "$gte ",  "$lte ",  "$gt ",  "$lt ",  "$eq "
+  - Operators: "$or", "$and", "$gte", "$lte", "$gt", "$lt", "$eq"
   - Values: strings and numbers
 
-Fliplet also supports a custom  "$filters " operator with some unique conditional logic such as case-insensitive match or date & time comparison. See example below.
+Fliplet also supports a custom "$filters" operator with some unique conditional logic such as case-insensitive match or date & time comparison. See example below.
 
 A few examples to get you started:
 
  
-// Find records where column "sum" is greater than 10 and column "name"
-// is either "Nick" or "Tony"
+// Find records where column"sum" is greater than 10 and column"name"
+// is either"Nick" or"Tony"
 connection.find({
   where: {
     sum: { $gt: 10 },
@@ -306,22 +306,22 @@ connection.find({
   }
 });
 
-// Find a case insensitive and partial match to the "Email" column. For e.g. it will match with bobsmith@email.com or Bobsmith@email.com or smith@email.com
+// Find a case insensitive and partial match to the"Email" column. For e.g. it will match with bobsmith@email.com or Bobsmith@email.com or smith@email.com
 connection.find({
   where: {
     Email: { $iLike: 'BobSmith@email.com' }
   }
 });
 
-// Find records where column "email" matches the domain "example.org"
+// Find records where column"email" matches the domain"example.org"
 connection.find({
   where: {
     email: { $regex: /example\.org$/i }
   }
 });
 
-// Nested queries using the $or operator: find records where either "name" is "Nick"
-// or "address" is "UK" and "name" is "Tony"
+// Nested queries using the $or operator: find records where either"name" is"Nick"
+// or"address" is"UK" and"name" is"Tony"
 connection.find({
   where: {
     $or: [
@@ -331,8 +331,8 @@ connection.find({
   }
 });
 
-// Find records where the column "country" is not "Germany" or "France"
-// and "createdAt" is on or after a specific date
+// Find records where the column"country" is not"Germany" or"France"
+// and"createdAt" is on or after a specific date
 connection.find({
   where: {
     country: { $nin: ['Germany', 'France'] },
@@ -341,7 +341,7 @@ connection.find({
 });
 
 // Use Fliplet's custom $filters operator
-// The "==" and "contains" conditions are optimized to perform better with Fliplet's database
+// The"==" and"contains" conditions are optimized to perform better with Fliplet's database
 connection.find({
   where: {
     // Find entries that match ALL of the following conditions
@@ -463,10 +463,10 @@ connection.find({
 
 #### Filter the columns returned when finding records
 
-Use the  "attributes " array to optionally define a list of the columns that should be returned for the records.
+Use the "attributes" array to optionally define a list of the columns that should be returned for the records.
 
  
-// use "find" with "attributes" to filter the columns returned
+// use"find" with"attributes" to filter the columns returned
 connection.find({ attributes: ['Foo', 'Bar'] }).then(function (records) {
   // records is an array
 });
@@ -482,7 +482,7 @@ connection.find({ attributes: [] }).then(function (records) {
 
 #### Fetch records with pagination
 
-You can use the  "limit " and  "offset " parameters to filter down the returned entries to a specific chunk (page) of the Data Source.
+You can use the "limit" and "offset" parameters to filter down the returned entries to a specific chunk (page) of the Data Source.
 
  
 // use limit and offset for pagination
@@ -502,7 +502,7 @@ Fliplet.DataSources.connect(123).then(function (connection) {
 });
  
 
-Moreover, the  "includePagination " parameter enables the response to return the count of total entries in the Data Source:
+Moreover, the "includePagination" parameter enables the response to return the count of total entries in the Data Source:
 
  
 connection.find({
@@ -515,26 +515,26 @@ connection.find({
 });
  
 
-Note that when using the above parameter, the returned object from the  "find() " method changes from an array of records to an object with the following structure:
+Note that when using the above parameter, the returned object from the "find()" method changes from an array of records to an object with the following structure:
 
 
 {
-  "entries": [],
-  "dataSourceId": 123456,
-  "count": 50,
-  "pagination": {
-    "total": 1000,
-    "limit": 50,
-    "offset": 10
+ "entries": [],
+ "dataSourceId": 123456,
+ "count": 50,
+ "pagination": {
+   "total": 1000,
+   "limit": 50,
+   "offset": 10
   }
 }
 
 #### Run aggregation queries
 
-You can use the built-in [Mingo](https://github.com/kofrasa/mingo) library to run complex aggregation queries or projections on top of Data Sources. Mingo operations can be provided to the  "find " method via the  "aggregate " attribute:
+You can use the built-in [Mingo](https://github.com/kofrasa/mingo) library to run complex aggregation queries or projections on top of Data Sources. Mingo operations can be provided to the "find" method via the "aggregate" attribute:
 
  
-// This example groups records by values found on a sample column "myColumnName"
+// This example groups records by values found on a sample column"myColumnName"
 // and counts the matches for each value
 connection.find({
   aggregate: [
@@ -557,15 +557,15 @@ The version of Mingo we have used does not automatically typecast strings to num
 
 ### Sort / order the results
 
-Use the  "order " array of arrays to specify the sorting order for the returned entries.
+Use the "order" array of arrays to specify the sorting order for the returned entries.
 
 You can order by:
-- Fliplet columns:  "id ",  "order ",  "createdAt ",  "deletedAt ",  "updatedAt "
-- Entry columns, using the  "data. " prefix (e.g.  "data.Email ")
+- Fliplet columns: "id", "order", "createdAt", "deletedAt", "updatedAt"
+- Entry columns, using the "data." prefix (e.g. "data.Email")
 
-The order direction is either  "ASC " for ascending ordering or  "DESC " for descending ordering.
+The order direction is either "ASC" for ascending ordering or "DESC" for descending ordering.
 
-The  "order " array accepts a list of arrays, where each includes the column and sorting order:
+The "order" array accepts a list of arrays, where each includes the column and sorting order:
 
  
 // Sort records by their created time (first records are newer)
@@ -592,13 +592,13 @@ connection.find({
 
 ### Find a specific record
 
-The  "findOne " method allows you to look for up to one record, limiting the amount of entries returned if you're only looking for one specific entry.
+The "findOne" method allows you to look for up to one record, limiting the amount of entries returned if you're only looking for one specific entry.
 
  
 connection.findOne({
   where: { name: 'John' }
 }).then(function (record) {
-  // record is either the found entry "object" or "undefined"
+  // record is either the found entry"object" or"undefined"
 });
  
 
@@ -606,7 +606,7 @@ connection.findOne({
 
 This is a code snippet for finding a record in a specific Data Source by its ID.
 
-The  "findById() " method accepts a single parameter, which is the ID of the entry to search for in the Data Source. Once the entry has been found, it will be returned as a record object in the response, and the code inside the promise callback function will be executed.
+The "findById()" method accepts a single parameter, which is the ID of the entry to search for in the Data Source. Once the entry has been found, it will be returned as a record object in the response, and the code inside the promise callback function will be executed.
 
  
 connection.findById(1).then(function (record) {
@@ -616,15 +616,15 @@ connection.findById(1).then(function (record) {
 
 ### Commit changes at once to a data source
 
-Use  "connection.commit(Array) " to commit more than one change at once to a data source. You can use this to insert, update and delete entries at the same time with a single request. This makes it very efficient in terms of both minimizing the network requests and computation required from both sides.
+Use "connection.commit(Array)" to commit more than one change at once to a data source. You can use this to insert, update and delete entries at the same time with a single request. This makes it very efficient in terms of both minimizing the network requests and computation required from both sides.
 
 List of input parameters:
-  -  "entries ": (required array): the list of entries to insert or update ( "{ data } " for insert and  "{ id, data } " for updates).
-  -  "append ": (optional boolean, defaults to false): set to  "true " to keep existing remote entries not sent in the updates to be made. When this is set to  "false " you will essentially be replacing the whole data source with just the data you are sending.
-  -  "delete ": (optional array): the list of entry IDs to remove (when used in combination with  "append: true ").
-  -  "extend " (optional boolean, defaults to false): set to  "true " to enable merging the local columns you are sending with any existing columns for the affected data source entries.
-  -  "runHooks " (optional array) the list of hooks ( "insert " or  "update ") to run on the data source during the operation.
-  -  "returnEntries " (optional boolean, defaults to true): set to  "false " to stop the API from returning all the entries in the data source
+  - "entries": (required array): the list of entries to insert or update ("{ data }" for insert and "{ id, data }" for updates).
+  - "append": (optional boolean, defaults to false): set to "true" to keep existing remote entries not sent in the updates to be made. When this is set to "false" you will essentially be replacing the whole data source with just the data you are sending.
+  - "delete": (optional array): the list of entry IDs to remove (when used in combination with "append: true").
+  - "extend" (optional boolean, defaults to false): set to "true" to enable merging the local columns you are sending with any existing columns for the affected data source entries.
+  - "runHooks" (optional array) the list of hooks ("insert" or "update") to run on the data source during the operation.
+  - "returnEntries" (optional boolean, defaults to true): set to "false" to stop the API from returning all the entries in the data source
 
 The following sample request applies the following changes to the data source:
   - inserts a new entry
@@ -652,7 +652,7 @@ connection.commit({
   extend: true,
 
   // Do not return the whole data source after updating the data.
-  // Keep this as "false" to speed up the response.
+  // Keep this as"false" to speed up the response.
   returnEntries: false
 });
  
@@ -661,7 +661,7 @@ connection.commit({
 
 ### Insert a single record into the data source
 
-To insert a record into a data source, use the  "connection.insert " method by passing the data to be inserted as a **JSON** object or a **FormData** object.
+To insert a record into a data source, use the "connection.insert" method by passing the data to be inserted as a **JSON** object or a **FormData** object.
 
  
 // Using a JSON object
@@ -674,16 +674,16 @@ connection.insert({
 connection.insert(FormData);
  
 
-**Note**: the  "dataSourceId " and  "dataSourceEntryId " are **reserved keys** and should not be used in the input JSON.
+**Note**: the "dataSourceId" and "dataSourceEntryId" are **reserved keys** and should not be used in the input JSON.
 
-The second parameter of the  "connection.insert " function accepts various options as described below:
+The second parameter of the "connection.insert" function accepts various options as described below:
 
   - [folderId](#options-folderid) (Number)
   - [ack](#options-ack) (Boolean)
 
 #### **Options: folderId**
 
-When  "FormData " is used as first parameter, your record gets uploaded using a multipart request. If your FormData contains files, you can specify the **MediaFolder** where files should be stored to using the  "folderId " parameter:
+When "FormData" is used as first parameter, your record gets uploaded using a multipart request. If your FormData contains files, you can specify the **MediaFolder** where files should be stored to using the "folderId" parameter:
 
  
 connection.insert(FormData, {
@@ -693,7 +693,7 @@ connection.insert(FormData, {
 
 #### **Options: ack**
 
-If you want to make sure the local (offline) database on the device also gets updated as soon as the server receives your record you can use the  "ack " (which abbreviates the word **acknowledge**) parameter:
+If you want to make sure the local (offline) database on the device also gets updated as soon as the server receives your record you can use the "ack" (which abbreviates the word **acknowledge**) parameter:
 
  
 connection.insert({ foo: 'bar' }, {
@@ -707,7 +707,7 @@ connection.insert({ foo: 'bar' }, {
 
 ### Update a record (entry)
 
-Updating a data source entry is done via the  "connection.insert " method by providing its ID and the update to be applied.
+Updating a data source entry is done via the "connection.insert" method by providing its ID and the update to be applied.
 
  
 connection.update(123, {
@@ -715,7 +715,7 @@ connection.update(123, {
 });
  
 
-You can also pass a  "FormData " object to upload files using a multipart request. When uploading files, you can also specify the MediaFolder where files should be stored to:
+You can also pass a "FormData" object to upload files using a multipart request. When uploading files, you can also specify the MediaFolder where files should be stored to:
 
  
 connection.update(123, FormData, {
@@ -726,14 +726,14 @@ connection.update(123, FormData, {
 
 ### Remove a record by its ID
 
-Use the  "removeById " method to remove a entry from a data source given its ID.
+Use the "removeById" method to remove a entry from a data source given its ID.
 
  
 connection.removeById(1).then(function onRemove() {});
  
 ### Remove entries matching a query
 
-Set  "type " to  "delete " and specify a where clause. This will query the data source and delete any matching entries.
+Set "type" to "delete" and specify a where clause. This will query the data source and delete any matching entries.
 
  
 connection.query({
@@ -744,7 +744,7 @@ connection.query({
 
 ### Get unique values for a column
 
-Use the  "getIndex " method to get unique values for a given column of the Data Source:
+Use the "getIndex" method to get unique values for a given column of the Data Source:
 
  
 connection.getIndex('name').then(function onSuccess(values) {
@@ -754,7 +754,7 @@ connection.getIndex('name').then(function onSuccess(values) {
 
 ### Get unique values for multiple columns at once
 
-Use the  "getIndexes " method to get unique values for a given array of columns of the Data Source:
+Use the "getIndexes" method to get unique values for a given array of columns of the Data Source:
 
  
 connection.getIndexes(['name','email']).then(function onSuccess(values) {
@@ -766,22 +766,22 @@ connection.getIndexes(['name','email']).then(function onSuccess(values) {
 
 ### Format of data returned from JS API
 
-If referencing data from a data source, the entry will be found under the "data" object as shown below. 
+If referencing data from a data source, the entry will be found under the"data" object as shown below. 
 
 {
 "id": 404811749,
 "data": {
-"Email": "hrenfree1t@hugedomains.com",
-"Title": "Manager",
-"Prefix": "Mrs",
-"Last Name": "Renfree",
-"Department": "Operations",
-"First Name": "Hayley",
-"Middle Name": "Issy"
+"Email":"hrenfree1t@hugedomains.com",
+"Title":"Manager",
+"Prefix":"Mrs",
+"Last Name":"Renfree",
+"Department":"Operations",
+"First Name":"Hayley",
+"Middle Name":"Issy"
 },
 "order": 0,
-"createdAt": "2025-02-19T17:13:51.507Z",
-"updatedAt": "2025-02-19T17:13:51.507Z",
+"createdAt":"2025-02-19T17:13:51.507Z",
+"updatedAt":"2025-02-19T17:13:51.507Z",
 "deletedAt": null,
 "dataSourceId": 1392773
 }
@@ -807,7 +807,7 @@ Fliplet.User.getCachedSession().then(function (session) {
 
 If you are asked to join data across multiple data sources then use the below JS API:
 
-Both DataSources JS APIs and REST APIs allow you to fetch data from more than one dataSource using a featured called "join", heavily inspired by traditional joins made in SQL databases.
+Both DataSources JS APIs and REST APIs allow you to fetch data from more than one dataSource using a featured called"join", heavily inspired by traditional joins made in SQL databases.
 
 Joins are defined by a unique name and their configuration options; any number of joins can be defined when fetching data from one data source:
 
@@ -1086,7 +1086,7 @@ connection.find({
 Order the entries returned
 Use the order parameter to define the order at which entries are returned for your join.
 
-Note: this parameter can be used for attributes such as "id" and "createdAt". If you need to order by actual data in your entry, use the "data." prefix (such as data.Title).
+Note: this parameter can be used for attributes such as"id" and"createdAt". If you need to order by actual data in your entry, use the"data." prefix (such as data.Title).
 
 connection.find({
   join: {

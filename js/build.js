@@ -35,7 +35,7 @@ Fliplet.Widget.instance({
       );
 
       const widgetId = AI.fields.aiFeatureId;
-
+     
       Fliplet.Hooks.on("componentEvent", async function (event) {
         if (
           event?.type == "removed" &&
@@ -129,6 +129,10 @@ Fliplet.Widget.instance({
             aiCssResponse: AI.fields.css,
             aiJsResponse: AI.fields.javascript,
             aiLayoutResponse: AI.fields.layoutHTML,
+            organizationId: organizationId,
+            pageId: pageId,
+            widgetId: widgetId,
+            appId: appId
           });
 
           // reload page preview

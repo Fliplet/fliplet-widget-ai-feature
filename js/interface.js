@@ -81,6 +81,8 @@ Fliplet.Widget.generateInterface({
                 <br>
                 5. Tables using DataTables (Add datatables via Dev Tools > Libraries)
                 <br>
+                6. The ability to send Emails
+                <br>
                 Note: Only the information in your prompt is shared with AI. AI cannot access your data or app.
               </div>
             </div>

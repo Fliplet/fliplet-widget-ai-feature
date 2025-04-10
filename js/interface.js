@@ -158,7 +158,7 @@ Fliplet.Widget.generateInterface({
         console.log('Initializing Deep Chat...');
         
         // Check if DeepChat is already loaded
-        if (window.deepChat) {
+        if (window.DeepChat || window.deepChat) {
           console.log('DeepChat already loaded');
           initializeDeepChat.call(self);
         } else {
@@ -168,6 +168,7 @@ Fliplet.Widget.generateInterface({
           script.src = 'https://unpkg.com/deep-chat@2.1.1/dist/deepChat.bundle.js';
           script.onload = function() {
             console.log('DeepChat script loaded');
+            console.log('DeepChat global object:', window.DeepChat || window.deepChat);
             initializeDeepChat.call(self);
           };
           script.onerror = function(error) {
@@ -187,7 +188,14 @@ Fliplet.Widget.generateInterface({
           }
 
           try {
-            const deepChat = new window.deepChat.DeepChat({
+            // Get the correct constructor
+            const DeepChatConstructor = window.DeepChat || window.deepChat?.DeepChat;
+            if (!DeepChatConstructor) {
+              console.error('DeepChat constructor not found');
+              return;
+            }
+
+            const deepChat = new DeepChatConstructor({
               container: container,
               style: {
                 height: '400px',

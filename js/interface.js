@@ -4,11 +4,11 @@ var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 
 // Initialize the widget
-Fliplet.Widget.instance("ai-feature", function (data) {
   Fliplet.Widget.setSaveButtonLabel("Close");
   Fliplet.Widget.toggleCancelButton(false);
 
   Fliplet.Widget.generateInterface({
+    title: 'AI Feature',
     fields: [
       {
         type: "html",
@@ -590,7 +590,6 @@ Fliplet.Widget.instance("ai-feature", function (data) {
       },
     ],
   });
-});
 
 function toggleLoader(isDisabled) {
   if (isDisabled) {

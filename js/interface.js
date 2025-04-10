@@ -158,7 +158,7 @@ Fliplet.Widget.generateInterface({
         console.log('Initializing Deep Chat...');
         
         // Check if DeepChat is already loaded
-        if (window.DeepChat || window.deepChat) {
+        if (window.DeepChat || window.deepChat || window.deepchat) {
           console.log('DeepChat already loaded');
           initializeDeepChat.call(self);
         } else {
@@ -168,7 +168,14 @@ Fliplet.Widget.generateInterface({
           script.src = 'https://unpkg.com/deep-chat@2.1.1/dist/deepChat.bundle.js';
           script.onload = function() {
             console.log('DeepChat script loaded');
-            console.log('DeepChat global object:', window.DeepChat || window.deepChat);
+            // Log all possible variations of the DeepChat object
+            console.log('Window object:', window);
+            console.log('DeepChat variations:', {
+              DeepChat: window.DeepChat,
+              deepChat: window.deepChat,
+              deepchat: window.deepchat,
+              Deepchat: window.Deepchat
+            });
             initializeDeepChat.call(self);
           };
           script.onerror = function(error) {
@@ -188,12 +195,21 @@ Fliplet.Widget.generateInterface({
           }
 
           try {
-            // Get the correct constructor
-            const DeepChatConstructor = window.DeepChat || window.deepChat?.DeepChat;
+            // Try different variations of the constructor
+            const DeepChatConstructor = window.DeepChat || 
+                                     window.deepChat?.DeepChat || 
+                                     window.deepchat?.DeepChat ||
+                                     window.Deepchat?.DeepChat ||
+                                     window.deepChat ||
+                                     window.deepchat ||
+                                     window.Deepchat;
+
             if (!DeepChatConstructor) {
-              console.error('DeepChat constructor not found');
+              console.error('DeepChat constructor not found. Available window properties:', Object.keys(window));
               return;
             }
+
+            console.log('Using DeepChat constructor:', DeepChatConstructor);
 
             const deepChat = new DeepChatConstructor({
               container: container,

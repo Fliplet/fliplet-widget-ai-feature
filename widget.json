@@ -24,8 +24,7 @@
       "fliplet-helper",
       "fliplet-datasources",
       "fliplet-communicate",
-      "fliplet-csv",
-      "deep-chat"
+      "fliplet-csv"
     ],
     "assets": [
       "css/build.css",

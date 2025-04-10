@@ -154,59 +154,65 @@ Fliplet.Widget.generateInterface({
       type: "html",
       html: `<div class="deep-chat"></div>`,
       ready: function () {
-        // Initialize Deep Chat
-        const deepChat = new DeepChat({
-          container: this.$el.querySelector('.deep-chat'),
-          style: {
-            height: '400px',
-            width: '100%'
-          },
-          textInput: {
-            placeholder: 'Type your message...'
-          },
-          messageStyles: {
-            default: {
-              user: {
-                bubble: {
-                  backgroundColor: '#007bff',
-                  color: '#ffffff'
-                }
-              },
-              ai: {
-                bubble: {
-                  backgroundColor: '#f8f9fa',
-                  color: '#212529'
+        // Load Deep Chat from CDN
+        const script = document.createElement('script');
+        script.src = 'https://unpkg.com/deep-chat@1.0.0/dist/deep-chat.min.js';
+        script.onload = function() {
+          // Initialize Deep Chat after script loads
+          const deepChat = new DeepChat({
+            container: this.$el.querySelector('.deep-chat'),
+            style: {
+              height: '400px',
+              width: '100%'
+            },
+            textInput: {
+              placeholder: 'Type your message...'
+            },
+            messageStyles: {
+              default: {
+                user: {
+                  bubble: {
+                    backgroundColor: '#007bff',
+                    color: '#ffffff'
+                  }
+                },
+                ai: {
+                  bubble: {
+                    backgroundColor: '#f8f9fa',
+                    color: '#212529'
+                  }
                 }
               }
-            }
-          },
-          initialMessages: [
-            {
-              text: 'Hello! How can I help you today?',
-              role: 'ai'
-            }
-          ]
-        });
+            },
+            initialMessages: [
+              {
+                text: 'Hello! How can I help you today?',
+                role: 'ai'
+              }
+            ]
+          });
 
-        // Handle message sending
-        deepChat.on('message', (message) => {
-          // Process the message and get AI response
-          queryAI(message.text)
-            .then(function(parsedContent) {
-              // Send the response back to the chat
-              deepChat.addMessage({
-                text: parsedContent.html || 'I generated some code for you. Check the output below.',
-                role: 'ai'
+          // Handle message sending
+          deepChat.on('message', (message) => {
+            // Process the message and get AI response
+            queryAI(message.text)
+              .then(function(parsedContent) {
+                // Send the response back to the chat
+                deepChat.addMessage({
+                  text: parsedContent.html || 'I generated some code for you. Check the output below.',
+                  role: 'ai'
+                });
+              })
+              .catch(function(error) {
+                console.error('Error processing message:', error);
+                deepChat.addMessage({
+                  text: 'Sorry, there was an error processing your request.',
+                  role: 'ai'
+                });
               });
-            })
-            .catch(function(error) {
-              console.error('Error processing message:', error);
-              deepChat.addMessage({
-                text: 'Sorry, there was an error processing your request.',
-                role: 'ai'
-              });
-            });
-        });
+          });
+        }.bind(this);
+        document.head.appendChild(script);
       },
     },
   ],

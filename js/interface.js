@@ -3,24 +3,28 @@ var selectedDataSourceName = null;
 var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 
-// Configure global filters
-Vue.config.globalProperties.$filters = {
-  capitalize(value) {
-    if (!value) return ''
-    value = value.toString()
-    return value.charAt(0).toUpperCase() + value.slice(1)
-  },
-  formatDate(value) {
-    if (!value) return ''
-    return new Date(value).toLocaleDateString()
-  },
-  truncate(value, length = 30) {
-    if (!value) return ''
-    value = value.toString()
-    if (value.length <= length) return value
-    return value.substring(0, length) + '...'
+// Initialize filters when Vue is ready
+Fliplet.Widget.onReady().then(function() {
+  if (Vue && Vue.config) {
+    Vue.config.globalProperties.$filters = {
+      capitalize(value) {
+        if (!value) return ''
+        value = value.toString()
+        return value.charAt(0).toUpperCase() + value.slice(1)
+      },
+      formatDate(value) {
+        if (!value) return ''
+        return new Date(value).toLocaleDateString()
+      },
+      truncate(value, length = 30) {
+        if (!value) return ''
+        value = value.toString()
+        if (value.length <= length) return value
+        return value.substring(0, length) + '...'
+      }
+    };
   }
-};
+});
 
 Fliplet.Widget.setSaveButtonLabel("Close");
 Fliplet.Widget.toggleCancelButton(false);

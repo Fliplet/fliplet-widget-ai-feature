@@ -16,7 +16,7 @@
     "dependencies": [
       "fliplet-core",
       "fliplet-studio-ui",
-      "fliplet-datasources",
+      "fliplet-datasources"
     ],
     "assets": ["js/interface.js", "css/interface.css", "https://unpkg.com/vue-advanced-chat/dist/vue-advanced-chat.umd.js", "https://unpkg.com/vue@3/dist/vue.global.js"]
   },

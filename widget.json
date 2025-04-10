@@ -13,7 +13,13 @@
   },
   "html_tag": "div",
   "interface": {
-    "dependencies": ["fliplet-core", "fliplet-studio-ui", "fliplet-datasources"],
+    "dependencies": [
+      "fliplet-core",
+      "fliplet-studio-ui",
+      "fliplet-datasources",
+      "https://unpkg.com/vue@3/dist/vue.global.js",
+      "https://unpkg.com/vue-advanced-chat/dist/vue-advanced-chat.umd.js"
+    ],
     "assets": ["js/interface.js", "css/interface.css"]
   },
   "build": {

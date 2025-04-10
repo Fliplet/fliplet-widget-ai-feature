@@ -154,65 +154,99 @@ Fliplet.Widget.generateInterface({
       type: "html",
       html: `<div class="deep-chat"></div>`,
       ready: function () {
-        // Load Deep Chat from CDN
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/deep-chat@1.0.0/dist/deep-chat.min.js';
-        script.onload = function() {
-          // Initialize Deep Chat after script loads
-          const deepChat = new DeepChat({
-            container: this.$el.querySelector('.deep-chat'),
-            style: {
-              height: '400px',
-              width: '100%'
-            },
-            textInput: {
-              placeholder: 'Type your message...'
-            },
-            messageStyles: {
-              default: {
-                user: {
-                  bubble: {
-                    backgroundColor: '#007bff',
-                    color: '#ffffff'
-                  }
-                },
-                ai: {
-                  bubble: {
-                    backgroundColor: '#f8f9fa',
-                    color: '#212529'
+        const self = this; // Store reference to this
+        console.log('Initializing Deep Chat...');
+        
+        // Check if DeepChat is already loaded
+        if (window.DeepChat) {
+          console.log('DeepChat already loaded');
+          initializeDeepChat.call(self);
+        } else {
+          console.log('Loading DeepChat from CDN...');
+          // Load Deep Chat from CDN
+          const script = document.createElement('script');
+          script.src = 'https://unpkg.com/deep-chat@1.0.0/dist/deep-chat.min.js';
+          script.onload = function() {
+            console.log('DeepChat script loaded');
+            initializeDeepChat.call(self);
+          };
+          script.onerror = function(error) {
+            console.error('Failed to load DeepChat:', error);
+          };
+          document.head.appendChild(script);
+        }
+
+        function initializeDeepChat() {
+          console.log('Initializing DeepChat instance...');
+          const container = this.$el.querySelector('.deep-chat');
+          console.log('Container found:', container);
+          
+          if (!container) {
+            console.error('Deep Chat container not found');
+            return;
+          }
+
+          try {
+            const deepChat = new window.DeepChat({
+              container: container,
+              style: {
+                height: '400px',
+                width: '100%'
+              },
+              textInput: {
+                placeholder: 'Type your message...'
+              },
+              messageStyles: {
+                default: {
+                  user: {
+                    bubble: {
+                      backgroundColor: '#007bff',
+                      color: '#ffffff'
+                    }
+                  },
+                  ai: {
+                    bubble: {
+                      backgroundColor: '#f8f9fa',
+                      color: '#212529'
+                    }
                   }
                 }
-              }
-            },
-            initialMessages: [
-              {
-                text: 'Hello! How can I help you today?',
-                role: 'ai'
-              }
-            ]
-          });
+              },
+              initialMessages: [
+                {
+                  text: 'Hello! How can I help you today?',
+                  role: 'ai'
+                }
+              ]
+            });
 
-          // Handle message sending
-          deepChat.on('message', (message) => {
-            // Process the message and get AI response
-            queryAI(message.text)
-              .then(function(parsedContent) {
-                // Send the response back to the chat
-                deepChat.addMessage({
-                  text: parsedContent.html || 'I generated some code for you. Check the output below.',
-                  role: 'ai'
+            console.log('DeepChat instance created');
+
+            // Handle message sending
+            deepChat.on('message', (message) => {
+              console.log('Message received:', message);
+              // Process the message and get AI response
+              queryAI(message.text)
+                .then(function(parsedContent) {
+                  console.log('AI response received:', parsedContent);
+                  // Send the response back to the chat
+                  deepChat.addMessage({
+                    text: parsedContent.html || 'I generated some code for you. Check the output below.',
+                    role: 'ai'
+                  });
+                })
+                .catch(function(error) {
+                  console.error('Error processing message:', error);
+                  deepChat.addMessage({
+                    text: 'Sorry, there was an error processing your request.',
+                    role: 'ai'
+                  });
                 });
-              })
-              .catch(function(error) {
-                console.error('Error processing message:', error);
-                deepChat.addMessage({
-                  text: 'Sorry, there was an error processing your request.',
-                  role: 'ai'
-                });
-              });
-          });
-        }.bind(this);
-        document.head.appendChild(script);
+            });
+          } catch (error) {
+            console.error('Error initializing DeepChat:', error);
+          }
+        }
       },
     },
   ],

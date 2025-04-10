@@ -162,26 +162,8 @@ Fliplet.Widget.generateInterface({
           console.log('DeepChat already loaded');
           initializeDeepChat.call(self);
         } else {
-          console.log('Loading DeepChat from CDN...');
-          // Load Deep Chat from CDN
-          const script = document.createElement('script');
-          script.src = 'https://unpkg.com/deep-chat@2.1.1/dist/deepChat.bundle.js';
-          script.onload = function() {
-            console.log('DeepChat script loaded');
-            // Log all possible variations of the DeepChat object
-            console.log('Window object:', window);
-            console.log('DeepChat variations:', {
-              DeepChat: window.DeepChat,
-              deepChat: window.deepChat,
-              deepchat: window.deepchat,
-              Deepchat: window.Deepchat
-            });
-            initializeDeepChat.call(self);
-          };
-          script.onerror = function(error) {
-            console.error('Failed to load DeepChat:', error);
-          };
-          document.head.appendChild(script);
+          console.log('DeepChat should be loaded via widget.json assets');
+          initializeDeepChat.call(self);
         }
 
         function initializeDeepChat() {

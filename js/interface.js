@@ -158,7 +158,7 @@ Fliplet.Widget.generateInterface({
         console.log('Initializing Deep Chat...');
         
         // Check if DeepChat is already loaded
-        if (window.DeepChat) {
+        if (window.deepChat) {
           console.log('DeepChat already loaded');
           initializeDeepChat.call(self);
         } else {
@@ -187,7 +187,7 @@ Fliplet.Widget.generateInterface({
           }
 
           try {
-            const deepChat = new window.DeepChat({
+            const deepChat = new window.deepChat.DeepChat({
               container: container,
               style: {
                 height: '400px',

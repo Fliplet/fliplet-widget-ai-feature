@@ -4,28 +4,7 @@ var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 
 // Initialize the widget
-Fliplet.Widget.instance('ai-feature', function(data) {
-  // Initialize filters when Vue is ready
-  if (Vue && Vue.config) {
-    Vue.config.globalProperties.$filters = {
-      capitalize(value) {
-        if (!value) return ''
-        value = value.toString()
-        return value.charAt(0).toUpperCase() + value.slice(1)
-      },
-      formatDate(value) {
-        if (!value) return ''
-        return new Date(value).toLocaleDateString()
-      },
-      truncate(value, length = 30) {
-        if (!value) return ''
-        value = value.toString()
-        if (value.length <= length) return value
-        return value.substring(0, length) + '...'
-      }
-    };
-  }
-
+Fliplet.Widget.instance("ai-feature", function (data) {
   Fliplet.Widget.setSaveButtonLabel("Close");
   Fliplet.Widget.toggleCancelButton(false);
 
@@ -111,7 +90,7 @@ Fliplet.Widget.instance('ai-feature', function(data) {
               </div>
             </div>
           </div>
-        `
+        `,
       },
       {
         name: "prompt",
@@ -177,10 +156,30 @@ Fliplet.Widget.instance('ai-feature', function(data) {
         type: "html",
         html: `<div id="app-chat"></div>`,
         ready: function () {
+          // Initialize filters when Vue is ready
+          if (Vue && Vue.config) {
+            Vue.config.globalProperties.$filters = {
+              capitalize(value) {
+                if (!value) return "";
+                value = value.toString();
+                return value.charAt(0).toUpperCase() + value.slice(1);
+              },
+              formatDate(value) {
+                if (!value) return "";
+                return new Date(value).toLocaleDateString();
+              },
+              truncate(value, length = 30) {
+                if (!value) return "";
+                value = value.toString();
+                if (value.length <= length) return value;
+                return value.substring(0, length) + "...";
+              },
+            };
+          }
           // Use Vue and vue-advanced-chat from dependencies
           const { createApp } = Vue;
-          
-          const app = createApp({ 
+
+          const app = createApp({
             template: `
               <vue-advanced-chat
                 :height="'100vh'"
@@ -212,166 +211,175 @@ Fliplet.Widget.instance('ai-feature', function(data) {
             `,
             data() {
               return {
-                currentUserId: '1234',
+                currentUserId: "1234",
                 rooms: [],
                 messages: {},
                 loadingRooms: false,
                 roomsLoaded: false,
                 messagesLoaded: {},
                 roomActions: [
-                  { name: 'inviteUser', title: 'Invite User' },
-                  { name: 'removeUser', title: 'Remove User' },
-                  { name: 'deleteRoom', title: 'Delete Room' }
+                  { name: "inviteUser", title: "Invite User" },
+                  { name: "removeUser", title: "Remove User" },
+                  { name: "deleteRoom", title: "Delete Room" },
                 ],
                 menuActions: [
-                  { name: 'inviteUser', title: 'Invite User' },
-                  { name: 'removeUser', title: 'Remove User' },
-                  { name: 'deleteRoom', title: 'Delete Room' }
+                  { name: "inviteUser", title: "Invite User" },
+                  { name: "removeUser", title: "Remove User" },
+                  { name: "deleteRoom", title: "Delete Room" },
                 ],
                 messageActions: [
-                  { name: 'replyMessage', title: 'Reply' },
-                  { name: 'editMessage', title: 'Edit Message' },
-                  { name: 'deleteMessage', title: 'Delete Message' }
+                  { name: "replyMessage", title: "Reply" },
+                  { name: "editMessage", title: "Edit Message" },
+                  { name: "deleteMessage", title: "Delete Message" },
                 ],
                 templatesText: {
-                  roomList: 'Rooms',
-                  roomSearch: 'Search rooms...',
-                  roomEmpty: 'No rooms found',
-                  messageEmpty: 'No messages',
-                  messageSearch: 'Search users...',
-                  newRoom: 'New Room',
-                  menuInviteUser: 'Invite User',
-                  menuRemoveUser: 'Remove User',
-                  menuDeleteRoom: 'Delete Room',
-                  menuBlockUser: 'Block User',
-                  messageReplied: 'replied to a message',
-                  messageEdited: '(edited)',
-                  messageDeleted: 'Message deleted',
-                  messageTypeMessage: 'Type a message...',
-                  messageTypeReply: 'Type a reply...',
-                  messageTypeEdit: 'Edit your message...',
-                  messageTypeEditReply: 'Edit your reply...',
-                  messageDeletedMessage: 'Message deleted',
-                  messageDeleteForMe: 'Delete for me',
-                  messageDeleteForEveryone: 'Delete for everyone',
-                  messageDeleteMyMessage: 'Delete my message',
-                  messageDeleteEveryoneMessage: 'Delete for everyone',
-                  messageConfirmDelete: 'Are you sure you want to delete this message?',
-                  messageConfirmDeleteDescription: 'This message will be deleted for everyone',
-                  messageConfirmDeleteCancel: 'Cancel',
-                  messageConfirmDeleteConfirm: 'Delete'
+                  roomList: "Rooms",
+                  roomSearch: "Search rooms...",
+                  roomEmpty: "No rooms found",
+                  messageEmpty: "No messages",
+                  messageSearch: "Search users...",
+                  newRoom: "New Room",
+                  menuInviteUser: "Invite User",
+                  menuRemoveUser: "Remove User",
+                  menuDeleteRoom: "Delete Room",
+                  menuBlockUser: "Block User",
+                  messageReplied: "replied to a message",
+                  messageEdited: "(edited)",
+                  messageDeleted: "Message deleted",
+                  messageTypeMessage: "Type a message...",
+                  messageTypeReply: "Type a reply...",
+                  messageTypeEdit: "Edit your message...",
+                  messageTypeEditReply: "Edit your reply...",
+                  messageDeletedMessage: "Message deleted",
+                  messageDeleteForMe: "Delete for me",
+                  messageDeleteForEveryone: "Delete for everyone",
+                  messageDeleteMyMessage: "Delete my message",
+                  messageDeleteEveryoneMessage: "Delete for everyone",
+                  messageConfirmDelete:
+                    "Are you sure you want to delete this message?",
+                  messageConfirmDeleteDescription:
+                    "This message will be deleted for everyone",
+                  messageConfirmDeleteCancel: "Cancel",
+                  messageConfirmDeleteConfirm: "Delete",
                 },
                 textMessages: {
-                  ROOMS_EMPTY: 'No rooms',
-                  ROOM_EMPTY: 'No room selected',
-                  NEW_MESSAGES: 'New Messages',
-                  MESSAGE_DELETED: 'This message was deleted',
-                  MESSAGES_EMPTY: 'No messages',
-                  CONVERSATION_STARTED: 'Conversation started on:',
-                  TYPE_MESSAGE: 'Type a message',
-                  SEARCH: 'Search',
-                  IS_ONLINE: 'is online',
-                  LAST_SEEN: 'last seen',
-                  IS_TYPING: 'is typing...',
-                  CANCEL_SELECT_MESSAGE: 'Cancel',
-                  DELETE_MESSAGE: 'Delete message',
-                  EDIT_MESSAGE: 'Edit message',
-                  REPLY_MESSAGE: 'Reply',
-                  COPY_MESSAGE: 'Copy',
-                  COPIED_MESSAGE: 'Copied',
-                  SELECT_USERS: 'Select users',
-                  EDIT: 'Edit',
-                  SAVE: 'Save',
-                  DELETE: 'Delete',
-                  MORE: 'More',
-                  CANCEL: 'Cancel',
-                  ADD: 'Add',
-                  USERS: 'Users',
-                  USER: 'User',
-                  ADD_USER: 'Add user',
-                  LEAVE_ROOM: 'Leave room',
-                  LEAVE_ROOM_CONFIRM: 'Are you sure you want to leave this room?',
-                  DELETE_ROOM: 'Delete room',
-                  DELETE_ROOM_CONFIRM: 'Are you sure you want to delete this room?',
-                  REMOVE_USER: 'Remove user',
-                  REMOVE_USER_CONFIRM: 'Are you sure you want to remove this user?',
-                  MESSAGE_EDITED: '(edited)',
-                  MESSAGE_DELETED: '(deleted)',
-                  MESSAGE_REPLIED: 'replied to a message',
-                  MESSAGE_REPLIED_TO: 'replied to',
-                  MESSAGE_TYPE: 'Type a message...',
-                  MESSAGE_REPLY: 'Reply...',
-                  MESSAGE_EDIT: 'Edit message...',
-                  MESSAGE_SAVE: 'Save',
-                  MESSAGE_CANCEL: 'Cancel',
-                  MESSAGE_DELETE: 'Delete',
-                  MESSAGE_DELETE_CONFIRM: 'Are you sure you want to delete this message?',
-                  MESSAGE_DELETE_CONFIRM_DESCRIPTION: 'This message will be deleted for everyone',
-                  MESSAGE_DELETE_CONFIRM_CANCEL: 'Cancel',
-                  MESSAGE_DELETE_CONFIRM_CONFIRM: 'Delete'
-                }
-              }
+                  ROOMS_EMPTY: "No rooms",
+                  ROOM_EMPTY: "No room selected",
+                  NEW_MESSAGES: "New Messages",
+                  MESSAGE_DELETED: "This message was deleted",
+                  MESSAGES_EMPTY: "No messages",
+                  CONVERSATION_STARTED: "Conversation started on:",
+                  TYPE_MESSAGE: "Type a message",
+                  SEARCH: "Search",
+                  IS_ONLINE: "is online",
+                  LAST_SEEN: "last seen",
+                  IS_TYPING: "is typing...",
+                  CANCEL_SELECT_MESSAGE: "Cancel",
+                  DELETE_MESSAGE: "Delete message",
+                  EDIT_MESSAGE: "Edit message",
+                  REPLY_MESSAGE: "Reply",
+                  COPY_MESSAGE: "Copy",
+                  COPIED_MESSAGE: "Copied",
+                  SELECT_USERS: "Select users",
+                  EDIT: "Edit",
+                  SAVE: "Save",
+                  DELETE: "Delete",
+                  MORE: "More",
+                  CANCEL: "Cancel",
+                  ADD: "Add",
+                  USERS: "Users",
+                  USER: "User",
+                  ADD_USER: "Add user",
+                  LEAVE_ROOM: "Leave room",
+                  LEAVE_ROOM_CONFIRM:
+                    "Are you sure you want to leave this room?",
+                  DELETE_ROOM: "Delete room",
+                  DELETE_ROOM_CONFIRM:
+                    "Are you sure you want to delete this room?",
+                  REMOVE_USER: "Remove user",
+                  REMOVE_USER_CONFIRM:
+                    "Are you sure you want to remove this user?",
+                  MESSAGE_EDITED: "(edited)",
+                  MESSAGE_DELETED: "(deleted)",
+                  MESSAGE_REPLIED: "replied to a message",
+                  MESSAGE_REPLIED_TO: "replied to",
+                  MESSAGE_TYPE: "Type a message...",
+                  MESSAGE_REPLY: "Reply...",
+                  MESSAGE_EDIT: "Edit message...",
+                  MESSAGE_SAVE: "Save",
+                  MESSAGE_CANCEL: "Cancel",
+                  MESSAGE_DELETE: "Delete",
+                  MESSAGE_DELETE_CONFIRM:
+                    "Are you sure you want to delete this message?",
+                  MESSAGE_DELETE_CONFIRM_DESCRIPTION:
+                    "This message will be deleted for everyone",
+                  MESSAGE_DELETE_CONFIRM_CANCEL: "Cancel",
+                  MESSAGE_DELETE_CONFIRM_CONFIRM: "Delete",
+                },
+              };
             },
             methods: {
               async handleFetchRooms() {
-                this.loadingRooms = true
+                this.loadingRooms = true;
                 try {
                   // Simulate API call
-                  await new Promise(resolve => setTimeout(resolve, 1000))
-                  
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
+
                   // Sample rooms data
                   this.rooms = [
                     {
-                      roomId: '1',
-                      roomName: 'Room 1',
-                      avatar: 'https://66.media.tumblr.com/avatar_9dd9bb497b75_128.pnj',
+                      roomId: "1",
+                      roomName: "Room 1",
+                      avatar:
+                        "https://66.media.tumblr.com/avatar_9dd9bb497b75_128.pnj",
                       unreadCount: 3,
                       index: 3,
                       lastMessage: {
-                        content: 'Last message received',
-                        senderId: '1234',
-                        username: 'John Doe',
-                        timestamp: '10:20',
+                        content: "Last message received",
+                        senderId: "1234",
+                        username: "John Doe",
+                        timestamp: "10:20",
                         saved: true,
                         distributed: false,
                         seen: false,
-                        new: true
+                        new: true,
                       },
                       users: [
                         {
-                          _id: '1234',
-                          username: 'John Doe',
-                          avatar: 'https://66.media.tumblr.com/avatar_9dd9bb497b75_128.pnj',
+                          _id: "1234",
+                          username: "John Doe",
+                          avatar:
+                            "https://66.media.tumblr.com/avatar_9dd9bb497b75_128.pnj",
                           status: {
-                            state: 'online',
-                            lastChanged: 'today, 14:30'
-                          }
-                        }
-                      ]
-                    }
-                  ]
-                  this.roomsLoaded = true
+                            state: "online",
+                            lastChanged: "today, 14:30",
+                          },
+                        },
+                      ],
+                    },
+                  ];
+                  this.roomsLoaded = true;
                 } catch (error) {
-                  console.error('Error fetching rooms:', error)
+                  console.error("Error fetching rooms:", error);
                 } finally {
-                  this.loadingRooms = false
+                  this.loadingRooms = false;
                 }
               },
               async handleFetchMessages({ room, options = {} }) {
-                this.messagesLoaded[room.roomId] = false
+                this.messagesLoaded[room.roomId] = false;
                 try {
                   // Simulate API call
-                  await new Promise(resolve => setTimeout(resolve, 1000))
-                  
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
+
                   // Sample messages data
                   this.messages[room.roomId] = [
                     {
-                      _id: '1',
-                      content: 'Hello!',
-                      senderId: '1234',
-                      username: 'John Doe',
-                      date: '10:00',
-                      timestamp: '10:00',
+                      _id: "1",
+                      content: "Hello!",
+                      senderId: "1234",
+                      username: "John Doe",
+                      date: "10:00",
+                      timestamp: "10:00",
                       system: false,
                       saved: true,
                       distributed: true,
@@ -382,15 +390,15 @@ Fliplet.Widget.instance('ai-feature', function(data) {
                       disableReactions: false,
                       files: [],
                       reactions: {},
-                      replyMessage: null
+                      replyMessage: null,
                     },
                     {
-                      _id: '2',
-                      content: 'Hi there!',
-                      senderId: '5678',
-                      username: 'Jane Smith',
-                      date: '10:05',
-                      timestamp: '10:05',
+                      _id: "2",
+                      content: "Hi there!",
+                      senderId: "5678",
+                      username: "Jane Smith",
+                      date: "10:05",
+                      timestamp: "10:05",
                       system: false,
                       saved: true,
                       distributed: true,
@@ -401,26 +409,32 @@ Fliplet.Widget.instance('ai-feature', function(data) {
                       disableReactions: false,
                       files: [],
                       reactions: {},
-                      replyMessage: null
-                    }
-                  ]
-                  this.messagesLoaded[room.roomId] = true
+                      replyMessage: null,
+                    },
+                  ];
+                  this.messagesLoaded[room.roomId] = true;
                 } catch (error) {
-                  console.error('Error fetching messages:', error)
+                  console.error("Error fetching messages:", error);
                 }
               },
               async handleSendMessage({ roomId, content, file, replyMessage }) {
                 try {
                   // Simulate API call
-                  await new Promise(resolve => setTimeout(resolve, 500))
-                  
+                  await new Promise((resolve) => setTimeout(resolve, 500));
+
                   const newMessage = {
                     _id: Date.now().toString(),
                     content,
                     senderId: this.currentUserId,
-                    username: 'John Doe',
-                    date: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    username: "John Doe",
+                    date: new Date().toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }),
+                    timestamp: new Date().toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    }),
                     system: false,
                     saved: true,
                     distributed: true,
@@ -431,40 +445,47 @@ Fliplet.Widget.instance('ai-feature', function(data) {
                     disableReactions: false,
                     files: file ? [file] : [],
                     reactions: {},
-                    replyMessage
-                  }
+                    replyMessage,
+                  };
 
                   if (!this.messages[roomId]) {
-                    this.messages[roomId] = []
+                    this.messages[roomId] = [];
                   }
-                  this.messages[roomId].push(newMessage)
+                  this.messages[roomId].push(newMessage);
                 } catch (error) {
-                  console.error('Error sending message:', error)
+                  console.error("Error sending message:", error);
                 }
               },
               handleRoomAction({ roomId, action }) {
-                console.log('Room action:', action, 'for room:', roomId)
+                console.log("Room action:", action, "for room:", roomId);
               },
               handleMenuAction({ roomId, action }) {
-                console.log('Menu action:', action, 'for room:', roomId)
+                console.log("Menu action:", action, "for room:", roomId);
               },
               handleMessageAction({ roomId, action, message }) {
-                console.log('Message action:', action, 'for message:', message, 'in room:', roomId)
-              }
+                console.log(
+                  "Message action:",
+                  action,
+                  "for message:",
+                  message,
+                  "in room:",
+                  roomId
+                );
+              },
             },
             mounted() {
-              this.handleFetchRooms()
-            }
+              this.handleFetchRooms();
+            },
           });
 
           // Register the chat component
-          app.component('vue-advanced-chat', window.VueAdvancedChat.default);
+          app.component("vue-advanced-chat", window.VueAdvancedChat.default);
 
           // Mount the app to the chat container
-          app.mount('#app-chat');
+          app.mount("#app-chat");
 
           // Add the chat styles
-          const style = document.createElement('style');
+          const style = document.createElement("style");
           style.textContent = `
             body {
               margin: 0;

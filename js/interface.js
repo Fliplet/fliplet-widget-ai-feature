@@ -192,16 +192,16 @@ Fliplet.Widget.generateInterface({
           inputField.value = '';
 
           // Process the message and get AI response
-          queryAI(message)
-            .then(function(parsedContent) {
-              console.log('AI response received:', parsedContent);
-              // Send the response back to the chat
-              addMessage(parsedContent.html || 'I generated some code for you. Check the output below.', 'ai');
-            })
-            .catch(function(error) {
-              console.error('Error processing message:', error);
-              addMessage('Sorry, there was an error processing your request.', 'ai');
-            });
+          // queryAI(message)
+          //   .then(function(parsedContent) {
+          //     console.log('AI response received:', parsedContent);
+          //     // Send the response back to the chat
+          //     addMessage(parsedContent.html || 'I generated some code for you. Check the output below.', 'ai');
+          //   })
+          //   .catch(function(error) {
+          //     console.error('Error processing message:', error);
+          //     addMessage('Sorry, there was an error processing your request.', 'ai');
+          //   });
         }
 
         function addMessage(text, role) {

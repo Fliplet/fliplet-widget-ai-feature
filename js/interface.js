@@ -154,14 +154,10 @@ Fliplet.Widget.generateInterface({
       type: "html",
       html: `<div id="app-chat"></div>`,
       ready: function () {
-        // Load Vue and vue-advanced-chat from CDN
-        const script1 = document.createElement('script');
-        script1.src = 'https://unpkg.com/vue@3/dist/vue.global.js';
-        script1.onload = () => {
-          const script2 = document.createElement('script');
-          script2.src = 'https://unpkg.com/vue-advanced-chat/dist/vue-advanced-chat.umd.js';
-          script2.onload = () => {
-            const { createApp } = Vue;
+        // Import Vue and vue-advanced-chat from installed packages
+        import('vue').then(Vue => {
+          import('vue-advanced-chat').then(VueAdvancedChat => {
+            const { createApp } = Vue.default;
             
             const app = createApp({ 
               template: `
@@ -441,7 +437,7 @@ Fliplet.Widget.generateInterface({
             });
 
             // Register the chat component
-            app.component('vue-advanced-chat', window.VueAdvancedChat.default);
+            app.component('vue-advanced-chat', VueAdvancedChat.default);
 
             // Mount the app to the chat container
             app.mount('#app-chat');
@@ -548,10 +544,8 @@ Fliplet.Widget.generateInterface({
               }
             `;
             document.head.appendChild(style);
-          };
-          document.head.appendChild(script2);
-        };
-        document.head.appendChild(script1);
+          });
+        });
       },
     },
   ],

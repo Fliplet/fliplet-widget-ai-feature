@@ -165,7 +165,7 @@ Fliplet.Widget.generateInterface({
           console.log('Loading DeepChat from CDN...');
           // Load Deep Chat from CDN
           const script = document.createElement('script');
-          script.src = 'https://unpkg.com/deep-chat@1.0.0/dist/deep-chat.min.js';
+          script.src = 'https://unpkg.com/deep-chat@2.1.1/dist/deepChat.bundle.js';
           script.onload = function() {
             console.log('DeepChat script loaded');
             initializeDeepChat.call(self);

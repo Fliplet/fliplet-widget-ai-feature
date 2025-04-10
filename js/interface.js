@@ -3,6 +3,26 @@ var selectedDataSourceName = null;
 var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 
+// Configure global filters
+const app = Vue.createApp({});
+app.config.globalProperties.$filters = {
+  capitalize(value) {
+    if (!value) return ''
+    value = value.toString()
+    return value.charAt(0).toUpperCase() + value.slice(1)
+  },
+  formatDate(value) {
+    if (!value) return ''
+    return new Date(value).toLocaleDateString()
+  },
+  truncate(value, length = 30) {
+    if (!value) return ''
+    value = value.toString()
+    if (value.length <= length) return value
+    return value.substring(0, length) + '...'
+  }
+};
+
 Fliplet.Widget.setSaveButtonLabel("Close");
 Fliplet.Widget.toggleCancelButton(false);
 
@@ -1282,7 +1302,7 @@ connection.find({
 Types of data returned in joins
 Joins can return data in several different ways:
 
-An Array of the matching entries. This is the default behaviour for joins.
+An Array of the matching entries. This is the default behaviour for joins, hence no parameters are required.
 A Boolean to indicate whether at least one entry was matched.
 A Count of the matched entries.
 A Sum taken by counting a number in a defined column from the matching entries.

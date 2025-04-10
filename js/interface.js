@@ -196,6 +196,9 @@ Fliplet.Widget.generateInterface({
           inputField.value = '';
 
           try {
+            // Show loader while processing
+            toggleLoader(true);
+            
             // Process the message and get AI response
             const parsedContent = await queryAI(message);
             console.log('AI response received:', parsedContent);
@@ -204,6 +207,9 @@ Fliplet.Widget.generateInterface({
           } catch (error) {
             console.error('Error processing message:', error);
             addMessage('Sorry, there was an error processing your request.', 'ai');
+          } finally {
+            // Hide loader when done
+            toggleLoader(false);
           }
         }
 

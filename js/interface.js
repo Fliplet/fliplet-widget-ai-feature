@@ -154,15 +154,8 @@ Fliplet.Widget.generateInterface({
       type: "html",
       html: `<div class="deep-chat"></div>`,
       ready: function () {
-        const self = this; // Store reference to this
-        console.log('Initializing Deep Chat...');
-        
         // Create a simple chat interface
         const container = this.$el.querySelector('.deep-chat');
-        if (!container) {
-          console.error('Chat container not found');
-          return;
-        }
 
         // Add basic chat UI
         container.innerHTML = `
@@ -220,6 +213,8 @@ Fliplet.Widget.generateInterface({
           messageDiv.style.alignSelf = role === 'user' ? 'flex-end' : 'flex-start';
           messageDiv.style.backgroundColor = role === 'user' ? '#007bff' : '#f8f9fa';
           messageDiv.style.color = role === 'user' ? 'white' : '#212529';
+          messageDiv.style.marginLeft = role === 'user' ? 'auto' : '0';
+          messageDiv.style.marginRight = role === 'user' ? '0' : 'auto';
           
           messageDiv.textContent = text;
           messagesContainer.appendChild(messageDiv);

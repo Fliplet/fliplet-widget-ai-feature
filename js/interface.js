@@ -163,7 +163,7 @@ Fliplet.Widget.generateInterface({
           script2.onload = () => {
             const { createApp } = Vue;
             
-            const app = createApp({
+            const app = createApp({ 
               template: `
                 <vue-advanced-chat
                   :height="'100vh'"
@@ -440,8 +440,8 @@ Fliplet.Widget.generateInterface({
               }
             });
 
-            // Register the vue-advanced-chat component
-            app.component('vue-advanced-chat', VueAdvancedChat);
+            // Register the chat component
+            app.component('vue-advanced-chat', window.VueAdvancedChat.default);
 
             // Mount the app to the chat container
             app.mount('#app-chat');

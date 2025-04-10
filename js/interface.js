@@ -176,14 +176,18 @@ Fliplet.Widget.generateInterface({
         addMessage('Hello! How can I help you today?', 'ai');
 
         // Handle send button click
-        sendButton.addEventListener('click', handleSend);
+        sendButton.addEventListener('click', function(e) {
+          e.preventDefault();
+          handleSend();
+        });
         inputField.addEventListener('keypress', function(e) {
           if (e.key === 'Enter') {
+            e.preventDefault();
             handleSend();
           }
         });
 
-        function handleSend() {
+        async function handleSend() {
           const message = inputField.value.trim();
           if (!message) return;
 
@@ -191,17 +195,16 @@ Fliplet.Widget.generateInterface({
           addMessage(message, 'user');
           inputField.value = '';
 
-          // Process the message and get AI response
-          // queryAI(message)
-          //   .then(function(parsedContent) {
-          //     console.log('AI response received:', parsedContent);
-          //     // Send the response back to the chat
-          //     addMessage(parsedContent.html || 'I generated some code for you. Check the output below.', 'ai');
-          //   })
-          //   .catch(function(error) {
-          //     console.error('Error processing message:', error);
-          //     addMessage('Sorry, there was an error processing your request.', 'ai');
-          //   });
+          try {
+            // Process the message and get AI response
+            const parsedContent = await queryAI(message);
+            console.log('AI response received:', parsedContent);
+            // Send the response back to the chat
+            addMessage(parsedContent.html || 'I generated some code for you. Check the output below.', 'ai');
+          } catch (error) {
+            console.error('Error processing message:', error);
+            addMessage('Sorry, there was an error processing your request.', 'ai');
+          }
         }
 
         function addMessage(text, role) {

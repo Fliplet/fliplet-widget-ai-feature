@@ -4,8 +4,7 @@ var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 
 // Configure global filters
-const app = Vue.createApp({});
-app.config.globalProperties.$filters = {
+Vue.config.globalProperties.$filters = {
   capitalize(value) {
     if (!value) return ''
     value = value.toString()

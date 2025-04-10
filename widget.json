@@ -18,7 +18,7 @@
       "fliplet-studio-ui",
       "fliplet-datasources"
     ],
-    "assets": ["js/interface.js", "css/interface.css", "https://unpkg.com/vue-advanced-chat/dist/vue-advanced-chat.umd.js", "https://unpkg.com/vue@3/dist/vue.global.js"]
+    "assets": ["js/interface.js", "css/interface.css", "js/vue-advanced-chat.js", "vue.js"]
   },
   "build": {
     "dependencies": [

@@ -391,6 +391,17 @@ These are the list of columns in the data source selected by the user: ${dataSou
       aiClientResponse = aiClientResponseMatch[1].trim();
     }
 
+    // If no code was generated but we have aiClientResponse, return only that
+    if (!html && !css && !javascript && aiClientResponse) {
+      return {
+        html: "",
+        css: "",
+        javascript: "",
+        aiClientResponse: aiClientResponse
+      };
+    }
+
+    // If we have code, return it with any aiClientResponse
     return {
       html,
       css,

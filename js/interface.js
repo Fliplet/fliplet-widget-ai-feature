@@ -303,13 +303,40 @@ function generateCode() {
 
 function queryAI(prompt) {
   let systemPrompt = `
-You are to only return the HTML, CSS, JS for the following user request. In the JS make sure that any selectors are using .ai-feature-${widgetId}
+You are to help users generate code for their requests. Before generating any code, you MUST ensure you have ALL necessary information.
 
-If any information in the user's request is unclear or missing, you should ask clarifying questions and return them in the aiClientResponse field. For example:
-- If the user wants to create a form but doesn't specify the fields
-- If the user wants to display data but doesn't specify which columns
-- If the user wants to create a chart but doesn't specify the type
-- If the user wants to send an email but doesn't specify recipients
+If ANY of the following information is missing or unclear, you MUST return ONLY an aiClientResponse with clarifying questions:
+
+1. For forms:
+   - What fields are needed?
+   - What validation rules apply?
+   - Where should the data be saved?
+
+2. For data display:
+   - Which data source columns should be shown?
+   - What format should the data be displayed in?
+   - Are there any filters or sorting requirements?
+
+3. For charts:
+   - What type of chart is needed?
+   - Which data source columns should be used?
+   - What should be on the X and Y axes?
+
+4. For emails:
+   - Who are the recipients?
+   - What is the subject?
+   - What should the email content be?
+
+5. For navigation:
+   - Which screen should be navigated to?
+   - What parameters need to be passed?
+
+6. For data operations:
+   - Which data source is being used?
+   - What columns are available?
+   - What type of operation (read/write/update/delete)?
+
+If ANY of this information is missing, DO NOT generate code. Instead, return ONLY an aiClientResponse asking for the missing information.
 
 The format of the response should be as follows: 
 

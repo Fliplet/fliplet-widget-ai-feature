@@ -88,7 +88,7 @@ Fliplet.Widget.generateInterface({
             </div>
           </div>
         </div>
-      `
+      `,
     },
     {
       name: "prompt",
@@ -108,6 +108,14 @@ Fliplet.Widget.generateInterface({
       html: '<input type="button" class="btn btn-primary generate-code" value="Generate code" />',
       ready: function () {
         $(this.$el).find(".generate-code").on("click", generateCode);
+        toggleLoader(false);
+      },
+    },
+    {
+      type: "html",
+      html: '<input type="button" class="btn btn-primary enhance-prompt" value="Enhance prompt" />',
+      ready: function () {
+        $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
         toggleLoader(false);
       },
     },
@@ -160,6 +168,33 @@ function toggleLoader(isDisabled) {
   } else {
     $(".interface").find(".generate-code-disabled").hide();
     $(".interface").find(".generate-code").show();
+  }
+}
+
+function enhancePrompt() {
+  toggleLoader(true);
+  var prompt = Fliplet.Helper.field("prompt").get();
+  if (prompt) {
+    let systemPrompt = `You are a software architect.
+    Take the following user's request and provide a detailed list of software requirements for the input,
+    processing and output required to deliver it.
+    Provide details about the user interface required for the input and output.
+    Do not provide options within the requirements, only suggest the best solution.
+    Be specific and detailed to ensure the code generated meets the requirements.
+    Your output will be provided to Fliplet's AI code generator tool to help it to deliver the code within Fliplet.`;
+
+    return Fliplet.AI.createCompletion({
+      model: "o3-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: prompt },
+      ],
+      reasoning_effort: "low",
+    }).then(function (result) {
+      debugger;
+      // Parse the response
+      const response = result.choices[0].message.content;
+    });
   }
 }
 

@@ -3,7 +3,18 @@
   margin-right: 10px;
 }
 
+.interface .enhance-prompt-disabled .spinner-holder {
+  display: block;
+  margin-right: 10px;
+}
+
 .interface .generate-code-disabled {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.interface .enhance-prompt-disabled {
   display: flex;
   justify-content: center;
   align-items: center;

@@ -217,11 +217,14 @@ function enhancePrompt() {
       // Parse the response
       const response = result.choices[0].message.content;
       Fliplet.Helper.field("prompt").set(response);
+      toggleLoaderEnhancePrompt(false);
     }).catch(function (error) {
       toggleLoaderEnhancePrompt(false);
       return Promise.reject(error);
     });
   }
+
+  toggleLoaderEnhancePrompt(false);
 }
 
 function generateCode() {

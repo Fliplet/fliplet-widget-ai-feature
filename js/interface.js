@@ -113,14 +113,6 @@ Fliplet.Widget.generateInterface({
     },
     {
       type: "html",
-      html: '<input type="button" class="btn btn-primary enhance-prompt" value="Enhance prompt" />',
-      ready: function () {
-        $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
-        toggleLoader(false);
-      },
-    },
-    {
-      type: "html",
       html: `<button disabled class="btn btn-primary generate-code-disabled">
                 <div class="spinner-holder">
                   <div class="spinner-overlay"></div>
@@ -128,7 +120,27 @@ Fliplet.Widget.generateInterface({
                 <div>Generating...</div>
             </button>`,
       ready: function () {
-        toggleLoader(false);
+        toggleLoaderCodeGeneration(false);
+      },
+    },
+    {
+      type: "html",
+      html: '<input type="button" class="btn btn-primary enhance-prompt" value="Enhance prompt" />',
+      ready: function () {
+        $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
+        toggleLoaderEnhancePrompt(false);
+      },
+    },
+    {
+      type: "html",
+      html: `<button disabled class="btn btn-primary enhance-prompt-disabled">
+                <div class="spinner-holder">
+                  <div class="spinner-overlay"></div>
+                </div>
+                <div>Enhancing...</div>
+            </button>`,
+      ready: function () {
+        toggleLoaderCodeGeneration(false);
       },
     },
     {
@@ -161,7 +173,7 @@ Fliplet.Widget.generateInterface({
   ],
 });
 
-function toggleLoader(isDisabled) {
+function toggleLoaderCodeGeneration(isDisabled) {
   if (isDisabled) {
     $(".interface").find(".generate-code-disabled").show();
     $(".interface").find(".generate-code").hide();
@@ -171,8 +183,18 @@ function toggleLoader(isDisabled) {
   }
 }
 
+function toggleLoaderEnhancePrompt(isDisabled) {
+  if (isDisabled) {
+    $(".interface").find(".enhance-prompt-disabled").show();
+    $(".interface").find(".enhance-prompt").hide();
+  } else {
+    $(".interface").find(".enhance-prompt-disabled").hide();
+    $(".interface").find(".enhance-prompt").show();
+  }
+}
+
 function enhancePrompt() {
-  toggleLoader(true);
+  toggleLoaderEnhancePrompt(true);
   var prompt = Fliplet.Helper.field("prompt").get();
   if (prompt) {
     let systemPrompt = `You are a software architect.
@@ -181,7 +203,8 @@ function enhancePrompt() {
     Provide details about the user interface required for the input and output.
     Do not provide options within the requirements, only suggest the best solution.
     Be specific and detailed to ensure the code generated meets the requirements.
-    Your output will be provided to Fliplet's AI code generator tool to help it to deliver the code within Fliplet.`;
+    Your output will be provided to Fliplet's AI code generator tool to help it to deliver the code within Fliplet.
+    Always return a prompt that can be reused straight away without additional explanation.`;
 
     return Fliplet.AI.createCompletion({
       model: "o3-mini",
@@ -194,12 +217,15 @@ function enhancePrompt() {
       // Parse the response
       const response = result.choices[0].message.content;
       Fliplet.Helper.field("prompt").set(response);
+    }).catch(function (error) {
+      toggleLoaderEnhancePrompt(false);
+      return Promise.reject(error);
     });
   }
 }
 
 function generateCode() {
-  toggleLoader(true);
+  toggleLoaderCodeGeneration(true);
   var prompt = Fliplet.Helper.field("prompt").get();
   if (prompt) {
     return queryAI(prompt)
@@ -208,7 +234,7 @@ function generateCode() {
         return saveGeneratedCode(parsedContent);
       })
       .catch(function (error) {
-        toggleLoader(false);
+        toggleLoaderCodeGeneration(false);
         return Promise.reject(error);
       });
   } else {
@@ -1258,7 +1284,7 @@ function saveGeneratedCode(parsedContent) {
 
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    toggleLoader(false);
+    toggleLoaderCodeGeneration(false);
     setTimeout(function () {
       Fliplet.Helper.field("regenerateCode").set(false);
       data.fields.regenerateCode = false;

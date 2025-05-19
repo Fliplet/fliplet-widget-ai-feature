@@ -98,7 +98,7 @@ Fliplet.Widget.generateInterface({
               </div>
               <div>
                 <input type="button" class="btn btn-secondary enhance-prompt" value="Enhance prompt" />
-                <button disabled class="btn btn-primary enhance-prompt-disabled">
+                <button disabled class="btn btn-secondary enhance-prompt-disabled">
                   <div class="spinner-holder">
                     <div class="spinner-overlay"></div>
                   </div>

@@ -205,7 +205,7 @@ function enhancePrompt() {
     Always return a prompt that can be reused straight away without additional explanation.`;
 
     return Fliplet.AI.createCompletion({
-      model: "o3-mini",
+      model: "o4-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },

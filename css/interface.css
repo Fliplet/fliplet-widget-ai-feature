@@ -93,3 +93,8 @@
     font-weight: 500!important;
   }
 }
+
+.interface .fa.fa-magic {
+  margin-right: 5px;
+  margin-left: -5px;
+}

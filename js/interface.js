@@ -4,7 +4,7 @@ var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 
 Fliplet.Widget.setSaveButtonLabel(false);
-Fliplet.Widget.setCancelButtonLabel("Save and generate");
+Fliplet.Widget.setCancelButtonLabel("Close");
 
 Fliplet.Widget.generateInterface({
   fields: [
@@ -122,7 +122,7 @@ Fliplet.Widget.generateInterface({
       type: "html",
       html: `<div class="prompt-generate-container">
               <div>
-                Clicking generate will ask AI to create the feature based on your prompt.
+                <label>Clicking generate will ask AI to create the feature based on your prompt.</label>
               </div>
               <div>
                 <input type="button" class="btn btn-primary generate-code" value="Generate code" />

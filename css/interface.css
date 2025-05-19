@@ -54,6 +54,7 @@
 
   input[type="button"] {
     width: 100%;
+    margin-bottom: 10px;
   }
 }
 
@@ -61,15 +62,22 @@
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  > div:first-child {
-    width: 60%;
-    flex: 0 0 60%;
+
+  >div:first-child {
+    width: 65%;
+    flex: 0 0 65%;
   }
-  > div:last-child {
-    width: 40%;
-    flex: 0 0 40%;
+
+  >div:last-child {
+    width: 35%;
+    flex: 0 0 35%;
   }
+
   input[type="button"] {
     width: 100%;
+  }
+
+  label {
+    font-size: 12px;
   }
 }

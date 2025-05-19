@@ -51,14 +51,25 @@
     font-size: 14px;
     line-height: 1.42857143;
   }
+
+  input[type="button"] {
+    width: 100%;
+  }
 }
 
 .interface .prompt-generate-container {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  >div {
-    width: 50%;
-    flex: 0 0 50%;
+  justify-content: flex-start;
+  align-items: center;
+  > div:first-child {
+    width: 60%;
+    flex: 0 0 60%;
+  }
+  > div:last-child {
+    width: 40%;
+    flex: 0 0 40%;
+  }
+  input[type="button"] {
+    width: 100%;
   }
 }

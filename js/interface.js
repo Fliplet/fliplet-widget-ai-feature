@@ -3,8 +3,8 @@ var selectedDataSourceName = null;
 var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 
-Fliplet.Widget.setSaveButtonLabel("Close");
-Fliplet.Widget.toggleCancelButton(false);
+Fliplet.Widget.setSaveButtonLabel(false);
+Fliplet.Widget.setCancelButtonLabel("Save and generate");
 
 Fliplet.Widget.generateInterface({
   fields: [
@@ -114,7 +114,7 @@ Fliplet.Widget.generateInterface({
     {
       name: "prompt",
       type: "textarea",
-      label: "Prompt",
+      label: "",
       default: "",
       rows: 12,
     },
@@ -176,9 +176,11 @@ function toggleLoaderCodeGeneration(isDisabled) {
   if (isDisabled) {
     $(".interface").find(".generate-code-disabled").show();
     $(".interface").find(".generate-code").hide();
+    $(".interface").find("textarea").attr("disabled", true);
   } else {
     $(".interface").find(".generate-code-disabled").hide();
     $(".interface").find(".generate-code").show();
+    $(".interface").find("textarea").attr("disabled", false);
   }
 }
 
@@ -186,9 +188,11 @@ function toggleLoaderEnhancePrompt(isDisabled) {
   if (isDisabled) {
     $(".interface").find(".enhance-prompt-disabled").show();
     $(".interface").find(".enhance-prompt").hide();
+    $(".interface").find("textarea").attr("disabled", true);
   } else {
     $(".interface").find(".enhance-prompt-disabled").hide();
     $(".interface").find(".enhance-prompt").show();
+    $(".interface").find("textarea").attr("disabled", false);
   }
 }
 

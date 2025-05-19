@@ -120,12 +120,9 @@ Fliplet.Widget.generateInterface({
     },
     {
       type: "html",
-      html: `<hr>
-            <div class="prompt-generate-container">
+      html: `<div class="prompt-generate-container">
               <div>
-                <br>
                 Clicking generate will ask AI to create the feature based on your prompt.
-                <br><br>
               </div>
               <div>
                 <input type="button" class="btn btn-primary generate-code" value="Generate code" />
@@ -180,7 +177,6 @@ function toggleLoaderCodeGeneration(isDisabled) {
   } else {
     $(".interface").find(".generate-code-disabled").hide();
     $(".interface").find(".generate-code").show();
-    $(".interface").find("textarea").attr("disabled", false);
   }
 }
 

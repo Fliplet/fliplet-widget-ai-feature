@@ -75,6 +75,7 @@
 
   input[type="button"] {
     width: 100%;
+    font-weight: 500!important;
   }
 
   label {

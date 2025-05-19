@@ -125,7 +125,7 @@ Fliplet.Widget.generateInterface({
                 <label>Clicking generate will ask AI to create the feature based on your prompt.</label>
               </div>
               <div>
-                <input type="button" class="btn btn-primary generate-code" value="Generate code" />
+                <input type="button" class="btn btn-primary generate-code" value="Save and Generate" />
                 <button disabled class="btn btn-primary generate-code-disabled">
                   <div class="spinner-holder">
                     <div class="spinner-overlay"></div>

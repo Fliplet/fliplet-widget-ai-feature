@@ -195,14 +195,17 @@ function enhancePrompt() {
   toggleLoaderEnhancePrompt(true);
   var prompt = Fliplet.Helper.field("prompt").get();
   if (prompt) {
-    let systemPrompt = `You are a software architect.
-    Take the following user's request and provide a detailed list of software requirements for the input,
-    processing and output required to deliver it.
-    Provide details about the user interface required for the input and output.
-    Do not provide options within the requirements, only suggest the best solution.
-    Be specific and detailed to ensure the code generated meets the requirements.
-    Your output will be provided to Fliplet's AI code generator tool to help it to deliver the code within Fliplet.
-    Always return a prompt that can be reused straight away without additional explanation.`;
+    let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user’s simple request for HTML/CSS/JS, you must:
+
+1. **Restate the core goal** in one clear sentence.  
+2. **Add context**: describe the target audience, use case, and any brand or environment constraints.  
+3. **Define functional requirements**: list all UI elements, interactions, and behaviors the component should support (e.g. hover states, form validation, animations).  
+4. **Specify design details**: layout structure (grid/flex), colors (primary, secondary, accents), typography (font families, sizes, weights), spacing, and responsive breakpoints.  
+5. **Include technical considerations**: prefer Fliplet’s JavaScript APIs when available; for any parts not covered by Fliplet, use vanilla HTML, CSS, and JavaScript. Also note any bundling/build tools, performance targets (load time, bundle size), and browser support requirements.  
+6. **Ensure accessibility**: ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.  
+7. **Outline integration points**: data sources to connect, use the data source JS API only  
+
+Finally, output the result as a single, consolidated “Enhanced Prompt” that the AI can use to generate production-ready HTML/CSS/JS. Only return the enhanced prompt`;
 
     return Fliplet.AI.createCompletion({
       model: "o4-mini",

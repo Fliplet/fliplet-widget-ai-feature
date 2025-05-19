@@ -81,7 +81,11 @@
   input[type="button"] {
     width: 100%;
   }
-  
+
+  button {
+    width: 100%;
+  }
+
   label {
     font-size: 12px;
     font-weight: 500!important;

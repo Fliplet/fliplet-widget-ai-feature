@@ -91,6 +91,27 @@ Fliplet.Widget.generateInterface({
       `,
     },
     {
+      type: "html",
+      html: `<div class="prompt-enhance-container">
+              <div>
+                <label>Prompt</label>
+              </div>
+              <div>
+                <input type="button" class="btn btn-secondary enhance-prompt" value="Enhance prompt" />
+                <button disabled class="btn btn-primary enhance-prompt-disabled">
+                  <div class="spinner-holder">
+                    <div class="spinner-overlay"></div>
+                  </div>
+                  <div>Enhancing...</div>
+                </button>
+              </div>
+            </div>`,
+      ready: function () {
+        $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
+        toggleLoaderEnhancePrompt(false);
+      },
+    },
+    {
       name: "prompt",
       type: "textarea",
       label: "Prompt",
@@ -99,47 +120,25 @@ Fliplet.Widget.generateInterface({
     },
     {
       type: "html",
-      html: `<br>
-            Clicking generate will ask AI to create the feature based on your prompt.
-            <br><br>`,
-    },
-    {
-      type: "html",
-      html: '<input type="button" class="btn btn-primary generate-code" value="Generate code" />',
+      html: `<hr>
+            <div class="prompt-generate-container">
+              <div>
+                <br>
+                Clicking generate will ask AI to create the feature based on your prompt.
+                <br><br>
+              </div>
+              <div>
+                <input type="button" class="btn btn-primary generate-code" value="Generate code" />
+                <button disabled class="btn btn-primary generate-code-disabled">
+                  <div class="spinner-holder">
+                    <div class="spinner-overlay"></div>
+                  </div>
+                  <div>Generating...</div>
+                </button>
+              </div>
+            </div>`,
       ready: function () {
         $(this.$el).find(".generate-code").on("click", generateCode);
-        toggleLoader(false);
-      },
-    },
-    {
-      type: "html",
-      html: `<button disabled class="btn btn-primary generate-code-disabled">
-                <div class="spinner-holder">
-                  <div class="spinner-overlay"></div>
-                </div>
-                <div>Generating...</div>
-            </button>`,
-      ready: function () {
-        toggleLoaderCodeGeneration(false);
-      },
-    },
-    {
-      type: "html",
-      html: '<input type="button" class="btn btn-primary enhance-prompt" value="Enhance prompt" />',
-      ready: function () {
-        $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
-        toggleLoaderEnhancePrompt(false);
-      },
-    },
-    {
-      type: "html",
-      html: `<button disabled class="btn btn-primary enhance-prompt-disabled">
-                <div class="spinner-holder">
-                  <div class="spinner-overlay"></div>
-                </div>
-                <div>Enhancing...</div>
-            </button>`,
-      ready: function () {
         toggleLoaderCodeGeneration(false);
       },
     },
@@ -213,15 +212,17 @@ function enhancePrompt() {
         { role: "user", content: prompt },
       ],
       reasoning_effort: "low",
-    }).then(function (result) {
-      // Parse the response
-      const response = result.choices[0].message.content;
-      Fliplet.Helper.field("prompt").set(response);
-      toggleLoaderEnhancePrompt(false);
-    }).catch(function (error) {
-      toggleLoaderEnhancePrompt(false);
-      return Promise.reject(error);
-    });
+    })
+      .then(function (result) {
+        // Parse the response
+        const response = result.choices[0].message.content;
+        Fliplet.Helper.field("prompt").set(response);
+        toggleLoaderEnhancePrompt(false);
+      })
+      .catch(function (error) {
+        toggleLoaderEnhancePrompt(false);
+        return Promise.reject(error);
+      });
   }
 
   toggleLoaderEnhancePrompt(false);

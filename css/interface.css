@@ -69,13 +69,13 @@
   align-items: center;
 
   >div:first-child {
-    width: 65%;
-    flex: 0 0 65%;
+    width: 50%;
+    flex: 0 0 50%;
   }
 
   >div:last-child {
-    width: 35%;
-    flex: 0 0 35%;
+    width: 50%;
+    flex: 0 0 50%;
   }
 
   input[type="button"] {

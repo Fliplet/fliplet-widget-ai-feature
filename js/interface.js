@@ -170,26 +170,25 @@ Fliplet.Widget.generateInterface({
 });
 
 function toggleLoaderCodeGeneration(isDisabled) {
-  if (isDisabled) {
-    $(".interface").find(".generate-code-disabled").show();
-    $(".interface").find(".generate-code").hide();
-    $(".interface").find("textarea").attr("disabled", true);
-  } else {
-    $(".interface").find(".generate-code-disabled").hide();
-    $(".interface").find(".generate-code").show();
-  }
+  const $interface = $(".interface");
+  const $generateButton = $interface.find(".generate-code");
+  const $generateButtonDisabled = $interface.find(".generate-code-disabled");
+  const $textareas = $interface.find("textarea");
+
+  $generateButtonDisabled.toggle(isDisabled);
+  $generateButton.toggle(!isDisabled);
+  $textareas.prop("disabled", isDisabled);
 }
 
 function toggleLoaderEnhancePrompt(isDisabled) {
-  if (isDisabled) {
-    $(".interface").find(".enhance-prompt-disabled").show();
-    $(".interface").find(".enhance-prompt").hide();
-    $(".interface").find("textarea").attr("disabled", true);
-  } else {
-    $(".interface").find(".enhance-prompt-disabled").hide();
-    $(".interface").find(".enhance-prompt").show();
-    $(".interface").find("textarea").attr("disabled", false);
-  }
+  const $interface = $(".interface");
+  const $enhanceButton = $interface.find(".enhance-prompt");
+  const $enhanceButtonDisabled = $interface.find(".enhance-prompt-disabled");
+  const $textareas = $interface.find("textarea");
+
+  $enhanceButtonDisabled.toggle(isDisabled);
+  $enhanceButton.toggle(!isDisabled);
+  $textareas.prop("disabled", isDisabled);
 }
 
 function enhancePrompt() {

@@ -208,7 +208,7 @@ function enhancePrompt() {
 Finally, output the result as a single, consolidated “Enhanced Prompt” that the AI can use to generate production-ready HTML/CSS/JS. Only return the enhanced prompt`;
 
     return Fliplet.AI.createCompletion({
-      model: "gpt-4.1",
+      model: "o4-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
@@ -1233,7 +1233,7 @@ Fliplet.Communicate.sendEmail(options);
 `;
 
   return Fliplet.AI.createCompletion({
-    model: "o4-mini",
+    model: "gpt-4.1",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: prompt },

@@ -3,8 +3,8 @@ var selectedDataSourceName = null;
 var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 
-Fliplet.Widget.setSaveButtonLabel("Close");
-Fliplet.Widget.toggleCancelButton(false);
+Fliplet.Widget.setSaveButtonLabel(false);
+Fliplet.Widget.setCancelButtonLabel("Close");
 
 Fliplet.Widget.generateInterface({
   fields: [
@@ -88,39 +88,55 @@ Fliplet.Widget.generateInterface({
             </div>
           </div>
         </div>
-      `
+      `,
+    },
+    {
+      type: "html",
+      html: `<div class="prompt-enhance-container">
+              <div>
+                <label>Prompt</label>
+              </div>
+              <div>
+                <button type="button" class="btn btn-secondary enhance-prompt"><i class="fa fa-magic" aria-hidden="true"></i> Enhance prompt</button>
+                <button disabled class="btn btn-secondary enhance-prompt-disabled">
+                  <div class="spinner-holder">
+                    <div class="spinner-overlay"></div>
+                  </div>
+                  <div>Enhancing...</div>
+                </button>
+              </div>
+            </div>`,
+      ready: function () {
+        $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
+        toggleLoaderEnhancePrompt(false);
+      },
     },
     {
       name: "prompt",
       type: "textarea",
-      label: "Prompt",
+      label: "",
       default: "",
       rows: 12,
     },
     {
       type: "html",
-      html: `<br>
-            Clicking generate will ask AI to create the feature based on your prompt.
-            <br><br>`,
-    },
-    {
-      type: "html",
-      html: '<input type="button" class="btn btn-primary generate-code" value="Generate code" />',
+      html: `<div class="prompt-generate-container">
+              <div>
+                <label>Clicking generate will ask AI to create the feature based on your prompt.</label>
+              </div>
+              <div>
+                <button type="button" class="btn btn-primary generate-code"><i class="fa fa-magic" aria-hidden="true"></i> Save and Generate</button>
+                <button disabled class="btn btn-primary generate-code-disabled">
+                  <div class="spinner-holder">
+                    <div class="spinner-overlay"></div>
+                  </div>
+                  <div>Generating...</div>
+                </button>
+              </div>
+            </div>`,
       ready: function () {
         $(this.$el).find(".generate-code").on("click", generateCode);
-        toggleLoader(false);
-      },
-    },
-    {
-      type: "html",
-      html: `<button disabled class="btn btn-primary generate-code-disabled">
-                <div class="spinner-holder">
-                  <div class="spinner-overlay"></div>
-                </div>
-                <div>Generating...</div>
-            </button>`,
-      ready: function () {
-        toggleLoader(false);
+        toggleLoaderCodeGeneration(false);
       },
     },
     {
@@ -153,18 +169,69 @@ Fliplet.Widget.generateInterface({
   ],
 });
 
-function toggleLoader(isDisabled) {
-  if (isDisabled) {
-    $(".interface").find(".generate-code-disabled").show();
-    $(".interface").find(".generate-code").hide();
-  } else {
-    $(".interface").find(".generate-code-disabled").hide();
-    $(".interface").find(".generate-code").show();
+function toggleLoaderCodeGeneration(isDisabled) {
+  const $interface = $(".interface");
+  const $generateButton = $interface.find(".generate-code");
+  const $generateButtonDisabled = $interface.find(".generate-code-disabled");
+  const $textareas = $interface.find("textarea");
+
+  $generateButtonDisabled.toggle(isDisabled);
+  $generateButton.toggle(!isDisabled);
+  $textareas.prop("disabled", isDisabled);
+}
+
+function toggleLoaderEnhancePrompt(isDisabled) {
+  const $interface = $(".interface");
+  const $enhanceButton = $interface.find(".enhance-prompt");
+  const $enhanceButtonDisabled = $interface.find(".enhance-prompt-disabled");
+  const $textareas = $interface.find("textarea");
+
+  $enhanceButtonDisabled.toggle(isDisabled);
+  $enhanceButton.toggle(!isDisabled);
+  $textareas.prop("disabled", isDisabled);
+}
+
+function enhancePrompt() {
+  toggleLoaderEnhancePrompt(true);
+  var prompt = Fliplet.Helper.field("prompt").get();
+  if (prompt) {
+    let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user’s simple request for HTML/CSS/JS, you must:
+
+1. **Restate the core goal** in one clear sentence.  
+2. **Add context**: describe the target audience, use case, and any brand or environment constraints.  
+3. **Define functional requirements**: list all UI elements, interactions, and behaviors the component should support (e.g. hover states, form validation, animations).  
+4. **Specify design details**: layout structure (grid/flex), colors (primary, secondary, accents), typography (font families, sizes, weights), spacing, and responsive breakpoints.  
+5. **Include technical considerations**: prefer Fliplet’s JavaScript APIs when available; for any parts not covered by Fliplet, use vanilla HTML, CSS, and JavaScript. Also note any bundling/build tools, performance targets (load time, bundle size), and browser support requirements.  
+6. **Ensure accessibility**: ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.  
+7. **Outline integration points**: data sources to connect, use the data source JS API only  
+
+Finally, output the result as a single, consolidated “Enhanced Prompt” that the AI can use to generate production-ready HTML/CSS/JS. Only return the enhanced prompt`;
+
+    return Fliplet.AI.createCompletion({
+      model: "gpt-4.1",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: prompt },
+      ],
+      //reasoning_effort: "low",
+    })
+      .then(function (result) {
+        // Parse the response
+        const response = result.choices[0].message.content;
+        Fliplet.Helper.field("prompt").set(response);
+        toggleLoaderEnhancePrompt(false);
+      })
+      .catch(function (error) {
+        toggleLoaderEnhancePrompt(false);
+        return Promise.reject(error);
+      });
   }
+
+  toggleLoaderEnhancePrompt(false);
 }
 
 function generateCode() {
-  toggleLoader(true);
+  toggleLoaderCodeGeneration(true);
   var prompt = Fliplet.Helper.field("prompt").get();
   if (prompt) {
     return queryAI(prompt)
@@ -173,7 +240,7 @@ function generateCode() {
         return saveGeneratedCode(parsedContent);
       })
       .catch(function (error) {
-        toggleLoader(false);
+        toggleLoaderCodeGeneration(false);
         return Promise.reject(error);
       });
   } else {
@@ -209,6 +276,7 @@ Add inline comments for the code so technical users can make edits to the code.
 Add try catch blocks in the code to catch any errors and log the errors to the console. 
 Ensure you chain all the promises correctly with return statements.
 You must only return code in the format specified. Do not return any text.
+If the user provides any links to dependencies/libraries please include them via script tags in the html. 
 
 If you get asked to use datasource js api for e.g. if you need to save data from a form to a datasource or need to read data dynamic data to show it on the screen you need to use the following API: 
 
@@ -1165,7 +1233,7 @@ Fliplet.Communicate.sendEmail(options);
 `;
 
   return Fliplet.AI.createCompletion({
-    model: "o3-mini",
+    model: "o4-mini",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: prompt },
@@ -1223,7 +1291,7 @@ function saveGeneratedCode(parsedContent) {
 
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    toggleLoader(false);
+    toggleLoaderCodeGeneration(false);
     setTimeout(function () {
       Fliplet.Helper.field("regenerateCode").set(false);
       data.fields.regenerateCode = false;

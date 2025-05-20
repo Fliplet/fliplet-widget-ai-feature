@@ -208,12 +208,12 @@ function enhancePrompt() {
 Finally, output the result as a single, consolidated “Enhanced Prompt” that the AI can use to generate production-ready HTML/CSS/JS. Only return the enhanced prompt`;
 
     return Fliplet.AI.createCompletion({
-      model: "o4-mini",
+      model: "gpt-4.1",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
       ],
-      reasoning_effort: "low",
+      //reasoning_effort: "low",
     })
       .then(function (result) {
         // Parse the response
@@ -276,6 +276,7 @@ Add inline comments for the code so technical users can make edits to the code.
 Add try catch blocks in the code to catch any errors and log the errors to the console. 
 Ensure you chain all the promises correctly with return statements.
 You must only return code in the format specified. Do not return any text.
+If the user provides any links to dependencies/libraries please include them via script tags in the html. 
 
 If you get asked to use datasource js api for e.g. if you need to save data from a form to a datasource or need to read data dynamic data to show it on the screen you need to use the following API: 
 
@@ -1232,7 +1233,7 @@ Fliplet.Communicate.sendEmail(options);
 `;
 
   return Fliplet.AI.createCompletion({
-    model: "o3-mini",
+    model: "o4-mini",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: prompt },

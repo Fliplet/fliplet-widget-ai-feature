@@ -213,7 +213,7 @@ Finally, output the result as a single, consolidated “Enhanced Prompt” that 
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
       ],
-      //reasoning_effort: "low",
+      reasoning_effort: "low",
     })
       .then(function (result) {
         // Parse the response
@@ -1238,7 +1238,7 @@ Fliplet.Communicate.sendEmail(options);
       { role: "system", content: systemPrompt },
       { role: "user", content: prompt },
     ],
-    reasoning_effort: "low",
+    // reasoning_effort: "low",
   }).then(function (result) {
     // Parse the response
     const response = result.choices[0].message.content;

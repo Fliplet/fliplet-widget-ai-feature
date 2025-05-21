@@ -1233,7 +1233,7 @@ Fliplet.Communicate.sendEmail(options);
 `;
 
   return Fliplet.AI.createCompletion({
-    model: "gpt-4.1",
+    model: "o4-mini",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: prompt },

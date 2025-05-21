@@ -34,7 +34,7 @@ Fliplet.Widget.instance({
         AI.fields
       );
 
-      const widgetId = AI.fields.aiFeatureId;
+      const widgetId = AI.fields.aiFeatureDevId;
      
       Fliplet.Hooks.on("componentEvent", async function (event) {
         if (

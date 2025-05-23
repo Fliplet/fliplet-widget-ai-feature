@@ -1235,7 +1235,7 @@ Fliplet.Communicate.sendEmail(options);
   return Fliplet.AI.createCompletion({
     model: "gemini-2.5-pro-preview-05-06",
     messages: [
-      { role: "system", content: systemPrompt },
+      { role: "model", content: systemPrompt },
       { role: "user", content: prompt },
     ],
     // reasoning_effort: "low",

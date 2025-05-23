@@ -1240,7 +1240,6 @@ Fliplet.Communicate.sendEmail(options);
     ],
     // reasoning_effort: "low",
   }).then(function (result) {
-    debugger;
     // Parse the response
     const response = result.choices[0].message.content;
 

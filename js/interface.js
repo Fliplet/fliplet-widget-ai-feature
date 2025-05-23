@@ -195,13 +195,13 @@ function enhancePrompt() {
   toggleLoaderEnhancePrompt(true);
   var prompt = Fliplet.Helper.field("prompt").get();
   if (prompt) {
-    let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user’s simple request for HTML/CSS/JS, you must:
+    let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user's simple request for HTML/CSS/JS, you must:
 
 1. **Restate the core goal** in one clear sentence.  
 2. **Add context**: describe the target audience, use case, and any brand or environment constraints.  
 3. **Define functional requirements**: list all UI elements, interactions, and behaviors the component should support (e.g. hover states, form validation, animations).  
 4. **Specify design details**: layout structure (grid/flex), colors (primary, secondary, accents), typography (font families, sizes, weights), spacing, and responsive breakpoints.  
-5. **Include technical considerations**: prefer Fliplet’s JavaScript APIs when available; for any parts not covered by Fliplet, use vanilla HTML, CSS, and JavaScript. Also note any bundling/build tools, performance targets (load time, bundle size), and browser support requirements.  
+5. **Include technical considerations**: prefer Fliplet's JavaScript APIs when available; for any parts not covered by Fliplet, use vanilla HTML, CSS, and JavaScript. Also note any bundling/build tools, performance targets (load time, bundle size), and browser support requirements.  
 6. **Ensure accessibility**: ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.  
 7. **Outline integration points**: data sources to connect, use the data source JS API only  
 
@@ -1233,15 +1233,20 @@ Fliplet.Communicate.sendEmail(options);
 `;
 
   return Fliplet.AI.createCompletion({
-    model: "o4-mini",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: prompt },
-    ],
+    model: "gemini-2.5-pro-preview-05-06",
+    config: {
+      systemInstruction: systemPrompt,
+    },
+    contents: prompt
+    //  [
+      // { role: "system", parts: [systemPrompt] },
+      // { role: "user", parts: [prompt] },
+    // ],
     // reasoning_effort: "low",
   }).then(function (result) {
+    debugger;
     // Parse the response
-    const response = result.choices[0].message.content;
+    const response = result.text;
 
     // Initialize variables
     let html = "";

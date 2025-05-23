@@ -1234,14 +1234,10 @@ Fliplet.Communicate.sendEmail(options);
 
   return Fliplet.AI.createCompletion({
     model: "gemini-2.5-pro-preview-05-06",
-    config: {
-      systemInstruction: systemPrompt,
-    },
-    contents: prompt
-    //  [
-      // { role: "system", parts: [systemPrompt] },
-      // { role: "user", parts: [prompt] },
-    // ],
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: prompt },
+    ],
     // reasoning_effort: "low",
   }).then(function (result) {
     debugger;

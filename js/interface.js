@@ -1242,7 +1242,7 @@ Fliplet.Communicate.sendEmail(options);
   }).then(function (result) {
     debugger;
     // Parse the response
-    const response = result.text;
+    const response = result.choices[0].message.content;
 
     // Initialize variables
     let html = "";

@@ -195,7 +195,7 @@ function enhancePrompt() {
   toggleLoaderEnhancePrompt(true);
   var prompt = Fliplet.Helper.field("prompt").get();
   if (prompt) {
-    let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user's simple request for HTML/CSS/JS, you must:
+    let systemPrompt = `You are a "Prompt Enhancer" for front-end feature requests. When given a user's simple request for HTML/CSS/JS, you must:
 
 1. **Restate the core goal** in one clear sentence.  
 2. **Add context**: describe the target audience, use case, and any brand or environment constraints.  
@@ -205,7 +205,7 @@ function enhancePrompt() {
 6. **Ensure accessibility**: ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.  
 7. **Outline integration points**: data sources to connect, use the data source JS API only  
 
-Finally, output the result as a single, consolidated “Enhanced Prompt” that the AI can use to generate production-ready HTML/CSS/JS. Only return the enhanced prompt`;
+Finally, output the result as a single, consolidated "Enhanced Prompt" that the AI can use to generate production-ready HTML/CSS/JS. Only return the enhanced prompt`;
 
     return Fliplet.AI.createCompletion({
       model: "o4-mini",
@@ -1250,6 +1250,7 @@ Fliplet.Communicate.sendEmail(options);
             css: { type: "string" },
             javascript: { type: "string" },
           },
+          additionalProperties: false
         },
       },
     },

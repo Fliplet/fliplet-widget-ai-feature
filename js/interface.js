@@ -173,22 +173,22 @@ function toggleLoaderCodeGeneration(isDisabled) {
   const $interface = $(".interface");
   const $generateButton = $interface.find(".generate-code");
   const $generateButtonDisabled = $interface.find(".generate-code-disabled");
-  const $textareas = $interface.find("textarea");
+  const $textAreas = $interface.find("textarea");
 
   $generateButtonDisabled.toggle(isDisabled);
   $generateButton.toggle(!isDisabled);
-  $textareas.prop("disabled", isDisabled);
+  $textAreas.prop("disabled", isDisabled);
 }
 
 function toggleLoaderEnhancePrompt(isDisabled) {
   const $interface = $(".interface");
   const $enhanceButton = $interface.find(".enhance-prompt");
   const $enhanceButtonDisabled = $interface.find(".enhance-prompt-disabled");
-  const $textareas = $interface.find("textarea");
+  const $textAreas = $interface.find("textarea");
 
   $enhanceButtonDisabled.toggle(isDisabled);
   $enhanceButton.toggle(!isDisabled);
-  $textareas.prop("disabled", isDisabled);
+  $textAreas.prop("disabled", isDisabled);
 }
 
 function enhancePrompt() {
@@ -321,7 +321,7 @@ Once you get a **connection**, you can use the instance methods described below 
 
 ### Connect to a data source by Name
 
-You can also connect to a datas ource by its name (case-sensitive) using the "connectByName" method.
+You can also connect to a data source by its name (case-sensitive) using the "connectByName" method.
 
 
 Fliplet.DataSources.connectByName("Attendees").then(function (connection) {
@@ -740,7 +740,7 @@ connection.insert(FormData);
 
 The second parameter of the "connection.insert" function accepts various options as described below:
 
-  - [folderId](#options-folderid) (Number)
+  - [folderId](#options-folderId) (Number)
   - [ack](#options-ack) (Boolean)
 
 #### **Options: folderId**
@@ -948,12 +948,12 @@ connection.find({
 Types of data returned in joins
 Joins can return data in several different ways:
 
-An Array of the matching entries. This is the default behaviour for joins.
+An Array of the matching entries. This is the default behavior for joins.
 A Boolean to indicate whether at least one entry was matched.
 A Count of the matched entries.
 A Sum taken by counting a number in a defined column from the matching entries.
 Array (join)
-This is the default return behaviour for joins, hence no parameters are required.
+This is the default return behavior for joins, hence no parameters are required.
 
 Example input:
 

@@ -1250,6 +1250,7 @@ Fliplet.Communicate.sendEmail(options);
             css: { type: "string" },
             javascript: { type: "string" },
           },
+          required: ["html", "css", "javascript"],
           additionalProperties: false
         },
       },

@@ -254,19 +254,11 @@ You are to only return the HTML, CSS, JS for the following user request. In the 
 
 The format of the response should be as follows: 
 
-### HTML
-<div>
-  <h1>Hello World</h1>
-</div>
-### CSS
-div {
-  color: red;
+{
+  html: "<div><h1>Hello World</h1></div>",
+  css: "div { color: red; }",
+  javascript: "document.addEventListener('DOMContentLoaded', function() { const div = document.querySelector('.ai-feature-dev-${widgetId} div'); div.style.color = 'blue'; });"
 }
-### JavaScript
-document.addEventListener('DOMContentLoaded', function() {
-  const div = document.querySelector('.ai-feature-dev-${widgetId} div');
-  div.style.color = 'blue';
-});
 
 For the HTML do not include any head tags, just return the html for the body. 
 Use bootstrap v3.4.1 for css and styling.

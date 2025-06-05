@@ -1233,11 +1233,26 @@ Fliplet.Communicate.sendEmail(options);
 `;
 
   return Fliplet.AI.createCompletion({
-    model: "gemini-2.5-pro-preview-05-06",
+    model: "gpt-4.1",
     messages: [
       { role: "model", content: systemPrompt },
       { role: "user", content: prompt },
     ],
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "code",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: {
+            html: { type: "string" },
+            css: { type: "string" },
+            javascript: { type: "string" },
+          },
+        },
+      },
+    },
     // reasoning_effort: "low",
   }).then(function (result) {
     // Parse the response

@@ -1235,7 +1235,7 @@ Fliplet.Communicate.sendEmail(options);
   return Fliplet.AI.createCompletion({
     model: "gpt-4.1",
     messages: [
-      { role: "model", content: systemPrompt },
+      { role: "system", content: systemPrompt },
       { role: "user", content: prompt },
     ],
     response_format: {

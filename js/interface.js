@@ -1251,37 +1251,17 @@ Fliplet.Communicate.sendEmail(options);
             javascript: { type: "string" },
           },
           required: ["html", "css", "javascript"],
-          additionalProperties: false
+          additionalProperties: false,
         },
       },
     },
     // reasoning_effort: "low",
   }).then(function (result) {
     // Parse the response
-    const response = result.choices[0].message.content;
-
-    // Initialize variables
-    let html = "";
-    let css = "";
-    let javascript = "";
-
-    // Extract HTML
-    const htmlMatch = response.match(/### HTML\n([\s\S]*?)(?=### CSS|$)/);
-    if (htmlMatch) {
-      html = htmlMatch[1].trim();
-    }
-
-    // Extract CSS
-    const cssMatch = response.match(/### CSS\n([\s\S]*?)(?=### JavaScript|$)/);
-    if (cssMatch) {
-      css = cssMatch[1].trim();
-    }
-
-    // Extract JavaScript
-    const jsMatch = response.match(/### JavaScript\n([\s\S]*?)(?=$)/);
-    if (jsMatch) {
-      javascript = jsMatch[1].trim();
-    }
+    const response = JSON.parse(result.choices[0].message.content);
+    let html = response.html;
+    let css = response.css;
+    let javascript = response.javascript;
 
     return {
       html,

@@ -96,15 +96,6 @@ Fliplet.Widget.generateInterface({
               <div>
                 <label>Prompt</label>
               </div>
-              <div>
-                <button type="button" class="btn btn-secondary enhance-prompt"><i class="fa fa-magic" aria-hidden="true"></i> Enhance prompt</button>
-                <button disabled class="btn btn-secondary enhance-prompt-disabled">
-                  <div class="spinner-holder">
-                    <div class="spinner-overlay"></div>
-                  </div>
-                  <div>Enhancing...</div>
-                </button>
-              </div>
             </div>`,
       ready: function () {
         $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
@@ -120,10 +111,22 @@ Fliplet.Widget.generateInterface({
     },
     {
       type: "html",
-      html: `<div class="prompt-generate-container">
+      html: `
+            <div class="prompt-enhance-container">
               <div>
-                <label>Clicking generate will ask AI to create the feature based on your prompt.</label>
+                <button type="button" class="btn btn-secondary enhance-prompt"><i class="fa fa-magic" aria-hidden="true"></i> Enhance prompt</button>
+                <button disabled class="btn btn-secondary enhance-prompt-disabled">
+                  <div class="spinner-holder">
+                    <div class="spinner-overlay"></div>
+                  </div>
+                  <div>Enhancing...</div>
+                </button>
               </div>
+              <div>
+                <label>Polish your prompt using AI for clarity and detail.</label>
+              </div>
+            </div>
+            <div class="prompt-generate-container">
               <div>
                 <button type="button" class="btn btn-primary generate-code"><i class="fa fa-magic" aria-hidden="true"></i> Save and Generate</button>
                 <button disabled class="btn btn-primary generate-code-disabled">
@@ -132,6 +135,9 @@ Fliplet.Widget.generateInterface({
                   </div>
                   <div>Generating...</div>
                 </button>
+              </div>
+              <div>
+                <label>Clicking generate will ask AI to create the feature based on your prompt.</label>
               </div>
             </div>`,
       ready: function () {

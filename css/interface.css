@@ -35,13 +35,11 @@
 
 .interface .prompt-enhance-container {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-
-  >div {
-    width: 50%;
-    flex: 0 0 50%;
-  }
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 50%;
+  flex: 0 0 50%;
 
   label {
     color: #333333;
@@ -67,18 +65,11 @@
 
 .interface .prompt-generate-container {
   display: flex;
-  justify-content: flex-start;
-  align-items: center;
-
-  >div:first-child {
-    width: 50%;
-    flex: 0 0 50%;
-  }
-
-  >div:last-child {
-    width: 50%;
-    flex: 0 0 50%;
-  }
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  width: 50%;
+  flex: 0 0 50%;
 
   input[type="button"] {
     width: 100%;

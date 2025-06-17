@@ -33,6 +33,13 @@
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, .05);
 }
 
+.interface .prompt-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
 .interface .prompt-enhance-container {
   display: flex;
   flex-direction: column;

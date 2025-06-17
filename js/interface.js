@@ -112,6 +112,7 @@ Fliplet.Widget.generateInterface({
     {
       type: "html",
       html: `
+          <div class="prompt-container">
             <div class="prompt-enhance-container">
               <div>
                 <button type="button" class="btn btn-secondary enhance-prompt"><i class="fa fa-magic" aria-hidden="true"></i> Enhance prompt</button>
@@ -139,7 +140,8 @@ Fliplet.Widget.generateInterface({
               <div>
                 <label>Clicking generate will ask AI to create the feature based on your prompt.</label>
               </div>
-            </div>`,
+            </div>
+          </div>`,
       ready: function () {
         $(this.$el).find(".generate-code").on("click", generateCode);
         toggleLoaderCodeGeneration(false);

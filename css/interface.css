@@ -49,14 +49,8 @@
   flex: 0 0 50%;
 
   label {
-    color: #333333;
-    display: inline-block;
-    max-width: 100%;
-    margin-bottom: 5px;
-    font-weight: 700;
-    font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 14px;
-    line-height: 1.42857143;
+    font-size: 12px;
+    font-weight: 500!important;
   }
 
   input[type="button"] {

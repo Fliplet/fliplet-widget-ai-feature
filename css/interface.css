@@ -48,6 +48,10 @@
   width: 50%;
   flex: 0 0 50%;
 
+  >div {
+    width: 100%;
+  }
+
   label {
     font-size: 12px;
     font-weight: 500 !important;
@@ -72,6 +76,10 @@
   align-items: flex-end;
   width: 50%;
   flex: 0 0 50%;
+
+  >div {
+    width: 100%;
+  }
 
   input[type="button"] {
     width: 100%;
@@ -100,7 +108,7 @@
   display: inline-block;
   max-width: 100%;
   margin-bottom: 5px;
-  font-weight: 700!important;
+  font-weight: 700 !important;
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 14px;
   line-height: 1.42857143;

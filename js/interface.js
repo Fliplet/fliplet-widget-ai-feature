@@ -137,7 +137,7 @@ Fliplet.Widget.generateInterface({
                   <div>Generating...</div>
                 </button>
               </div>
-              <div>
+              <div style="text-align: right;">
                 <label>Clicking generate will ask AI to create the feature based on your prompt.</label>
               </div>
             </div>

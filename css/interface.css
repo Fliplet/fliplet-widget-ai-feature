@@ -47,9 +47,10 @@
   align-items: flex-start;
   width: 50%;
   flex: 0 0 50%;
-
+  
   >div {
     width: 100%;
+    margin-right: 2px;
   }
 
   label {
@@ -76,9 +77,10 @@
   align-items: flex-end;
   width: 50%;
   flex: 0 0 50%;
-
+  
   >div {
     width: 100%;
+    margin-left: 2px;
   }
 
   input[type="button"] {

@@ -211,7 +211,7 @@ function enhancePrompt() {
 6. **Ensure accessibility**: ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.  
 7. **Outline integration points**: data sources to connect, use the data source JS API only  
 
-Finally, output the result as a single, consolidated "Enhanced Prompt" that the AI can use to generate production-ready HTML/CSS/JS. Only return the enhanced prompt`;
+Finally, output the result as a single, consolidated prompt that the AI can use to generate production-ready HTML/CSS/JS. Only return the enhanced prompt`;
 
     return Fliplet.AI.createCompletion({
       model: "o4-mini",

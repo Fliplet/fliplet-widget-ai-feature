@@ -97,10 +97,6 @@ Fliplet.Widget.generateInterface({
                 <label class="input-label">Prompt</label>
               </div>
             </div>`,
-      ready: function () {
-        $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
-        toggleLoaderEnhancePrompt(false);
-      },
     },
     {
       name: "prompt",
@@ -144,7 +140,9 @@ Fliplet.Widget.generateInterface({
           </div>`,
       ready: function () {
         $(this.$el).find(".generate-code").on("click", generateCode);
+        $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
         toggleLoaderCodeGeneration(false);
+        toggleLoaderEnhancePrompt(false);
       },
     },
     {

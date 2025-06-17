@@ -94,7 +94,7 @@ Fliplet.Widget.generateInterface({
       type: "html",
       html: `<div class="prompt-enhance-container">
               <div>
-                <label>Prompt</label>
+                <label class="input-label">Prompt</label>
               </div>
             </div>`,
       ready: function () {

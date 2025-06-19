@@ -1,7 +1,7 @@
 // Register this widget instance
 Fliplet.Widget.instance({
-  name: "ai-feature-dev",
-  displayName: "AI feature DEV",
+  name: "ai-feature",
+  displayName: "AI feature",
   render: {
     template: `<div class="ai-feature-content">
                 <div class="well text-center">AI feature</div>
@@ -34,7 +34,7 @@ Fliplet.Widget.instance({
         AI.fields
       );
 
-      const widgetId = AI.fields.aiFeatureDevId;
+      const widgetId = AI.fields.aiFeatureId;
      
       Fliplet.Hooks.on("componentEvent", async function (event) {
         if (
@@ -146,20 +146,20 @@ Fliplet.Widget.instance({
 
       function injectHtmlCode(currentSettings) {
         // code from AI
-        var codeGenContainer = `<div class="ai-feature-dev-${widgetId}">${parsedContent.layoutHTML}</div>`;
+        var codeGenContainer = `<div class="ai-feature-${widgetId}">${parsedContent.layoutHTML}</div>`;
         // Wrap response inside a temporary container
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container
-        $wrapper.find(`.ai-feature-dev-${widgetId}`).remove();
-        // Find `<fl-ai-feature-dev>` and add a sibling after it
-        $wrapper.find(`fl-ai-feature-dev[cid="${widgetId}"]`).after(codeGenContainer);
+        $wrapper.find(`.ai-feature-${widgetId}`).remove();
+        // Find `<fl-ai-feature>` and add a sibling after it
+        $wrapper.find(`fl-ai-feature[cid="${widgetId}"]`).after(codeGenContainer);
         return $wrapper.html();
       }
 
       function removeHtmlCode(currentSettings) {
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container
-        $wrapper.find(`.ai-feature-dev-${widgetId}`).remove();
+        $wrapper.find(`.ai-feature-${widgetId}`).remove();
         return $wrapper.html();
       }
 
@@ -178,11 +178,11 @@ Fliplet.Widget.instance({
         let start, end;
 
         if (type == "js") {
-          start = `// start-ai-feature-dev ${widgetId}`;
-          end = `// end-ai-feature-dev ${widgetId}`;
+          start = `// start-ai-feature ${widgetId}`;
+          end = `// end-ai-feature ${widgetId}`;
         } else {
-          start = `/* start-ai-feature-dev ${widgetId} */`;
-          end = `/* end-ai-feature-dev ${widgetId} */`;
+          start = `/* start-ai-feature ${widgetId} */`;
+          end = `/* end-ai-feature ${widgetId} */`;
         }
 
         // Check if delimiters exist in the old code
@@ -202,12 +202,12 @@ Fliplet.Widget.instance({
         let start, end;
 
         if (type == "js") {
-          start = `// start-ai-feature-dev ${widgetId}`;
-          end = `// end-ai-feature-dev ${widgetId}`;
+          start = `// start-ai-feature ${widgetId}`;
+          end = `// end-ai-feature ${widgetId}`;
         } else {
           // For CSS, we need to escape the special characters properly
-          start = `/\\* start-ai-feature-dev ${widgetId} \\*/`;
-          end = `/\\* end-ai-feature-dev ${widgetId} \\*/`;
+          start = `/\\* start-ai-feature ${widgetId} \\*/`;
+          end = `/\\* end-ai-feature ${widgetId} \\*/`;
         }
 
         // Create the pattern and escape the string properly

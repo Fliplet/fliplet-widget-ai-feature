@@ -256,14 +256,14 @@ function generateCode() {
 
 function queryAI(prompt) {
   let systemPrompt = `
-You are to only return the HTML, CSS, JS for the following user request. In the JS make sure that any selectors are using .ai-feature-dev-${widgetId}
+You are to only return the HTML, CSS, JS for the following user request. In the JS make sure that any selectors are using .ai-feature-${widgetId}
 
 The format of the response should be as follows: 
 
 {
   html: "<div><h1>Hello World</h1></div>",
   css: "div { color: red; }",
-  javascript: "document.addEventListener('DOMContentLoaded', function() { const div = document.querySelector('.ai-feature-dev-${widgetId} div'); div.style.color = 'blue'; });"
+  javascript: "document.addEventListener('DOMContentLoaded', function() { const div = document.querySelector('.ai-feature-${widgetId} div'); div.style.color = 'blue'; });"
 }
 
 For the HTML do not include any head tags, just return the html for the body. 

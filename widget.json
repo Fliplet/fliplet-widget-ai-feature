@@ -1,6 +1,6 @@
 {
-  "name": "AI feature DEV",
-  "package": "com.fliplet.ai-feature-dev",
+  "name": "AI feature",
+  "package": "com.fliplet.ai-feature",
   "version": "1.0.0",
   "icon": "img/icon.png",
   "tags": ["type:component", "category:text", "beta:true"],

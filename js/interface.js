@@ -251,6 +251,7 @@ function generateCode() {
       });
   } else {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
+    toggleLoaderCodeGeneration(false);
   }
 }
 

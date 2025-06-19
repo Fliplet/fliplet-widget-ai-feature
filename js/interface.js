@@ -94,22 +94,9 @@ Fliplet.Widget.generateInterface({
       type: "html",
       html: `<div class="prompt-enhance-container">
               <div>
-                <label>Prompt</label>
-              </div>
-              <div>
-                <button type="button" class="btn btn-secondary enhance-prompt"><i class="fa fa-magic" aria-hidden="true"></i> Enhance prompt</button>
-                <button disabled class="btn btn-secondary enhance-prompt-disabled">
-                  <div class="spinner-holder">
-                    <div class="spinner-overlay"></div>
-                  </div>
-                  <div>Enhancing...</div>
-                </button>
+                <label class="input-label">Prompt</label>
               </div>
             </div>`,
-      ready: function () {
-        $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
-        toggleLoaderEnhancePrompt(false);
-      },
     },
     {
       name: "prompt",
@@ -120,10 +107,23 @@ Fliplet.Widget.generateInterface({
     },
     {
       type: "html",
-      html: `<div class="prompt-generate-container">
+      html: `
+          <div class="prompt-container">
+            <div class="prompt-enhance-container">
               <div>
-                <label>Clicking generate will ask AI to create the feature based on your prompt.</label>
+                <button type="button" class="btn btn-secondary enhance-prompt"><i class="fa fa-magic" aria-hidden="true"></i> Enhance prompt</button>
+                <button disabled class="btn btn-secondary enhance-prompt-disabled">
+                  <div class="spinner-holder">
+                    <div class="spinner-overlay"></div>
+                  </div>
+                  <div>Enhancing...</div>
+                </button>
               </div>
+              <div>
+                <label>Polish your prompt using AI for clarity and detail.</label>
+              </div>
+            </div>
+            <div class="prompt-generate-container">
               <div>
                 <button type="button" class="btn btn-primary generate-code"><i class="fa fa-magic" aria-hidden="true"></i> Save and Generate</button>
                 <button disabled class="btn btn-primary generate-code-disabled">
@@ -133,10 +133,16 @@ Fliplet.Widget.generateInterface({
                   <div>Generating...</div>
                 </button>
               </div>
-            </div>`,
+              <div style="text-align: right;">
+                <label>Clicking generate will ask AI to create the feature based on your prompt.</label>
+              </div>
+            </div>
+          </div>`,
       ready: function () {
         $(this.$el).find(".generate-code").on("click", generateCode);
+        $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
         toggleLoaderCodeGeneration(false);
+        toggleLoaderEnhancePrompt(false);
       },
     },
     {
@@ -173,47 +179,47 @@ function toggleLoaderCodeGeneration(isDisabled) {
   const $interface = $(".interface");
   const $generateButton = $interface.find(".generate-code");
   const $generateButtonDisabled = $interface.find(".generate-code-disabled");
-  const $textareas = $interface.find("textarea");
+  const $textAreas = $interface.find("textarea");
 
   $generateButtonDisabled.toggle(isDisabled);
   $generateButton.toggle(!isDisabled);
-  $textareas.prop("disabled", isDisabled);
+  $textAreas.prop("disabled", isDisabled);
 }
 
 function toggleLoaderEnhancePrompt(isDisabled) {
   const $interface = $(".interface");
   const $enhanceButton = $interface.find(".enhance-prompt");
   const $enhanceButtonDisabled = $interface.find(".enhance-prompt-disabled");
-  const $textareas = $interface.find("textarea");
+  const $textAreas = $interface.find("textarea");
 
   $enhanceButtonDisabled.toggle(isDisabled);
   $enhanceButton.toggle(!isDisabled);
-  $textareas.prop("disabled", isDisabled);
+  $textAreas.prop("disabled", isDisabled);
 }
 
 function enhancePrompt() {
   toggleLoaderEnhancePrompt(true);
   var prompt = Fliplet.Helper.field("prompt").get();
   if (prompt) {
-    let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user’s simple request for HTML/CSS/JS, you must:
+    let systemPrompt = `You are a "Prompt Enhancer" for front-end feature requests. When given a user's simple request for HTML/CSS/JS, you must:
 
 1. **Restate the core goal** in one clear sentence.  
 2. **Add context**: describe the target audience, use case, and any brand or environment constraints.  
 3. **Define functional requirements**: list all UI elements, interactions, and behaviors the component should support (e.g. hover states, form validation, animations).  
 4. **Specify design details**: layout structure (grid/flex), colors (primary, secondary, accents), typography (font families, sizes, weights), spacing, and responsive breakpoints.  
-5. **Include technical considerations**: prefer Fliplet’s JavaScript APIs when available; for any parts not covered by Fliplet, use vanilla HTML, CSS, and JavaScript. Also note any bundling/build tools, performance targets (load time, bundle size), and browser support requirements.  
+5. **Include technical considerations**: prefer Fliplet's JavaScript APIs when available; for any parts not covered by Fliplet, use vanilla HTML, CSS, and JavaScript. Also note any bundling/build tools, performance targets (load time, bundle size), and browser support requirements.  
 6. **Ensure accessibility**: ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.  
 7. **Outline integration points**: data sources to connect, use the data source JS API only  
 
-Finally, output the result as a single, consolidated “Enhanced Prompt” that the AI can use to generate production-ready HTML/CSS/JS. Only return the enhanced prompt`;
+Finally, output the result as a single, consolidated prompt that the AI can use to generate production-ready HTML/CSS/JS. Only return the enhanced prompt`;
 
     return Fliplet.AI.createCompletion({
-      model: "gpt-4.1",
+      model: "o4-mini",
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: prompt },
       ],
-      //reasoning_effort: "low",
+      reasoning_effort: "low",
     })
       .then(function (result) {
         // Parse the response
@@ -254,19 +260,11 @@ You are to only return the HTML, CSS, JS for the following user request. In the 
 
 The format of the response should be as follows: 
 
-### HTML
-<div>
-  <h1>Hello World</h1>
-</div>
-### CSS
-div {
-  color: red;
+{
+  html: "<div><h1>Hello World</h1></div>",
+  css: "div { color: red; }",
+  javascript: "document.addEventListener('DOMContentLoaded', function() { const div = document.querySelector('.ai-feature-${widgetId} div'); div.style.color = 'blue'; });"
 }
-### JavaScript
-document.addEventListener('DOMContentLoaded', function() {
-  const div = document.querySelector('.ai-feature-${widgetId} div');
-  div.style.color = 'blue';
-});
 
 For the HTML do not include any head tags, just return the html for the body. 
 Use bootstrap v3.4.1 for css and styling.
@@ -329,7 +327,7 @@ Once you get a **connection**, you can use the instance methods described below 
 
 ### Connect to a data source by Name
 
-You can also connect to a datas ource by its name (case-sensitive) using the "connectByName" method.
+You can also connect to a data source by its name (case-sensitive) using the "connectByName" method.
 
 
 Fliplet.DataSources.connectByName("Attendees").then(function (connection) {
@@ -748,7 +746,7 @@ connection.insert(FormData);
 
 The second parameter of the "connection.insert" function accepts various options as described below:
 
-  - [folderId](#options-folderid) (Number)
+  - [folderId](#options-folderId) (Number)
   - [ack](#options-ack) (Boolean)
 
 #### **Options: folderId**
@@ -956,12 +954,12 @@ connection.find({
 Types of data returned in joins
 Joins can return data in several different ways:
 
-An Array of the matching entries. This is the default behaviour for joins.
+An Array of the matching entries. This is the default behavior for joins.
 A Boolean to indicate whether at least one entry was matched.
 A Count of the matched entries.
 A Sum taken by counting a number in a defined column from the matching entries.
 Array (join)
-This is the default return behaviour for joins, hence no parameters are required.
+This is the default return behavior for joins, hence no parameters are required.
 
 Example input:
 
@@ -1233,38 +1231,35 @@ Fliplet.Communicate.sendEmail(options);
 `;
 
   return Fliplet.AI.createCompletion({
-    model: "o4-mini",
+    model: "gpt-4.1",
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: prompt },
     ],
-    reasoning_effort: "low",
+    response_format: {
+      type: "json_schema",
+      json_schema: {
+        name: "code",
+        strict: true,
+        schema: {
+          type: "object",
+          properties: {
+            html: { type: "string" },
+            css: { type: "string" },
+            javascript: { type: "string" },
+          },
+          required: ["html", "css", "javascript"],
+          additionalProperties: false,
+        },
+      },
+    },
+    // reasoning_effort: "low",
   }).then(function (result) {
     // Parse the response
-    const response = result.choices[0].message.content;
-
-    // Initialize variables
-    let html = "";
-    let css = "";
-    let javascript = "";
-
-    // Extract HTML
-    const htmlMatch = response.match(/### HTML\n([\s\S]*?)(?=### CSS|$)/);
-    if (htmlMatch) {
-      html = htmlMatch[1].trim();
-    }
-
-    // Extract CSS
-    const cssMatch = response.match(/### CSS\n([\s\S]*?)(?=### JavaScript|$)/);
-    if (cssMatch) {
-      css = cssMatch[1].trim();
-    }
-
-    // Extract JavaScript
-    const jsMatch = response.match(/### JavaScript\n([\s\S]*?)(?=$)/);
-    if (jsMatch) {
-      javascript = jsMatch[1].trim();
-    }
+    const response = JSON.parse(result.choices[0].message.content);
+    let html = response.html;
+    let css = response.css;
+    let javascript = response.javascript;
 
     return {
       html,

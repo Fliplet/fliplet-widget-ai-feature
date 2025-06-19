@@ -2,6 +2,10 @@ var selectedDataSourceId = null;
 var selectedDataSourceName = null;
 var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
+const appId = Fliplet.Env.get("appId");
+const pageId = Fliplet.Env.get("pageId");
+const organizationId = Fliplet.Env.get("organizationId");
+const userId = Fliplet.Env.get("user")?.id || "";
 
 Fliplet.Widget.setSaveButtonLabel(false);
 Fliplet.Widget.setCancelButtonLabel("Close");
@@ -221,9 +225,15 @@ Finally, output the result as a single, consolidated prompt that the AI can use 
       ],
       reasoning_effort: "low",
     })
-      .then(function (result) {
+      .then(async function (result) {
         // Parse the response
         const response = result.choices[0].message.content;
+
+        const logAiCallResponse = await logAiCall({
+          'User prompt': prompt,
+          'AI prompt': response,
+        });
+
         Fliplet.Helper.field("prompt").set(response);
         toggleLoaderEnhancePrompt(false);
       })
@@ -234,6 +244,18 @@ Finally, output the result as a single, consolidated prompt that the AI can use 
   }
 
   toggleLoaderEnhancePrompt(false);
+}
+
+function logAiCall(data) {
+  return Fliplet.App.Logs.create({
+    data: {
+      data: data,
+      userId: userId,
+      appId: appId,
+      organizationId: organizationId,
+      pageId: pageId,
+    },
+  }, "ai.feature.component");
 }
 
 function generateCode() {

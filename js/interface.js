@@ -1279,7 +1279,7 @@ You can use most parameters available in the OpenAI Completions API reference (f
 
 **Important:**
 *   You must provide *either* 'messages'
-*   If 'model is not provided when using 'messages', it defaults to `'gpt-3.5-turbo'` but try to use at least gpt-4o
+*   If 'model is not provided when using 'messages', it defaults to 'gpt-3.5-turbo' but try to use at least gpt-4o
 
 **Returns:**
 

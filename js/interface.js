@@ -205,15 +205,17 @@ function enhancePrompt() {
   toggleLoaderEnhancePrompt(true);
   var prompt = Fliplet.Helper.field("prompt").get();
   if (prompt) {
-    let systemPrompt = `You are a "Prompt Enhancer" for front-end feature requests. When given a user's simple request for HTML/CSS/JS, you must:
-
-1. **Restate the core goal** in one clear sentence.  
-2. **Add context**: describe the target audience, use case, and any brand or environment constraints.  
-3. **Define functional requirements**: list all UI elements, interactions, and behaviors the component should support (e.g. hover states, form validation, animations).  
-4. **Specify design details**: layout structure (grid/flex), colors (primary, secondary, accents), typography (font families, sizes, weights), spacing, and responsive breakpoints.  
-5. **Include technical considerations**: prefer Fliplet's JavaScript APIs when available; for any parts not covered by Fliplet, use vanilla HTML, CSS, and JavaScript. Also note any bundling/build tools, performance targets (load time, bundle size), and browser support requirements.  
-6. **Ensure accessibility**: ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.  
-7. **Outline integration points**: data sources to connect, use the data source JS API only  
+    let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user’s simple request for HTML/CSS/JS, you must:
+	1.	Core Goal
+Restate the user’s main objective in one clear sentence.
+	2.	Context
+Describe the target audience, use case, and any brand or environment constraints.
+	3.	Functional Requirements
+List all UI elements, interactions, and behaviors the component should support (e.g. hover states, form validation, animations).
+	4.	Design Details
+Specify layout structure (grid/flex), colors (primary, secondary, accents), typography (font families, sizes, weights), spacing, and responsive breakpoints.
+	6.	Accessibility
+Define ARIA roles, keyboard navigation, contrast ratios.
 
 Important:
   - Only return the enhanced prompt as a plain string.
@@ -298,7 +300,7 @@ Use bootstrap v3.4.1 for css and styling.
 Do not include any backticks in the response.
 Ensure there are no syntax errors in the code and that column names with spaced in them are wrapped with square brackets.
 Add inline comments for the code so technical users can make edits to the code. 
-Add try catch blocks in the code to catch any errors and log the errors to the console. 
+Add try catch blocks in the code to catch any errors and log the errors to the console and show them to the user user via Fliplet.UI.Toast(message).
 Ensure you chain all the promises correctly with return statements.
 You must only return code in the format specified. Do not return any text.
 If the user provides any links to dependencies/libraries please include them via script tags in the html. 
@@ -1255,6 +1257,79 @@ var options = {
 
 // Returns a promise
 Fliplet.Communicate.sendEmail(options);
+
+Use the following endpoint to query OpenAI. 
+
+### Fliplet.AI.createCompletion()
+
+This low-level method provides direct access to OpenAI's completion capabilities, supporting both traditional prompt-based completions (e.g., with text-davinci-003) and chat-based completions (e.g., with 'gpt-4o').
+
+**'CompletionOptions' Object Properties:**
+
+You can use most parameters available in the OpenAI Completions API reference (for 'prompt'-based calls) or the OpenAI Chat Completions API reference for 'messages'-based calls).
+
+**Key 'CompletionOptions' include:**
+
+| Parameter     | Type                        | Optional | Default        | Description                                                                                                                                                                                             |
+|---------------|-----------------------------|----------|----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| model       | String                    | Yes      | See below      | ID of the model to use. For chat models (using messages), defaults to 'gpt-3.5-turbo'. For older completion models (using prompt), a model like 'text-davinci-003' must be specified.           |
+| messages    | Array<MessageObject>      | Yes      | undefined    | An array of message objects (see [Conversation Message Structure](#conversation-message-structure)) for chat-based completions. Use this for models like gpt-3.5-turbo.                                |
+| prompt      | String or Array<String> | Yes      | undefined    | The prompt(s) to generate completions for. Use this for older completion models like text-davinci-003.                                                                                                |
+| temperature | Number                    | Yes      | 1 (OpenAI)   | Sampling temperature (0-2).                                                                                                                                                                               |
+
+**Important:**
+*   You must provide *either* 'messages'
+*   If 'model is not provided when using 'messages', it defaults to `'gpt-3.5-turbo'` but try to use at least gpt-4o
+
+**Returns:**
+
+A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends on whether it's a chat completion or a standard completion, generally following OpenAI's response format. Refer to the OpenAI documentation for the detailed structure of the completion object. 
+
+
+**Example (Chat Completion):**
+
+/**
+ * @typedef {Object} MessageObject
+ * @property {string} role - e.g., 'user', 'system'.
+ * @property {string} content - Message content.
+ */
+
+/**
+ * @typedef {Object} CompletionOptionsChat
+ * @property {string} [model='gpt-3.5-turbo'] - Model ID.
+ * @property {MessageObject[]} messages - Array of message objects.
+ * @property {number} [temperature=1]
+ * @property {boolean} [stream=false]
+ * // ... other OpenAI chat parameters
+ */
+
+/**
+ * @typedef {Object} CompletionOptionsPrompt
+ * @property {string} model - Model ID (e.g., 'text-davinci-003'). Required.
+ * @property {string|string[]} prompt - Prompt string(s).
+ * @property {number} [temperature=1]
+ * @property {boolean} [stream=false]
+ * // ... other OpenAI completion parameters
+ */
+
+async function runChatCompletion() {
+  try {
+    const params = {
+      // model: 'gpt-4o'
+      messages: [{ role: 'user', content: 'Hello, AI!' }],
+      temperature: 0.7
+    };
+    console.log('Input for createCompletion (chat):', params);
+    const result = await Fliplet.AI.createCompletion(params);
+    console.log('createCompletion Response (chat):', result);
+    if (result.choices && result.choices.length > 0) {
+      console.log('AI Reply:', result.choices[0].message.content);
+    }
+  } catch (error) {
+    console.error('Error in createCompletion (chat):', error);
+  }
+}
+runChatCompletion();
 `;
 
   return Fliplet.AI.createCompletion({

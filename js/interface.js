@@ -87,6 +87,8 @@ Fliplet.Widget.generateInterface({
                 <br>
                 6. The ability to send Emails
                 <br>
+		7. The ability to query AI
+  		<br>
                 Note: Only the information in your prompt is shared with AI. AI cannot access your data or app.
               </div>
             </div>
@@ -212,10 +214,10 @@ Restate the user’s main objective in one clear sentence.
 Describe the target audience, use case, and any brand or environment constraints.
 	3.	Functional Requirements
 List all UI elements, interactions, and behaviors the component should support (e.g. hover states, form validation, animations).
-	4.	Design Details
-Specify layout structure (grid/flex), colors (primary, secondary, accents), typography (font families, sizes, weights), spacing, and responsive breakpoints.
-	6.	Accessibility
-Define ARIA roles, keyboard navigation, contrast ratios.
+	4.	UI & UX Guidelines
+Define visual hierarchy, interaction patterns, navigation flow, micro-interactions and feedback, error and empty states, consistency with existing components, and overall usability best practices.
+	5.	Accessibility
+Define ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.
 
 Important:
   - Only return the enhanced prompt as a plain string.

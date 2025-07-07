@@ -1317,9 +1317,8 @@ A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends
 async function runChatCompletion() {
   try {
     const params = {
-      // model: 'gpt-4o'
-      messages: [{ role: 'user', content: 'Hello, AI!' }],
-      temperature: 0.7
+	model: 'gpt-4o' // use gpt-4o unless model specified by user. 
+      messages: [{ role: 'user', content: 'Hello, AI!' }]
     };
     console.log('Input for createCompletion (chat):', params);
     const result = await Fliplet.AI.createCompletion(params);

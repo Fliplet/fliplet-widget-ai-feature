@@ -1298,7 +1298,7 @@ A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends
 
 /**
  * @typedef {Object} CompletionOptionsChat
- * @property {string} [model='gpt-3.5-turbo'] - Model ID.
+ * @property {string} [model='gpt-4o'] - Model ID.
  * @property {MessageObject[]} messages - Array of message objects.
  * @property {number} [temperature=1]
  * @property {boolean} [stream=false]
@@ -1317,9 +1317,8 @@ A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends
 async function runChatCompletion() {
   try {
     const params = {
-      // model: 'gpt-4o'
-      messages: [{ role: 'user', content: 'Hello, AI!' }],
-      temperature: 0.7
+       model: 'gpt-4o' // Use gpt-4o unless specified by the user
+      messages: [{ role: 'user', content: 'Hello, AI!' }]
     };
     console.log('Input for createCompletion (chat):', params);
     const result = await Fliplet.AI.createCompletion(params);

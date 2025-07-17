@@ -67,6 +67,42 @@ Fliplet.Widget.generateInterface({
           chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
+        // Function to show/hide loading state
+        function setLoadingState(isLoading) {
+          const chatInput = document.getElementById("chatInput");
+          const chatSendBtn = document.getElementById("chatSendBtn");
+          const chatContainer = document.querySelector(".chat-container");
+          
+          if (isLoading) {
+            // Disable input and button
+            chatInput.disabled = true;
+            chatSendBtn.disabled = true;
+            chatSendBtn.style.opacity = "0.6";
+            
+            // Add loading overlay
+            const overlay = document.createElement("div");
+            overlay.className = "chat-loading-overlay";
+            overlay.innerHTML = `
+              <div class="chat-loading-spinner">
+                <div class="spinner"></div>
+                <div class="loading-text">AI is thinking...</div>
+              </div>
+            `;
+            chatContainer.appendChild(overlay);
+          } else {
+            // Enable input and button
+            chatInput.disabled = false;
+            chatSendBtn.disabled = false;
+            chatSendBtn.style.opacity = "1";
+            
+            // Remove loading overlay
+            const overlay = document.querySelector(".chat-loading-overlay");
+            if (overlay) {
+              overlay.remove();
+            }
+          }
+        }
+
         // Function to send message
         function sendMessage() {
           const message = chatInput.value.trim();
@@ -82,13 +118,18 @@ Fliplet.Widget.generateInterface({
           // Clear input
           chatInput.value = "";
 
+          // Show loading state
+          setLoadingState(true);
+
           // Simulate AI response (you can replace this with actual AI integration)
           setTimeout(() => {
             addMessage(
               "Thank you for your message! I'm here to help you with your AI feature requests.",
               false
             );
-          }, 1000);
+            // Hide loading state
+            setLoadingState(false);
+          }, 2000);
         }
 
         // Event listeners

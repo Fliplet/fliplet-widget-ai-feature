@@ -59,7 +59,11 @@ Fliplet.Widget.generateInterface({
           });
           
           const storageKey = `chat_history_${widgetId}`;
-          localStorage.setItem(storageKey, JSON.stringify(messages));
+          const chatData = {
+            messages: messages,
+            timestamp: Date.now()
+          };
+          localStorage.setItem(storageKey, JSON.stringify(chatData));
         }
 
         // Function to load chat history from localStorage
@@ -69,13 +73,33 @@ Fliplet.Widget.generateInterface({
           
           if (savedHistory) {
             try {
-              const messages = JSON.parse(savedHistory);
-              messages.forEach(msg => {
+              const chatData = JSON.parse(savedHistory);
+              
+              // Check if data is in old format (just messages array)
+              if (Array.isArray(chatData)) {
+                // Old format - clear it and return false
+                localStorage.removeItem(storageKey);
+                return false;
+              }
+              
+              // Check if data is older than 1 hour (3600000 milliseconds)
+              const oneHour = 3600000;
+              const isExpired = (Date.now() - chatData.timestamp) > oneHour;
+              
+              if (isExpired) {
+                // Clear expired data
+                localStorage.removeItem(storageKey);
+                return false;
+              }
+              
+              // Load valid messages
+              chatData.messages.forEach(msg => {
                 addMessage(msg.message, msg.isUser, msg.time);
               });
               return true;
             } catch (error) {
               console.error('Error loading chat history:', error);
+              localStorage.removeItem(storageKey);
               return false;
             }
           }

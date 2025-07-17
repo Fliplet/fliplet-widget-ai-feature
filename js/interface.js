@@ -21,6 +21,24 @@ Fliplet.Widget.generateInterface({
             <br><br>`,
     },
     {
+      type: "html",
+      html: `<div class="chat-container">
+        <div class="chat-messages" id="chatMessages">
+          <!-- Messages will be dynamically added here -->
+        </div>
+        <div class="chat-input-container">
+          <div class="input-group">
+            <input type="text" class="form-control chat-input" id="chatInput" placeholder="Type your message here..." />
+            <span class="input-group-btn">
+              <button class="btn btn-primary chat-send-btn" id="chatSendBtn" type="button">
+                <i class="fa fa-paper-plane"></i> Send
+              </button>
+            </span>
+          </div>
+        </div>
+      </div>`,
+    },
+    {
       type: "provider",
       name: "dataSourceId",
       package: "com.fliplet.data-source-provider",
@@ -1397,3 +1415,65 @@ function saveGeneratedCode(parsedContent) {
     }, 1000);
   });
 }
+
+// Chat functionality
+$(document).ready(function() {
+  const chatMessages = document.getElementById('chatMessages');
+  const chatInput = document.getElementById('chatInput');
+  const chatSendBtn = document.getElementById('chatSendBtn');
+
+  // Function to add a message to the chat
+  function addMessage(message, isUser = false) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${isUser ? 'user-message' : 'ai-message'}`;
+    
+    const messageContent = document.createElement('div');
+    messageContent.className = 'message-content';
+    messageContent.textContent = message;
+    
+    const messageTime = document.createElement('div');
+    messageTime.className = 'message-time';
+    messageTime.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    
+    messageDiv.appendChild(messageContent);
+    messageDiv.appendChild(messageTime);
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // Function to send message
+  function sendMessage() {
+    const message = chatInput.value.trim();
+    
+    // Validation: don't send empty messages
+    if (!message) {
+      return;
+    }
+    
+    // Add user message to chat
+    addMessage(message, true);
+    
+    // Clear input
+    chatInput.value = '';
+    
+    // Simulate AI response (you can replace this with actual AI integration)
+    setTimeout(() => {
+      addMessage('Thank you for your message! I\'m here to help you with your AI feature requests.', false);
+    }, 1000);
+  }
+
+  // Event listeners
+  chatSendBtn.addEventListener('click', sendMessage);
+  
+  chatInput.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // Add initial AI welcome message
+  addMessage('Hello! I\'m here to help you create AI-powered features. What would you like to build today?', false);
+});

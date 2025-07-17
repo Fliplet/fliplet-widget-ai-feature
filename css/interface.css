@@ -115,3 +115,151 @@
   font-size: 14px;
   line-height: 1.42857143;
 }
+
+/* Chat UI Styles */
+.chat-container {
+  border: 1px solid #e3e3e3;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  height: 400px;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 15px;
+  background: #f8f9fa;
+}
+
+.chat-message {
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-message.ai-message {
+  align-items: flex-start;
+}
+
+.chat-message.user-message {
+  align-items: flex-end;
+}
+
+.message-content {
+  max-width: 70%;
+  padding: 10px 15px;
+  border-radius: 18px;
+  word-wrap: break-word;
+  position: relative;
+}
+
+.ai-message .message-content {
+  background: #007bff;
+  color: white;
+  border-bottom-left-radius: 5px;
+}
+
+.user-message .message-content {
+  background: #e9ecef;
+  color: #333;
+  border-bottom-right-radius: 5px;
+}
+
+.message-time {
+  font-size: 11px;
+  color: #6c757d;
+  margin-top: 4px;
+  padding: 0 5px;
+}
+
+.ai-message .message-time {
+  text-align: left;
+}
+
+.user-message .message-time {
+  text-align: right;
+}
+
+.chat-input-container {
+  padding: 15px;
+  background: #fff;
+  border-top: 1px solid #e3e3e3;
+  border-radius: 0 0 8px 8px;
+}
+
+.chat-input-container .input-group {
+  display: flex;
+}
+
+.chat-input {
+  border-radius: 20px 0 0 20px;
+  border: 1px solid #ced4da;
+  padding: 10px 15px;
+  font-size: 14px;
+}
+
+.chat-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.chat-send-btn {
+  border-radius: 0 20px 20px 0;
+  border: 1px solid #007bff;
+  background: #007bff;
+  color: white;
+  padding: 10px 15px;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.chat-send-btn:hover {
+  background: #0056b3;
+  border-color: #0056b3;
+}
+
+.chat-send-btn:active {
+  transform: translateY(1px);
+}
+
+.chat-send-btn i {
+  margin-right: 5px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .chat-container {
+    height: 350px;
+  }
+  
+  .message-content {
+    max-width: 85%;
+  }
+  
+  .chat-input-container {
+    padding: 10px;
+  }
+}
+
+/* Scrollbar styling */
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

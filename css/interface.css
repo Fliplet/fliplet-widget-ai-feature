@@ -193,6 +193,7 @@
 
 .chat-input-container .input-group {
   display: flex;
+  width: 100%;
 }
 
 .chat-input {
@@ -200,6 +201,8 @@
   border: 1px solid #ced4da;
   padding: 10px 15px;
   font-size: 14px;
+  flex: 1;
+  min-width: 0;
 }
 
 .chat-input:focus {
@@ -215,6 +218,8 @@
   padding: 10px 15px;
   font-size: 14px;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .chat-send-btn:hover {

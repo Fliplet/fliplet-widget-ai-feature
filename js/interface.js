@@ -41,8 +41,49 @@ Fliplet.Widget.generateInterface({
         const chatInput = document.getElementById("chatInput");
         const chatSendBtn = document.getElementById("chatSendBtn");
 
+        // Function to save chat history to localStorage
+        function saveChatHistory() {
+          const messages = [];
+          const messageElements = chatMessages.querySelectorAll('.chat-message');
+          
+          messageElements.forEach(element => {
+            const isUser = element.classList.contains('user-message');
+            const messageContent = element.querySelector('.message-content').textContent;
+            const messageTime = element.querySelector('.message-time').textContent;
+            
+            messages.push({
+              message: messageContent,
+              isUser: isUser,
+              time: messageTime
+            });
+          });
+          
+          const storageKey = `chat_history_${widgetId}`;
+          localStorage.setItem(storageKey, JSON.stringify(messages));
+        }
+
+        // Function to load chat history from localStorage
+        function loadChatHistory() {
+          const storageKey = `chat_history_${widgetId}`;
+          const savedHistory = localStorage.getItem(storageKey);
+          
+          if (savedHistory) {
+            try {
+              const messages = JSON.parse(savedHistory);
+              messages.forEach(msg => {
+                addMessage(msg.message, msg.isUser, msg.time);
+              });
+              return true;
+            } catch (error) {
+              console.error('Error loading chat history:', error);
+              return false;
+            }
+          }
+          return false;
+        }
+
         // Function to add a message to the chat
-        function addMessage(message, isUser = false) {
+        function addMessage(message, isUser = false, customTime = null) {
           const messageDiv = document.createElement("div");
           messageDiv.className = `chat-message ${
             isUser ? "user-message" : "ai-message"
@@ -54,7 +95,7 @@ Fliplet.Widget.generateInterface({
 
           const messageTime = document.createElement("div");
           messageTime.className = "message-time";
-          messageTime.textContent = new Date().toLocaleTimeString([], {
+          messageTime.textContent = customTime || new Date().toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           });
@@ -65,6 +106,9 @@ Fliplet.Widget.generateInterface({
 
           // Scroll to bottom
           chatMessages.scrollTop = chatMessages.scrollHeight;
+          
+          // Save chat history after adding message
+          saveChatHistory();
         }
 
         // Function to show/hide loading state
@@ -129,6 +173,8 @@ Fliplet.Widget.generateInterface({
             );
             // Hide loading state
             setLoadingState(false);
+            // Focus the input field again
+            chatInput.focus();
           }, 2000);
         }
 
@@ -142,11 +188,14 @@ Fliplet.Widget.generateInterface({
           }
         });
 
-        // Add initial AI welcome message
-        addMessage(
-          "Hello! I'm here to help you create AI-powered features. What would you like to build today?",
-          false
-        );
+        // Load chat history or add initial AI welcome message
+        const hasHistory = loadChatHistory();
+        if (!hasHistory) {
+          addMessage(
+            "Hello! I'm here to help you create AI-powered features. What would you like to build today?",
+            false
+          );
+        }
       },
     },
     {

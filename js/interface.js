@@ -29,11 +29,9 @@ Fliplet.Widget.generateInterface({
         <div class="chat-input-container">
           <div class="input-group">
             <input type="text" class="form-control chat-input" id="chatInput" placeholder="Type your message here..." />
-            <span class="input-group-btn">
-              <button class="btn btn-primary chat-send-btn" id="chatSendBtn" type="button">
-                <i class="fa fa-paper-plane"></i> Send
-              </button>
-            </span>
+            <button class="btn btn-primary chat-send-btn" id="chatSendBtn" type="button">
+              <i class="fa fa-paper-plane"></i> Send
+            </button>
           </div>
         </div>
       </div>`,

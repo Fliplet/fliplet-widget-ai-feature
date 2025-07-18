@@ -14,14 +14,6 @@ Fliplet.Widget.generateInterface({
   fields: [
     {
       type: "html",
-      html: `Use this component to generate features within a screen using AI. The code created will be available in the developer tools.
-            <br>
-            <br>
-            Select a data source if you want your feature to use a data source.
-            <br><br>`,
-    },
-    {
-      type: "html",
       html: `<div class="chat-container">
         <div class="chat-messages" id="chatMessages">
           <!-- Messages will be dynamically added here -->
@@ -221,6 +213,14 @@ Fliplet.Widget.generateInterface({
           );
         }
       },
+    },
+    {
+      type: "html",
+      html: `Use this component to generate features within a screen using AI. The code created will be available in the developer tools.
+            <br>
+            <br>
+            Select a data source if you want your feature to use a data source.
+            <br><br>`,
     },
     {
       type: "provider",

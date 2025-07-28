@@ -197,9 +197,9 @@
 }
 
 .interface .chat-input {
-  border-radius: 20px 0 0 20px;
-  border: 1px solid #ced4da;
-  padding: 10px 15px;
+  /* border-radius: 20px 0 0 20px; */
+  border: none;
+  padding: 5px;
   font-size: 14px;
   height: 44px;
   box-sizing: border-box;
@@ -392,7 +392,7 @@
 
 .interface #user-input {
   flex: 1;
-  padding: 12px 15px;
+  padding: 15px 15px;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
   font-size: 1rem;
@@ -628,9 +628,9 @@
     max-width: 95%;
   }
 
-  .interface .chat-input {
+  /* .interface .chat-input {
     flex-direction: column;
-  }
+  } */
 
   .interface #user-input {
     margin-bottom: 10px;

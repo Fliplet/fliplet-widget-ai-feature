@@ -98,7 +98,11 @@ Fliplet.Widget.generateInterface({
     },
     {
       type: "html",
-      html: `<div class="chat-section">
+      html: `<div class="container">
+        <h1>AI Coding Tool Test Interface</h1>
+        
+        <!-- Chat Interface -->
+        <div class="chat-section">
             <div class="chat-header">
                 <h2>Chat Interface</h2>
                 <button id="reset-btn" class="btn-secondary">Reset Session</button>
@@ -115,6 +119,69 @@ Fliplet.Widget.generateInterface({
                 <button id="send-btn" class="btn-primary">Send</button>
             </div>
         </div>
+        
+        <!-- Code Display Areas -->
+        <div class="code-section">
+            <div class="code-panel">
+                <div class="code-header">
+                    <h3>Generated HTML</h3>
+                    <span id="html-status" class="status">Empty</span>
+                </div>
+                <pre id="html-code" class="code-display"></pre>
+                <div id="html-diff" class="diff-section" style="display: none;">
+                    <h4>🔍 HTML Changes:</h4>
+                    <div class="diff-content"></div>
+                </div>
+            </div>
+            
+            <div class="code-panel">
+                <div class="code-header">
+                    <h3>Generated CSS</h3>
+                    <span id="css-status" class="status">Empty</span>
+                </div>
+                <pre id="css-code" class="code-display"></pre>
+                <div id="css-diff" class="diff-section" style="display: none;">
+                    <h4>🎨 CSS Changes:</h4>
+                    <div class="diff-content"></div>
+                </div>
+            </div>
+            
+            <div class="code-panel">
+                <div class="code-header">
+                    <h3>Generated JavaScript</h3>
+                    <span id="js-status" class="status">Empty</span>
+                </div>
+                <pre id="js-code" class="code-display"></pre>
+                <div id="js-diff" class="diff-section" style="display: none;">
+                    <h4>⚡ JavaScript Changes:</h4>
+                    <div class="diff-content"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Live Preview Area -->
+        <div class="preview-section">
+            <div class="preview-header">
+                <h3>Live Preview</h3>
+                <div class="preview-controls">
+                    <span id="preview-status" class="status">Empty</span>
+                    <button id="refresh-preview" class="btn-secondary">Refresh</button>
+                </div>
+            </div>
+            <div class="preview-container">
+                <iframe id="preview-frame" title="Code Preview" sandbox="allow-scripts allow-same-origin allow-modals"></iframe>
+            </div>
+        </div>
+
+        <!-- Debug Information -->
+        <div class="debug-section">
+            <div class="debug-header">
+                <h3>Debug Information</h3>
+                <button id="clear-debug" class="btn-secondary">Clear</button>
+            </div>
+            <div id="debug-log" class="debug-log"></div>
+        </div>
+    </div>
       `,
       ready: function () {
         // Initialize app when DOM is ready

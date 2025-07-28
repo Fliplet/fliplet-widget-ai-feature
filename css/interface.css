@@ -1,4 +1,4 @@
-.interface .generate-code-disabled .spinner-holder {
+/* .interface .generate-code-disabled .spinner-holder {
   display: block;
   margin-right: 10px;
 }
@@ -114,7 +114,7 @@
   font-family: "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 14px;
   line-height: 1.42857143;
-}
+} */
 
 /* Chat UI Styles */
 .interface .chat-container {

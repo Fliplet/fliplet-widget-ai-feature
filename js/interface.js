@@ -188,213 +188,213 @@ Fliplet.Widget.generateInterface({
         document.addEventListener("DOMContentLoaded", initializeApp);
       },
     },
-    {
-      type: "html",
-      html: `<div class="chat-container">
-        <div class="chat-messages" id="chatMessages">
-          <!-- Messages will be dynamically added here -->
-        </div>
-        <div class="chat-input-container">
-          <div class="input-group">
-            <input type="text" class="form-control chat-input" id="chatInput" placeholder="Type your message here..." />
-            <button class="btn btn-primary chat-send-btn" id="chatSendBtn" type="button">
-              <i class="fa fa-paper-plane"></i> Send
-            </button>
-          </div>
-        </div>
-      </div>`,
-      ready: function () {
-        // Chat functionality
-        const chatMessages = document.getElementById("chatMessages");
-        const chatInput = document.getElementById("chatInput");
-        const chatSendBtn = document.getElementById("chatSendBtn");
+    // {
+    //   type: "html",
+    //   html: `<div class="chat-container">
+    //     <div class="chat-messages" id="chatMessages">
+    //       <!-- Messages will be dynamically added here -->
+    //     </div>
+    //     <div class="chat-input-container">
+    //       <div class="input-group">
+    //         <input type="text" class="form-control chat-input" id="chatInput" placeholder="Type your message here..." />
+    //         <button class="btn btn-primary chat-send-btn" id="chatSendBtn" type="button">
+    //           <i class="fa fa-paper-plane"></i> Send
+    //         </button>
+    //       </div>
+    //     </div>
+    //   </div>`,
+    //   ready: function () {
+    //     // Chat functionality
+    //     const chatMessages = document.getElementById("chatMessages");
+    //     const chatInput = document.getElementById("chatInput");
+    //     const chatSendBtn = document.getElementById("chatSendBtn");
 
-        // Function to save chat history to localStorage
-        function saveChatHistory() {
-          const messages = [];
-          const messageElements =
-            chatMessages.querySelectorAll(".chat-message");
+    //     // Function to save chat history to localStorage
+    //     function saveChatHistory() {
+    //       const messages = [];
+    //       const messageElements =
+    //         chatMessages.querySelectorAll(".chat-message");
 
-          messageElements.forEach((element) => {
-            const isUser = element.classList.contains("user-message");
-            const messageContent =
-              element.querySelector(".message-content").textContent;
-            const messageTime =
-              element.querySelector(".message-time").textContent;
+    //       messageElements.forEach((element) => {
+    //         const isUser = element.classList.contains("user-message");
+    //         const messageContent =
+    //           element.querySelector(".message-content").textContent;
+    //         const messageTime =
+    //           element.querySelector(".message-time").textContent;
 
-            messages.push({
-              message: messageContent,
-              isUser: isUser,
-              time: messageTime,
-            });
-          });
+    //         messages.push({
+    //           message: messageContent,
+    //           isUser: isUser,
+    //           time: messageTime,
+    //         });
+    //       });
 
-          const storageKey = `chat_history_${widgetId}`;
-          const chatData = {
-            messages: messages,
-            timestamp: Date.now(),
-          };
-          localStorage.setItem(storageKey, JSON.stringify(chatData));
-        }
+    //       const storageKey = `chat_history_${widgetId}`;
+    //       const chatData = {
+    //         messages: messages,
+    //         timestamp: Date.now(),
+    //       };
+    //       localStorage.setItem(storageKey, JSON.stringify(chatData));
+    //     }
 
-        // Function to load chat history from localStorage
-        function loadChatHistory() {
-          const storageKey = `chat_history_${widgetId}`;
-          const savedHistory = localStorage.getItem(storageKey);
+    //     // Function to load chat history from localStorage
+    //     function loadChatHistory() {
+    //       const storageKey = `chat_history_${widgetId}`;
+    //       const savedHistory = localStorage.getItem(storageKey);
 
-          if (savedHistory) {
-            try {
-              const chatData = JSON.parse(savedHistory);
+    //       if (savedHistory) {
+    //         try {
+    //           const chatData = JSON.parse(savedHistory);
 
-              // Check if data is in old format (just messages array)
-              if (Array.isArray(chatData)) {
-                // Old format - clear it and return false
-                localStorage.removeItem(storageKey);
-                return false;
-              }
+    //           // Check if data is in old format (just messages array)
+    //           if (Array.isArray(chatData)) {
+    //             // Old format - clear it and return false
+    //             localStorage.removeItem(storageKey);
+    //             return false;
+    //           }
 
-              // Check if data is older than 1 hour (3600000 milliseconds)
-              const oneHour = 3600000;
-              const isExpired = Date.now() - chatData.timestamp > oneHour;
+    //           // Check if data is older than 1 hour (3600000 milliseconds)
+    //           const oneHour = 3600000;
+    //           const isExpired = Date.now() - chatData.timestamp > oneHour;
 
-              if (isExpired) {
-                // Clear expired data
-                localStorage.removeItem(storageKey);
-                return false;
-              }
+    //           if (isExpired) {
+    //             // Clear expired data
+    //             localStorage.removeItem(storageKey);
+    //             return false;
+    //           }
 
-              // Load valid messages
-              chatData.messages.forEach((msg) => {
-                addMessage(msg.message, msg.isUser, msg.time);
-              });
-              return true;
-            } catch (error) {
-              console.error("Error loading chat history:", error);
-              localStorage.removeItem(storageKey);
-              return false;
-            }
-          }
-          return false;
-        }
+    //           // Load valid messages
+    //           chatData.messages.forEach((msg) => {
+    //             addMessage(msg.message, msg.isUser, msg.time);
+    //           });
+    //           return true;
+    //         } catch (error) {
+    //           console.error("Error loading chat history:", error);
+    //           localStorage.removeItem(storageKey);
+    //           return false;
+    //         }
+    //       }
+    //       return false;
+    //     }
 
-        // Function to add a message to the chat
-        function addMessage(message, isUser = false, customTime = null) {
-          const messageDiv = document.createElement("div");
-          messageDiv.className = `chat-message ${
-            isUser ? "user-message" : "ai-message"
-          }`;
+    //     // Function to add a message to the chat
+    //     function addMessage(message, isUser = false, customTime = null) {
+    //       const messageDiv = document.createElement("div");
+    //       messageDiv.className = `chat-message ${
+    //         isUser ? "user-message" : "ai-message"
+    //       }`;
 
-          const messageContent = document.createElement("div");
-          messageContent.className = "message-content";
-          messageContent.textContent = message;
+    //       const messageContent = document.createElement("div");
+    //       messageContent.className = "message-content";
+    //       messageContent.textContent = message;
 
-          const messageTime = document.createElement("div");
-          messageTime.className = "message-time";
-          messageTime.textContent =
-            customTime ||
-            new Date().toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            });
+    //       const messageTime = document.createElement("div");
+    //       messageTime.className = "message-time";
+    //       messageTime.textContent =
+    //         customTime ||
+    //         new Date().toLocaleTimeString([], {
+    //           hour: "2-digit",
+    //           minute: "2-digit",
+    //         });
 
-          messageDiv.appendChild(messageContent);
-          messageDiv.appendChild(messageTime);
-          chatMessages.appendChild(messageDiv);
+    //       messageDiv.appendChild(messageContent);
+    //       messageDiv.appendChild(messageTime);
+    //       chatMessages.appendChild(messageDiv);
 
-          // Scroll to bottom
-          chatMessages.scrollTop = chatMessages.scrollHeight;
+    //       // Scroll to bottom
+    //       chatMessages.scrollTop = chatMessages.scrollHeight;
 
-          // Save chat history after adding message
-          saveChatHistory();
-        }
+    //       // Save chat history after adding message
+    //       saveChatHistory();
+    //     }
 
-        // Function to show/hide loading state
-        function setLoadingState(isLoading) {
-          const chatInput = document.getElementById("chatInput");
-          const chatSendBtn = document.getElementById("chatSendBtn");
-          const chatContainer = document.querySelector(".chat-container");
+    //     // Function to show/hide loading state
+    //     function setLoadingState(isLoading) {
+    //       const chatInput = document.getElementById("chatInput");
+    //       const chatSendBtn = document.getElementById("chatSendBtn");
+    //       const chatContainer = document.querySelector(".chat-container");
 
-          if (isLoading) {
-            // Disable input and button
-            chatInput.disabled = true;
-            chatSendBtn.disabled = true;
-            chatSendBtn.style.opacity = "0.6";
+    //       if (isLoading) {
+    //         // Disable input and button
+    //         chatInput.disabled = true;
+    //         chatSendBtn.disabled = true;
+    //         chatSendBtn.style.opacity = "0.6";
 
-            // Add loading overlay
-            const overlay = document.createElement("div");
-            overlay.className = "chat-loading-overlay";
-            overlay.innerHTML = `
-              <div class="chat-loading-spinner">
-                <div class="spinner"></div>
-                <div class="loading-text">AI is thinking...</div>
-              </div>
-            `;
-            chatContainer.appendChild(overlay);
-          } else {
-            // Enable input and button
-            chatInput.disabled = false;
-            chatSendBtn.disabled = false;
-            chatSendBtn.style.opacity = "1";
+    //         // Add loading overlay
+    //         const overlay = document.createElement("div");
+    //         overlay.className = "chat-loading-overlay";
+    //         overlay.innerHTML = `
+    //           <div class="chat-loading-spinner">
+    //             <div class="spinner"></div>
+    //             <div class="loading-text">AI is thinking...</div>
+    //           </div>
+    //         `;
+    //         chatContainer.appendChild(overlay);
+    //       } else {
+    //         // Enable input and button
+    //         chatInput.disabled = false;
+    //         chatSendBtn.disabled = false;
+    //         chatSendBtn.style.opacity = "1";
 
-            // Remove loading overlay
-            const overlay = document.querySelector(".chat-loading-overlay");
-            if (overlay) {
-              overlay.remove();
-            }
-          }
-        }
+    //         // Remove loading overlay
+    //         const overlay = document.querySelector(".chat-loading-overlay");
+    //         if (overlay) {
+    //           overlay.remove();
+    //         }
+    //       }
+    //     }
 
-        // Function to send message
-        function sendMessage() {
-          const message = chatInput.value.trim();
+    //     // Function to send message
+    //     function sendMessage() {
+    //       const message = chatInput.value.trim();
 
-          // Validation: don't send empty messages
-          if (!message) {
-            return;
-          }
+    //       // Validation: don't send empty messages
+    //       if (!message) {
+    //         return;
+    //       }
 
-          // Add user message to chat
-          addMessage(message, true);
+    //       // Add user message to chat
+    //       addMessage(message, true);
 
-          // Clear input
-          chatInput.value = "";
+    //       // Clear input
+    //       chatInput.value = "";
 
-          // Show loading state
-          setLoadingState(true);
+    //       // Show loading state
+    //       setLoadingState(true);
 
-          // Simulate AI response (you can replace this with actual AI integration)
-          setTimeout(() => {
-            addMessage(
-              "Thank you for your message! I'm here to help you with your AI feature requests.",
-              false
-            );
-            // Hide loading state
-            setLoadingState(false);
-            // Focus the input field again
-            chatInput.focus();
-          }, 2000);
-        }
+    //       // Simulate AI response (you can replace this with actual AI integration)
+    //       setTimeout(() => {
+    //         addMessage(
+    //           "Thank you for your message! I'm here to help you with your AI feature requests.",
+    //           false
+    //         );
+    //         // Hide loading state
+    //         setLoadingState(false);
+    //         // Focus the input field again
+    //         chatInput.focus();
+    //       }, 2000);
+    //     }
 
-        // Event listeners
-        chatSendBtn.addEventListener("click", sendMessage);
+    //     // Event listeners
+    //     chatSendBtn.addEventListener("click", sendMessage);
 
-        chatInput.addEventListener("keypress", function (e) {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            sendMessage();
-          }
-        });
+    //     chatInput.addEventListener("keypress", function (e) {
+    //       if (e.key === "Enter") {
+    //         e.preventDefault();
+    //         sendMessage();
+    //       }
+    //     });
 
-        // Load chat history or add initial AI welcome message
-        const hasHistory = loadChatHistory();
-        if (!hasHistory) {
-          addMessage(
-            "Hello! I'm here to help you create AI-powered features. What would you like to build today?",
-            false
-          );
-        }
-      },
-    },
+    //     // Load chat history or add initial AI welcome message
+    //     const hasHistory = loadChatHistory();
+    //     if (!hasHistory) {
+    //       addMessage(
+    //         "Hello! I'm here to help you create AI-powered features. What would you like to build today?",
+    //         false
+    //       );
+    //     }
+    //   },
+    // },
     // {
     //   type: "html",
     //   html: `<div class="prompt-enhance-container">

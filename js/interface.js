@@ -116,7 +116,7 @@ Fliplet.Widget.generateInterface({
             
             <div class="chat-input">
                 <input type="text" id="user-input" placeholder="Ask for code generation or changes..." />
-                <button id="send-btn" class="btn-primary">Send</button>
+                <input type="button" id="send-btn" class="btn-primary" value="Send">
             </div>
         </div>
         
@@ -2462,7 +2462,7 @@ Fliplet.Widget.generateInterface({
           $(DOM.sendBtn).on("click", handleSendMessage);
 
           // Send message on Enter key press
-          DOM.userInput.addEventListener("keydown", function (event) {
+          $(DOM.userInput).on("keydown", function (event) {
             if (event.key === "Enter") {
               handleSendMessage();
             }

@@ -105,7 +105,7 @@ Fliplet.Widget.generateInterface({
         <div class="chat-section">
             <div class="chat-header">
                 <h2>Chat Interface</h2>
-                <button id="reset-btn" class="btn-secondary">Reset Session</button>
+                <input type="button" id="reset-btn" class="btn-secondary" value="Reset Session">
             </div>
             
             <div id="chat-messages" class="chat-messages">
@@ -165,7 +165,7 @@ Fliplet.Widget.generateInterface({
                 <h3>Live Preview</h3>
                 <div class="preview-controls">
                     <span id="preview-status" class="status">Empty</span>
-                    <button id="refresh-preview" class="btn-secondary">Refresh</button>
+                    <input type="button" id="refresh-preview" class="btn-secondary" value="Refresh">
                 </div>
             </div>
             <div class="preview-container">
@@ -177,7 +177,7 @@ Fliplet.Widget.generateInterface({
         <div class="debug-section">
             <div class="debug-header">
                 <h3>Debug Information</h3>
-                <button id="clear-debug" class="btn-secondary">Clear</button>
+                <input type="button" id="clear-debug" class="btn-secondary" value="Clear">
             </div>
             <div id="debug-log" class="debug-log"></div>
         </div>
@@ -4120,7 +4120,7 @@ Make sure each code block is complete and functional.`;
           };
         }
         // Initialize app when DOM is ready
-        document.addEventListener("DOMContentLoaded", initializeApp);
+        initializeApp();
       },
     },
     // {

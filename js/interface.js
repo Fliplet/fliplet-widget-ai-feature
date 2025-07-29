@@ -3981,6 +3981,7 @@ async function processUserMessage(userMessage) {
 
     // Step 6b: Update chat history for future context
     AppState.chatHistory.push({ role: "user", content: userMessage });
+    debugger
 
     // Step 7: Update UI with detailed diff information
     updateCodeDisplayWithDiffs(applicationResult.changeLog);

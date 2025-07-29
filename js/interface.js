@@ -3875,31 +3875,31 @@ Make sure each code block is complete and functional.`;
               DOM.previewStatus.textContent = "Empty";
 
               // Clear the iframe
-              DOM.previewFrame.srcdoc = `
-                <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Preview</title>
-                    <style>
-                        body { 
-                            font-family: Arial, sans-serif; 
-                            display: flex; 
-                            align-items: center; 
-                            justify-content: center; 
-                            height: 100vh; 
-                            margin: 0; 
-                            background: #f8f9fa; 
-                            color: #6c757d;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <p>No code to preview yet...</p>
-                </body>
-                </html>
-            `;
+            //   DOM.previewFrame.srcdoc = `
+            //     <!DOCTYPE html>
+            //     <html lang="en">
+            //     <head>
+            //         <meta charset="UTF-8">
+            //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            //         <title>Preview</title>
+            //         <style>
+            //             body { 
+            //                 font-family: Arial, sans-serif; 
+            //                 display: flex; 
+            //                 align-items: center; 
+            //                 justify-content: center; 
+            //                 height: 100vh; 
+            //                 margin: 0; 
+            //                 background: #f8f9fa; 
+            //                 color: #6c757d;
+            //             }
+            //         </style>
+            //     </head>
+            //     <body>
+            //         <p>No code to preview yet...</p>
+            //     </body>
+            //     </html>
+            // `;
               return;
             }
 
@@ -3910,53 +3910,59 @@ Make sure each code block is complete and functional.`;
             const cssContent = AppState.currentCSS || "";
             const jsContent = AppState.currentJS || "";
 
-            // Create complete HTML document for preview
-            const completeDocument = `
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>AI Generated Code Preview</title>
-                <style>
-                    /* Reset for preview */
-                    * { box-sizing: border-box; }
-                    body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-                    
-                    /* Generated CSS */
-                    ${cssContent}
-                </style>
-            </head>
-            <body>
-                ${htmlContent}
-                
-                <script>
-                    // Error handling for preview
-                    window.addEventListener('error', function(e) {
-                        console.error('Preview Error:', e.error);
-                        document.body.insertAdjacentHTML('beforeend', 
-                            '<div style="background: #fee; border: 1px solid #fcc; color: #c00; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
-                            'Error: ' + e.message + '</div>'
-                        );
-                    });
-                    
-                    // Generated JavaScript
-                    try {
-                        ${jsContent}
-                    } catch (error) {
-                        console.error('JavaScript Error:', error);
-                        document.body.insertAdjacentHTML('beforeend', 
-                            '<div style="background: #fee; border: 1px solid #fcc; color: #c00; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
-                            'JavaScript Error: ' + error.message + '</div>'
-                        );
-                    }
-                </script>
-            </body>
-            </html>
-        `;
+            saveGeneratedCode({
+              html: htmlContent,
+              css: cssContent,
+              js: jsContent,
+            });
 
-            // Update iframe with complete document
-            DOM.previewFrame.srcdoc = completeDocument;
+            // Create complete HTML document for preview
+        //     const completeDocument = `
+        //     <!DOCTYPE html>
+        //     <html lang="en">
+        //     <head>
+        //         <meta charset="UTF-8">
+        //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        //         <title>AI Generated Code Preview</title>
+        //         <style>
+        //             /* Reset for preview */
+        //             * { box-sizing: border-box; }
+        //             body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+                    
+        //             /* Generated CSS */
+        //             ${cssContent}
+        //         </style>
+        //     </head>
+        //     <body>
+        //         ${htmlContent}
+                
+        //         <script>
+        //             // Error handling for preview
+        //             window.addEventListener('error', function(e) {
+        //                 console.error('Preview Error:', e.error);
+        //                 document.body.insertAdjacentHTML('beforeend', 
+        //                     '<div style="background: #fee; border: 1px solid #fcc; color: #c00; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
+        //                     'Error: ' + e.message + '</div>'
+        //                 );
+        //             });
+                    
+        //             // Generated JavaScript
+        //             try {
+        //                 ${jsContent}
+        //             } catch (error) {
+        //                 console.error('JavaScript Error:', error);
+        //                 document.body.insertAdjacentHTML('beforeend', 
+        //                     '<div style="background: #fee; border: 1px solid #fcc; color: #c00; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
+        //                     'JavaScript Error: ' + error.message + '</div>'
+        //                 );
+        //             }
+        //         </script>
+        //     </body>
+        //     </html>
+        // `;
+
+        //     // Update iframe with complete document
+        //     DOM.previewFrame.srcdoc = completeDocument;
 
             // Update status
             const hasHTML = !!AppState.currentHTML;

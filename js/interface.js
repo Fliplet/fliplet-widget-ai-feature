@@ -4410,14 +4410,14 @@ Make sure each code block is complete and functional.`;
       label: "Layout",
       default: "",
     },
-    // {
-    //   type: "hidden",
-    //   name: "regenerateCode",
-    //   label: "Regenerate code",
-    //   description: "Regenerate code",
-    //   toggleLabel: "Regenerate",
-    //   default: false,
-    // },
+    {
+      type: "hidden",
+      name: "regenerateCode",
+      label: "Regenerate code",
+      description: "Regenerate code",
+      toggleLabel: "Regenerate",
+      default: false,
+    },
   ],
 });
 
@@ -5619,23 +5619,23 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("layoutHTML").set(parsedContent.html);
   Fliplet.Helper.field("css").set(parsedContent.css);
   Fliplet.Helper.field("javascript").set(parsedContent.javascript);
-  // Fliplet.Helper.field("regenerateCode").set(true);
+  Fliplet.Helper.field("regenerateCode").set(true);
 
   var data = Fliplet.Widget.getData();
   data.fields.dataSourceId = selectedDataSourceId;
   data.fields.dataSourceName = selectedDataSourceName;
-  data.fields.prompt = Fliplet.Helper.field("prompt").get() || 'tbd'
+  data.fields.prompt = Fliplet.Helper.field("prompt").get(); // tbd
   data.fields.layoutHTML = parsedContent.html;
   data.fields.css = parsedContent.css;
   data.fields.javascript = parsedContent.javascript;
-  // data.fields.regenerateCode = true;
+  data.fields.regenerateCode = true;
 
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
     // toggleLoaderCodeGeneration(false);
     setTimeout(function () {
-      // Fliplet.Helper.field("regenerateCode").set(false);
-      // data.fields.regenerateCode = false;
+      Fliplet.Helper.field("regenerateCode").set(false);
+      data.fields.regenerateCode = false;
       Fliplet.Widget.save(data.fields);
     }, 1000);
   });

@@ -25,11 +25,11 @@ Fliplet.Widget.instance({
       AI.fields = _.assign(
         {
           dataSourceId: "",
-          prompt: "",
+          prompt: "tbd",
           css: "",
           javascript: "",
           layoutHTML: "",
-          // regenerateCode: false,
+          regenerateCode: false,
         },
         AI.fields
       );

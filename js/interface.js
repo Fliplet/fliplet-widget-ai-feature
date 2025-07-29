@@ -3913,7 +3913,7 @@ Make sure each code block is complete and functional.`;
             saveGeneratedCode({
               html: htmlContent,
               css: cssContent,
-              js: jsContent,
+              javascript: jsContent,
             });
 
             // Create complete HTML document for preview

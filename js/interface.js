@@ -2459,7 +2459,7 @@ Fliplet.Widget.generateInterface({
           );
 
           // Send message on button click
-          DOM.sendBtn.addEventListener("click", handleSendMessage);
+          $(DOM.sendBtn).on("click", handleSendMessage);
 
           // Send message on Enter key press
           DOM.userInput.addEventListener("keydown", function (event) {
@@ -2469,7 +2469,7 @@ Fliplet.Widget.generateInterface({
           });
 
           // Reset session
-          DOM.resetBtn.addEventListener("click", handleReset);
+          $(DOM.resetBtn).on("click", handleReset);
 
           // Clear debug log
           DOM.clearDebugBtn.addEventListener("click", function () {

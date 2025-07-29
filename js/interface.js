@@ -5632,7 +5632,7 @@ function saveGeneratedCode(parsedContent) {
 
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    toggleLoaderCodeGeneration(false);
+    // toggleLoaderCodeGeneration(false);
     setTimeout(function () {
       // Fliplet.Helper.field("regenerateCode").set(false);
       // data.fields.regenerateCode = false;

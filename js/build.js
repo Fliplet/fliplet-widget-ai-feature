@@ -25,11 +25,11 @@ Fliplet.Widget.instance({
       AI.fields = _.assign(
         {
           dataSourceId: "",
-          // prompt: "",
+          prompt: "",
           css: "",
           javascript: "",
           layoutHTML: "",
-          regenerateCode: false,
+          // regenerateCode: false,
         },
         AI.fields
       );
@@ -63,12 +63,12 @@ Fliplet.Widget.instance({
         }
       });
 
-      // if (!AI.fields.prompt) {
-      //   Fliplet.UI.Toast("Please enter a prompt");
-      //   return;
-      // } else if (!AI.fields.regenerateCode) {
-      //   return;
-      // }
+      if (!AI.fields.prompt) {
+        Fliplet.UI.Toast("Please enter a prompt");
+        return;
+      } else if (!AI.fields.regenerateCode) {
+        return;
+      }
 
       async function getCurrentPageSettings() {
         return await Fliplet.API.request({
@@ -125,7 +125,7 @@ Fliplet.Widget.instance({
 
           // save logs
           const logAiCallResponse = await logAiCall({
-            // prompt: AI.fields.prompt,
+            prompt: AI.fields.prompt,
             aiCssResponse: AI.fields.css,
             aiJsResponse: AI.fields.javascript,
             aiLayoutResponse: AI.fields.layoutHTML,

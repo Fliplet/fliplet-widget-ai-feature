@@ -4344,13 +4344,13 @@ Make sure each code block is complete and functional.`;
     //           </div>
     //         </div>`,
     // },
-    // {
-    //   name: "prompt",
-    //   type: "textarea",
-    //   label: "",
-    //   default: "",
-    //   rows: 12,
-    // },
+    {
+      name: "prompt",
+      type: "textarea",
+      label: "",
+      default: "",
+      rows: 12,
+    },
     // {
     //   type: "html",
     //   html: `
@@ -5624,7 +5624,7 @@ function saveGeneratedCode(parsedContent) {
   var data = Fliplet.Widget.getData();
   data.fields.dataSourceId = selectedDataSourceId;
   data.fields.dataSourceName = selectedDataSourceName;
-  data.fields.prompt = Fliplet.Helper.field("prompt").get();
+  data.fields.prompt = Fliplet.Helper.field("prompt").get() || 'tbd'
   data.fields.layoutHTML = parsedContent.html;
   data.fields.css = parsedContent.css;
   data.fields.javascript = parsedContent.javascript;

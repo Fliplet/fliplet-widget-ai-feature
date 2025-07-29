@@ -63,10 +63,11 @@ Fliplet.Widget.instance({
         }
       });
 
-      if (!AI.fields.prompt) {
-        Fliplet.UI.Toast("Please enter a prompt");
-        return;
-      } else if (!AI.fields.regenerateCode) {
+      // if (!AI.fields.prompt) {
+      //   Fliplet.UI.Toast("Please enter a prompt");
+      //   return;
+      // } else 
+      if (!AI.fields.regenerateCode) {
         return;
       }
 

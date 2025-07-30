@@ -2628,7 +2628,11 @@ Fliplet.Widget.generateInterface({
             AppState.lastAppliedChanges = applicationResult.changeLog;
 
             // Step 6b: Update chat history for future context
-            AppState.chatHistory.push({ role: "user", content: userMessage });
+            AppState.chatHistory.push({ 
+              message: userMessage, 
+              type: "user", 
+              timestamp: new Date().toISOString() 
+            });
             debugger;
 
             // Step 7: Update UI with detailed diff information
@@ -2646,8 +2650,9 @@ Fliplet.Widget.generateInterface({
 
             // Store AI response in chat history
             AppState.chatHistory.push({
-              role: "assistant",
-              content: aiResponseText,
+              message: aiResponseText,
+              type: "ai",
+              timestamp: new Date().toISOString(),
             });
 
             // Mark first generation as complete
@@ -2699,10 +2704,12 @@ Fliplet.Widget.generateInterface({
           // Add conversation history (keep last 6 messages to stay within token limits)
           const recentHistory = AppState.chatHistory.slice(-3); // Last 3 exchanges
           recentHistory.forEach((historyItem) => {
-            if (historyItem.role && historyItem.content) {
+            if (historyItem.message && historyItem.type) {
+              // Convert our internal format to OpenAI format
+              const role = historyItem.type === "user" ? "user" : "assistant";
               messages.push({
-                role: historyItem.role,
-                content: historyItem.content,
+                role: role,
+                content: historyItem.message,
               });
             }
           });
@@ -4030,16 +4037,21 @@ Make sure each code block is complete and functional.`;
             if (storedHistory) {
               const parsedHistory = JSON.parse(storedHistory);
               if (Array.isArray(parsedHistory)) {
-                AppState.chatHistory = parsedHistory;
+                // Filter out system messages and ensure all messages have the correct format
+                const filteredHistory = parsedHistory
+                  .filter(item => item.type !== "system" && item.message && item.type)
+                  .map(item => ({
+                    message: item.message,
+                    type: item.type,
+                    timestamp: item.timestamp || new Date().toISOString()
+                  }));
                 
-                // Repopulate chat interface with loaded history (excluding system messages)
+                // Update AppState with filtered history
+                AppState.chatHistory = filteredHistory;
+                
+                // Repopulate chat interface
                 DOM.chatMessages.innerHTML = "";
-                parsedHistory.forEach(item => {
-                  // Skip system messages
-                  if (item.type === "system") {
-                    return;
-                  }
-                  
+                filteredHistory.forEach(item => {
                   const messageDiv = document.createElement("div");
                   messageDiv.className = `message ${item.type}-message`;
 

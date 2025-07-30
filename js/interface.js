@@ -2440,6 +2440,13 @@ Fliplet.Widget.generateInterface({
           // Setup event listeners
           setupEventListeners();
 
+          // Load chat history from local storage
+          const historyLoaded = loadChatHistoryFromStorage();
+          if (!historyLoaded) {
+            // If no history loaded, add initial system message
+            addMessageToChat("Session started. Ready to generate code!", "system");
+          }
+
           // Initialize debug logging
           logDebug("Application initialized successfully");
 
@@ -3999,6 +4006,71 @@ Make sure each code block is complete and functional.`;
         }
 
         /**
+         * Save chat history to local storage
+         */
+        function saveChatHistoryToStorage() {
+          try {
+            const storageKey = `ai_chat_history_${widgetId}`;
+            localStorage.setItem(storageKey, JSON.stringify(AppState.chatHistory));
+            logDebug("Chat history saved to local storage");
+          } catch (error) {
+            console.error("Failed to save chat history to local storage:", error);
+          }
+        }
+
+        /**
+         * Load chat history from local storage
+         */
+        function loadChatHistoryFromStorage() {
+          try {
+            const storageKey = `ai_chat_history_${widgetId}`;
+            const storedHistory = localStorage.getItem(storageKey);
+            
+            if (storedHistory) {
+              const parsedHistory = JSON.parse(storedHistory);
+              if (Array.isArray(parsedHistory)) {
+                AppState.chatHistory = parsedHistory;
+                
+                // Repopulate chat interface with loaded history
+                DOM.chatMessages.innerHTML = "";
+                parsedHistory.forEach(item => {
+                  const messageDiv = document.createElement("div");
+                  messageDiv.className = `message ${item.type}-message`;
+
+                  const prefix =
+                    item.type === "user" ? "You" : item.type === "ai" ? "AI" : "System";
+                  messageDiv.innerHTML = `<strong>${prefix}:</strong> ${escapeHTML(
+                    item.message
+                  )}`;
+
+                  DOM.chatMessages.appendChild(messageDiv);
+                });
+                
+                scrollToBottom();
+                logDebug(`Loaded ${parsedHistory.length} messages from local storage`);
+                return true;
+              }
+            }
+          } catch (error) {
+            console.error("Failed to load chat history from local storage:", error);
+          }
+          return false;
+        }
+
+        /**
+         * Clear chat history from local storage
+         */
+        function clearChatHistoryFromStorage() {
+          try {
+            const storageKey = `ai_chat_history_${widgetId}`;
+            localStorage.removeItem(storageKey);
+            logDebug("Chat history cleared from local storage");
+          } catch (error) {
+            console.error("Failed to clear chat history from local storage:", error);
+          }
+        }
+
+        /**
          * Add message to chat interface
          * @param {string} message - The message content
          * @param {string} type - Message type ('user', 'ai', 'system')
@@ -4031,6 +4103,9 @@ Make sure each code block is complete and functional.`;
             type,
             timestamp: new Date().toISOString(),
           });
+
+          // Save to local storage
+          saveChatHistoryToStorage();
         }
 
         /**
@@ -4069,6 +4144,9 @@ Make sure each code block is complete and functional.`;
           AppState.chatHistory = [];
           AppState.isFirstGeneration = true;
           AppState.requestCount = 0;
+
+          // Clear local storage
+          clearChatHistoryFromStorage();
 
           // Clear displays
           DOM.chatMessages.innerHTML =

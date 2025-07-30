@@ -4032,9 +4032,14 @@ Make sure each code block is complete and functional.`;
               if (Array.isArray(parsedHistory)) {
                 AppState.chatHistory = parsedHistory;
                 
-                // Repopulate chat interface with loaded history
+                // Repopulate chat interface with loaded history (excluding system messages)
                 DOM.chatMessages.innerHTML = "";
                 parsedHistory.forEach(item => {
+                  // Skip system messages
+                  if (item.type === "system") {
+                    return;
+                  }
+                  
                   const messageDiv = document.createElement("div");
                   messageDiv.className = `message ${item.type}-message`;
 
@@ -4151,7 +4156,7 @@ Make sure each code block is complete and functional.`;
 
           // Clear displays
           DOM.chatMessages.innerHTML =
-            '<div class="message system-message"><strong>System:</strong> Session reset. Ready to generate code!</div>';
+            '<div class="message system-message"><strong>System:</strong> Ready to generate code! Ask for HTML, CSS, or JavaScript to get started.</div>';
           DOM.htmlCode.textContent = "";
           DOM.cssCode.textContent = "";
           DOM.jsCode.textContent = "";

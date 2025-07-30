@@ -2627,13 +2627,8 @@ Fliplet.Widget.generateInterface({
 
             AppState.lastAppliedChanges = applicationResult.changeLog;
 
-            // Step 6b: Update chat history for future context
-            AppState.chatHistory.push({ 
-              message: userMessage, 
-              type: "user", 
-              timestamp: new Date().toISOString() 
-            });
-            debugger;
+            // Step 6b: User message already added to chat history by addMessageToChat() in handleSendMessage()
+            // No need to add it again here
 
             // Step 7: Update UI with detailed diff information
             updateCodeDisplayWithDiffs(applicationResult.changeLog);
@@ -2648,12 +2643,8 @@ Fliplet.Widget.generateInterface({
             const aiResponseText = `${changeRequest.explanation}\n\n${changesSummary}`;
             addMessageToChat(aiResponseText, "ai");
 
-            // Store AI response in chat history
-            AppState.chatHistory.push({
-              message: aiResponseText,
-              type: "ai",
-              timestamp: new Date().toISOString(),
-            });
+            // AI response already added to chat history by addMessageToChat()
+            // No need to add it again here
 
             // Mark first generation as complete
             if (AppState.isFirstGeneration) {

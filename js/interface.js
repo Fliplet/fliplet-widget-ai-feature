@@ -2702,9 +2702,14 @@ Fliplet.Widget.generateInterface({
           const messages = [{ role: "system", content: systemPrompt }];
 
           // Add conversation history (keep last 6 messages to stay within token limits)
-          const recentHistory = AppState.chatHistory.slice(-3); // Last 3 exchanges
+          // Filter out the current user message to avoid duplication
+          const recentHistory = AppState.chatHistory.slice(-6); // Last 6 messages
           recentHistory.forEach((historyItem) => {
             if (historyItem.message && historyItem.type) {
+              // Skip the current user message to avoid duplication
+              if (historyItem.message === userMessage && historyItem.type === "user") {
+                return;
+              }
               // Convert our internal format to OpenAI format
               const role = historyItem.type === "user" ? "user" : "assistant";
               messages.push({

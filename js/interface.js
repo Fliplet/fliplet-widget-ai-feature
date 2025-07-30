@@ -2443,8 +2443,9 @@ Fliplet.Widget.generateInterface({
           // Load chat history from local storage
           const historyLoaded = loadChatHistoryFromStorage();
           if (!historyLoaded) {
-            // If no history loaded, add initial system message
-            addMessageToChat("Session started. Ready to generate code!", "system");
+            // If no history loaded, the existing system message in HTML template is sufficient
+            // No need to add another system message since there's already one in the HTML
+            logDebug("No chat history found, using existing system message");
           }
 
           // Initialize debug logging

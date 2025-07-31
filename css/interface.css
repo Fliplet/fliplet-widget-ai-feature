@@ -627,76 +627,7 @@
   }
 }
 
-/* Live Preview Section */
-.interface .preview-section {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  margin-bottom: 30px;
-  overflow: hidden;
-}
 
-.interface .preview-header {
-  background: #38b2ac;
-  color: white;
-  padding: 15px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.interface .preview-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.interface .preview-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.interface .preview-container {
-  background: #f7fafc;
-  padding: 20px;
-  min-height: 400px;
-  position: relative;
-}
-
-.interface #preview-frame {
-  width: 100%;
-  height: 350px;
-  border: 2px solid #e2e8f0;
-  border-radius: 8px;
-  background: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.interface .preview-container:empty::before {
-  content: "No code to preview yet...";
-  color: #718096;
-  font-style: italic;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-/* Preview status indicator colors */
-.interface .preview-header .status {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.interface .preview-error {
-  background: #fed7d7;
-  border: 1px solid #fc8181;
-  color: #c53030;
-  padding: 10px;
-  border-radius: 6px;
-  margin-top: 10px;
-  font-family: monospace;
-  font-size: 0.9rem;
-}
 
 /* NEW ARCHITECTURE: Diff Visualization Styles */
 .interface .diff-section {
@@ -762,15 +693,7 @@
   color: #2f855a;
 }
 
-.interface .diff-content-preview {
-  background: #ebf8ff;
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.8rem;
-  margin: 2px 0;
-  color: #2b6cb0;
-}
+
 
 .interface .status.updated {
   background: #c6f6d5;

@@ -2549,6 +2549,10 @@ Fliplet.Widget.generateInterface({
           DOM.chatMessages.appendChild(loadingDiv);
           scrollToBottom();
 
+          AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+          AppState.css = Fliplet.Helper.field("css").get() || "";
+          AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+
           AppState.currentHTML = AppState.layoutHTML;
           AppState.currentCSS = AppState.css;
           AppState.currentJS = AppState.javascript;

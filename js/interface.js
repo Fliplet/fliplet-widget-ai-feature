@@ -120,44 +120,7 @@ Fliplet.Widget.generateInterface({
             </div>
         </div>
         
-        <!-- Code Display Areas -->
-        <div class="code-section">
-            <div class="code-panel">
-                <div class="code-header">
-                    <h3>Generated HTML</h3>
-                    <span id="html-status" class="status">Empty</span>
-                </div>
-                <pre id="html-code" class="code-display"></pre>
-                <div id="html-diff" class="diff-section" style="display: none;">
-                    <h4>🔍 HTML Changes:</h4>
-                    <div class="diff-content"></div>
-                </div>
-            </div>
-            
-            <div class="code-panel">
-                <div class="code-header">
-                    <h3>Generated CSS</h3>
-                    <span id="css-status" class="status">Empty</span>
-                </div>
-                <pre id="css-code" class="code-display"></pre>
-                <div id="css-diff" class="diff-section" style="display: none;">
-                    <h4>🎨 CSS Changes:</h4>
-                    <div class="diff-content"></div>
-                </div>
-            </div>
-            
-            <div class="code-panel">
-                <div class="code-header">
-                    <h3>Generated JavaScript</h3>
-                    <span id="js-status" class="status">Empty</span>
-                </div>
-                <pre id="js-code" class="code-display"></pre>
-                <div id="js-diff" class="diff-section" style="display: none;">
-                    <h4>⚡ JavaScript Changes:</h4>
-                    <div class="diff-content"></div>
-                </div>
-            </div>
-        </div>
+
         
         <!-- Live Preview Area -->
         <div class="preview-section">
@@ -2404,14 +2367,8 @@ Fliplet.Widget.generateInterface({
           DOM.userInput = document.getElementById("user-input");
           DOM.sendBtn = document.getElementById("send-btn");
           DOM.resetBtn = document.getElementById("reset-btn");
-          DOM.htmlCode = document.getElementById("html-code");
-          DOM.cssCode = document.getElementById("css-code");
-          DOM.jsCode = document.getElementById("js-code");
           DOM.debugLog = document.getElementById("debug-log");
           DOM.clearDebugBtn = document.getElementById("clear-debug");
-          DOM.htmlStatus = document.getElementById("html-status");
-          DOM.cssStatus = document.getElementById("css-status");
-          DOM.jsStatus = document.getElementById("js-status");
           DOM.previewFrame = document.getElementById("preview-frame");
           DOM.previewStatus = document.getElementById("preview-status");
           DOM.refreshPreviewBtn = document.getElementById("refresh-preview");
@@ -2426,9 +2383,6 @@ Fliplet.Widget.generateInterface({
             "userInput",
             "sendBtn",
             "resetBtn",
-            "htmlCode",
-            "cssCode",
-            "jsCode",
             "debugLog",
             "previewFrame",
           ];
@@ -2649,8 +2603,7 @@ Fliplet.Widget.generateInterface({
             // Step 6b: User message already added to chat history by addMessageToChat() in handleSendMessage()
             // No need to add it again here
 
-            // Step 7: Update UI with detailed diff information
-            updateCodeDisplayWithDiffs(applicationResult.changeLog);
+
 
             // Remove loading indicator
             DOM.chatMessages.removeChild(loadingDiv);
@@ -2983,192 +2936,7 @@ Make sure each code block is complete and functional.`;
           return prompt;
         }
 
-        /**
-         * Update code display with diff information
-         * @param {Object} changeLog - Change log from application
-         */
-        function updateCodeDisplayWithDiffs(changeLog) {
-          console.log("🎨 [UI] Updating code display with diffs...");
 
-          // Update HTML display
-          if (changeLog.html && changeLog.html.length > 0) {
-            const htmlElement = DOM.htmlCode;
-            htmlElement.textContent = AppState.currentHTML;
-            DOM.htmlStatus.textContent = "Updated";
-            DOM.htmlStatus.className = "status updated";
-
-            // Show HTML diff section
-            const htmlDiffSection = document.getElementById("html-diff");
-            const htmlDiffContent =
-              htmlDiffSection.querySelector(".diff-content");
-            htmlDiffContent.innerHTML = "";
-
-            changeLog.html.forEach((change) => {
-              console.log(`📝 [HTML Diff] ${change.description}:`, change);
-
-              const diffItem = document.createElement("div");
-              diffItem.className = "diff-item";
-
-              let diffHTML = `
-                <div class="diff-type">${change.type}</div>
-                <div class="diff-description">${change.description}</div>
-            `;
-
-              // Show actual changes if detected
-              if (change.actualChanges && change.actualChanges.length > 0) {
-                diffHTML +=
-                  '<div class="actual-changes"><strong>Specific Changes:</strong><ul>';
-                change.actualChanges.slice(0, 5).forEach((actualChange) => {
-                  const isAddition = actualChange.startsWith("+");
-                  const isRemoval = actualChange.startsWith("-");
-                  const changeClass = isAddition
-                    ? "addition"
-                    : isRemoval
-                    ? "removal"
-                    : "modification";
-                  diffHTML += `<li class="${changeClass}">${actualChange}</li>`;
-                });
-                if (change.actualChanges.length > 5) {
-                  diffHTML += `<li class="more-changes">... and ${
-                    change.actualChanges.length - 5
-                  } more changes</li>`;
-                }
-                diffHTML += "</ul></div>";
-              } else {
-                // Fallback to before/after preview
-                if (change.before && change.after) {
-                  diffHTML += `<div class="diff-before">Before: ${change.before.substring(
-                    0,
-                    100
-                  )}...</div>`;
-                  diffHTML += `<div class="diff-after">After: ${change.after.substring(
-                    0,
-                    100
-                  )}...</div>`;
-                }
-                if (change.content) {
-                  diffHTML += `<div class="diff-content-preview">Added: ${change.content.substring(
-                    0,
-                    100
-                  )}...</div>`;
-                }
-              }
-
-              diffItem.innerHTML = diffHTML;
-              htmlDiffContent.appendChild(diffItem);
-            });
-
-            htmlDiffSection.style.display = "block";
-          }
-
-          // Update CSS display
-          if (changeLog.css && changeLog.css.length > 0) {
-            const cssElement = DOM.cssCode;
-            cssElement.textContent = AppState.currentCSS;
-            DOM.cssStatus.textContent = "Updated";
-            DOM.cssStatus.className = "status updated";
-
-            // Show CSS diff section
-            const cssDiffSection = document.getElementById("css-diff");
-            const cssDiffContent =
-              cssDiffSection.querySelector(".diff-content");
-            cssDiffContent.innerHTML = "";
-
-            changeLog.css.forEach((change) => {
-              console.log(`🎨 [CSS Diff] ${change.description}:`, change);
-
-              const diffItem = document.createElement("div");
-              diffItem.className = "diff-item";
-              diffItem.innerHTML = `
-                <div class="diff-type">${change.type}</div>
-                <div class="diff-description">${change.description}</div>
-                ${
-                  change.before
-                    ? `<div class="diff-before">Before: ${change.before.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-                ${
-                  change.after
-                    ? `<div class="diff-after">After: ${change.after.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-                ${
-                  change.content
-                    ? `<div class="diff-content-preview">Added: ${change.content.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-            `;
-              cssDiffContent.appendChild(diffItem);
-            });
-
-            cssDiffSection.style.display = "block";
-          }
-
-          // Update JS display
-          if (changeLog.js && changeLog.js.length > 0) {
-            const jsElement = DOM.jsCode;
-            jsElement.textContent = AppState.currentJS;
-            DOM.jsStatus.textContent = "Updated";
-            DOM.jsStatus.className = "status updated";
-
-            // Show JS diff section
-            const jsDiffSection = document.getElementById("js-diff");
-            const jsDiffContent = jsDiffSection.querySelector(".diff-content");
-            jsDiffContent.innerHTML = "";
-
-            changeLog.js.forEach((change) => {
-              console.log(`⚡ [JS Diff] ${change.description}:`, change);
-
-              const diffItem = document.createElement("div");
-              diffItem.className = "diff-item";
-              diffItem.innerHTML = `
-                <div class="diff-type">${change.type}</div>
-                <div class="diff-description">${change.description}</div>
-                ${
-                  change.before
-                    ? `<div class="diff-before">Before: ${change.before.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-                ${
-                  change.after
-                    ? `<div class="diff-after">After: ${change.after.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-                ${
-                  change.content
-                    ? `<div class="diff-content-preview">Added: ${change.content.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-            `;
-              jsDiffContent.appendChild(diffItem);
-            });
-
-            jsDiffSection.style.display = "block";
-          }
-
-          // Update preview
-          updateCodePreview();
-
-          console.log("✅ [UI] Code display updated with diffs");
-        }
 
         /**
          * Generate human-readable changes summary
@@ -3199,13 +2967,7 @@ Make sure each code block is complete and functional.`;
           return `📊 **Changes Applied:**\n${summaryParts.join("\n")}`;
         }
 
-        /**
-         * Apply HTML diff to existing HTML
-         * @param {string} currentHTML - Current HTML code
-         * @param {Object} diff - HTML diff object
-         * @returns {string} Modified HTML
-         */
-        function applyHTMLDiff(currentHTML, diff) {
+
           console.assert(
             typeof currentHTML === "string",
             "currentHTML must be a string"
@@ -3475,17 +3237,7 @@ Make sure each code block is complete and functional.`;
               );
           }
 
-          console.log("🔚 HTML diff application completed");
-          return modifiedHTML;
-        }
 
-        /**
-         * Apply CSS diff to existing CSS
-         * @param {string} currentCSS - Current CSS code
-         * @param {Object} diff - CSS diff object
-         * @returns {string} Modified CSS
-         */
-        function applyCSSDiff(currentCSS, diff) {
           console.assert(
             typeof currentCSS === "string",
             "currentCSS must be a string"
@@ -3595,17 +3347,7 @@ Make sure each code block is complete and functional.`;
             );
           }
 
-          console.log("🔚 CSS diff application completed");
-          return modifiedCSS;
-        }
 
-        /**
-         * Apply JavaScript diff to existing JavaScript
-         * @param {string} currentJS - Current JavaScript code
-         * @param {Object} diff - JavaScript diff object
-         * @returns {string} Modified JavaScript
-         */
-        function applyJSDiff(currentJS, diff) {
           console.assert(
             typeof currentJS === "string",
             "currentJS must be a string"
@@ -3829,10 +3571,6 @@ Make sure each code block is complete and functional.`;
             default:
               console.warn("⚠️ Unsupported JS diff operation:", diff.operation);
           }
-
-          console.log("🔚 JS diff application completed");
-          return modifiedJS;
-        }
 
         /**
          * Sanitize HTML content to remove external references that would cause errors in the preview
@@ -4269,9 +4007,6 @@ Make sure each code block is complete and functional.`;
         if (typeof module !== "undefined" && module.exports) {
           module.exports = {
             AppState,
-            applyHTMLDiff,
-            applyCSSDiff,
-            applyJSDiff,
             escapeHTML,
           };
         }
@@ -4597,9 +4332,9 @@ Make sure each code block is complete and functional.`;
 //   toggleLoaderEnhancePrompt(true);
 //   var prompt = Fliplet.Helper.field("prompt").get();
 //   if (prompt) {
-//     let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user’s simple request for HTML/CSS/JS, you must:
+//     let systemPrompt = `You are a "Prompt Enhancer" for front-end feature requests. When given a user's simple request for HTML/CSS/JS, you must:
 // 	1.	Core Goal
-// Restate the user’s main objective in one clear sentence.
+// Restate the user's main objective in one clear sentence.
 // 	2.	Context
 // Describe the target audience, use case, and any brand or environment constraints.
 // 	3.	Functional Requirements

@@ -2416,6 +2416,10 @@ Fliplet.Widget.generateInterface({
           DOM.previewStatus = document.getElementById("preview-status");
           DOM.refreshPreviewBtn = document.getElementById("refresh-preview");
 
+          AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get();
+          AppState.css = Fliplet.Helper.field("css").get();
+          AppState.javascript = Fliplet.Helper.field("javascript").get();
+
           // Validation - ensure all required DOM elements exist
           const requiredElements = [
             "chatMessages",

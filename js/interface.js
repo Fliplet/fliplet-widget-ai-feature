@@ -119,33 +119,6 @@ Fliplet.Widget.generateInterface({
                 <input type="button" id="send-btn" class="btn-primary" value="Send">
             </div>
         </div>
-        
-        <!-- Code Display Areas -->
-        <div class="code-section">
-            <div class="code-panel">
-                <div class="code-header">
-                    <h3>Generated CSS</h3>
-                    <span id="css-status" class="status">Empty</span>
-                </div>
-                <pre id="css-code" class="code-display"></pre>
-                <div id="css-diff" class="diff-section" style="display: none;">
-                    <h4>🎨 CSS Changes:</h4>
-                    <div class="diff-content"></div>
-                </div>
-            </div>
-            
-            <div class="code-panel">
-                <div class="code-header">
-                    <h3>Generated JavaScript</h3>
-                    <span id="js-status" class="status">Empty</span>
-                </div>
-                <pre id="js-code" class="code-display"></pre>
-                <div id="js-diff" class="diff-section" style="display: none;">
-                    <h4>⚡ JavaScript Changes:</h4>
-                    <div class="diff-content"></div>
-                </div>
-            </div>
-        </div>
     </div>
       `,
       ready: function () {
@@ -2332,15 +2305,7 @@ Fliplet.Widget.generateInterface({
           /** @type {HTMLButtonElement} Send button */
           sendBtn: null,
           /** @type {HTMLButtonElement} Reset button */
-          resetBtn: null,
-          /** @type {HTMLElement} CSS code display */
-          cssCode: null,
-          /** @type {HTMLElement} JS code display */
-          jsCode: null,
-          /** @type {HTMLElement} CSS status indicator */
-          cssStatus: null,
-          /** @type {HTMLElement} JS status indicator */
-          jsStatus: null,
+          resetBtn: null
         };
 
         /**
@@ -2354,11 +2319,6 @@ Fliplet.Widget.generateInterface({
           DOM.userInput = document.getElementById("user-input");
           DOM.sendBtn = document.getElementById("send-btn");
           DOM.resetBtn = document.getElementById("reset-btn");
-          DOM.cssCode = document.getElementById("css-code");
-          DOM.jsCode = document.getElementById("js-code");
-
-          DOM.cssStatus = document.getElementById("css-status");
-          DOM.jsStatus = document.getElementById("js-status");
 
           AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get();
           AppState.css = Fliplet.Helper.field("css").get();
@@ -2369,9 +2329,7 @@ Fliplet.Widget.generateInterface({
             "chatMessages",
             "userInput",
             "sendBtn",
-            "resetBtn",
-            "cssCode",
-            "jsCode",
+            "resetBtn"
           ];
 
           for (const elementName of requiredElements) {
@@ -2903,111 +2861,8 @@ Make sure each code block is complete and functional.`;
          * Update code display with diff information
          * @param {Object} changeLog - Change log from application
          */
-        function updateCodeDisplayWithDiffs(changeLog) {
-          console.log("🎨 [UI] Updating code display with diffs...");
-
-          // Update CSS display
-          if (changeLog.css && changeLog.css.length > 0) {
-            const cssElement = DOM.cssCode;
-            cssElement.textContent = AppState.currentCSS;
-            DOM.cssStatus.textContent = "Updated";
-            DOM.cssStatus.className = "status updated";
-
-            // Show CSS diff section
-            const cssDiffSection = document.getElementById("css-diff");
-            const cssDiffContent =
-              cssDiffSection.querySelector(".diff-content");
-            cssDiffContent.innerHTML = "";
-
-            changeLog.css.forEach((change) => {
-              console.log(`🎨 [CSS Diff] ${change.description}:`, change);
-
-              const diffItem = document.createElement("div");
-              diffItem.className = "diff-item";
-              diffItem.innerHTML = `
-                <div class="diff-type">${change.type}</div>
-                <div class="diff-description">${change.description}</div>
-                ${
-                  change.before
-                    ? `<div class="diff-before">Before: ${change.before.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-                ${
-                  change.after
-                    ? `<div class="diff-after">After: ${change.after.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-                ${
-                  change.content
-                    ? `<div class="diff-content-preview">Added: ${change.content.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-            `;
-              cssDiffContent.appendChild(diffItem);
-            });
-
-            cssDiffSection.style.display = "block";
-          }
-
-          // Update JS display
-          if (changeLog.js && changeLog.js.length > 0) {
-            const jsElement = DOM.jsCode;
-            jsElement.textContent = AppState.currentJS;
-            DOM.jsStatus.textContent = "Updated";
-            DOM.jsStatus.className = "status updated";
-
-            // Show JS diff section
-            const jsDiffSection = document.getElementById("js-diff");
-            const jsDiffContent = jsDiffSection.querySelector(".diff-content");
-            jsDiffContent.innerHTML = "";
-
-            changeLog.js.forEach((change) => {
-              console.log(`⚡ [JS Diff] ${change.description}:`, change);
-
-              const diffItem = document.createElement("div");
-              diffItem.className = "diff-item";
-              diffItem.innerHTML = `
-                <div class="diff-type">${change.type}</div>
-                <div class="diff-description">${change.description}</div>
-                ${
-                  change.before
-                    ? `<div class="diff-before">Before: ${change.before.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-                ${
-                  change.after
-                    ? `<div class="diff-after">After: ${change.after.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-                ${
-                  change.content
-                    ? `<div class="diff-content-preview">Added: ${change.content.substring(
-                        0,
-                        100
-                      )}...</div>`
-                    : ""
-                }
-            `;
-              jsDiffContent.appendChild(diffItem);
-            });
-
-            jsDiffSection.style.display = "block";
-          }
+        function updateCodeDisplayWithDiffs(changeLog) { // tbd
+          console.log("🎨 [UI] Updating code...");
 
           // Update
           updateCode();
@@ -3824,17 +3679,6 @@ Make sure each code block is complete and functional.`;
                   DOM.chatMessages.appendChild(messageDiv);
                 });
 
-                // Set code display elements with Fliplet field values if chat history exists
-                const css = Fliplet.Helper.field("css").get();
-                const javascript = Fliplet.Helper.field("javascript").get();
-
-                if (css) {
-                  DOM.cssCode.textContent = css;
-                }
-                if (javascript) {
-                  DOM.jsCode.textContent = javascript;
-                }
-
                 scrollToBottom();
                 return true;
               }
@@ -3944,12 +3788,6 @@ Make sure each code block is complete and functional.`;
           // Clear displays
           DOM.chatMessages.innerHTML =
             '<div class="message system-message"><strong>System:</strong> Ready to generate code! Ask for HTML, CSS, or JavaScript to get started.</div>';
-          DOM.cssCode.textContent = "";
-          DOM.jsCode.textContent = "";
-
-          // Update status indicators
-          DOM.cssStatus.textContent = "Empty";
-          DOM.jsStatus.textContent = "Empty";
 
           // Reset
           updateCode();

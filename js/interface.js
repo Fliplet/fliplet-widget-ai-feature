@@ -3797,268 +3797,6 @@ Make sure each code block is complete and functional.`;
         initializeApp();
       },
     },
-    // {
-    //   type: "html",
-    //   html: `<div class="chat-container">
-    //     <div class="chat-messages" id="chatMessages">
-    //       <!-- Messages will be dynamically added here -->
-    //     </div>
-    //     <div class="chat-input-container">
-    //       <div class="input-group">
-    //         <input type="text" class="form-control chat-input" id="chatInput" placeholder="Type your message here..." />
-    //         <button class="btn btn-primary chat-send-btn" id="chatSendBtn" type="button">
-    //           <i class="fa fa-paper-plane"></i> Send
-    //         </button>
-    //       </div>
-    //     </div>
-    //   </div>`,
-    //   ready: function () {
-    //     // Chat functionality
-    //     const chatMessages = document.getElementById("chatMessages");
-    //     const chatInput = document.getElementById("chatInput");
-    //     const chatSendBtn = document.getElementById("chatSendBtn");
-
-    //     // Function to save chat history to localStorage
-    //     function saveChatHistory() {
-    //       const messages = [];
-    //       const messageElements =
-    //         chatMessages.querySelectorAll(".chat-message");
-
-    //       messageElements.forEach((element) => {
-    //         const isUser = element.classList.contains("user-message");
-    //         const messageContent =
-    //           element.querySelector(".message-content").textContent;
-    //         const messageTime =
-    //           element.querySelector(".message-time").textContent;
-
-    //         messages.push({
-    //           message: messageContent,
-    //           isUser: isUser,
-    //           time: messageTime,
-    //         });
-    //       });
-
-    //       const storageKey = `chat_history_${widgetId}`;
-    //       const chatData = {
-    //         messages: messages,
-    //         timestamp: Date.now(),
-    //       };
-    //       localStorage.setItem(storageKey, JSON.stringify(chatData));
-    //     }
-
-    //     // Function to load chat history from localStorage
-    //     function loadChatHistory() {
-    //       const storageKey = `chat_history_${widgetId}`;
-    //       const savedHistory = localStorage.getItem(storageKey);
-
-    //       if (savedHistory) {
-    //         try {
-    //           const chatData = JSON.parse(savedHistory);
-
-    //           // Check if data is in old format (just messages array)
-    //           if (Array.isArray(chatData)) {
-    //             // Old format - clear it and return false
-    //             localStorage.removeItem(storageKey);
-    //             return false;
-    //           }
-
-    //           // Check if data is older than 1 hour (3600000 milliseconds)
-    //           const oneHour = 3600000;
-    //           const isExpired = Date.now() - chatData.timestamp > oneHour;
-
-    //           if (isExpired) {
-    //             // Clear expired data
-    //             localStorage.removeItem(storageKey);
-    //             return false;
-    //           }
-
-    //           // Load valid messages
-    //           chatData.messages.forEach((msg) => {
-    //             addMessage(msg.message, msg.isUser, msg.time);
-    //           });
-    //           return true;
-    //         } catch (error) {
-    //           console.error("Error loading chat history:", error);
-    //           localStorage.removeItem(storageKey);
-    //           return false;
-    //         }
-    //       }
-    //       return false;
-    //     }
-
-    //     // Function to add a message to the chat
-    //     function addMessage(message, isUser = false, customTime = null) {
-    //       const messageDiv = document.createElement("div");
-    //       messageDiv.className = `chat-message ${
-    //         isUser ? "user-message" : "ai-message"
-    //       }`;
-
-    //       const messageContent = document.createElement("div");
-    //       messageContent.className = "message-content";
-    //       messageContent.textContent = message;
-
-    //       const messageTime = document.createElement("div");
-    //       messageTime.className = "message-time";
-    //       messageTime.textContent =
-    //         customTime ||
-    //         new Date().toLocaleTimeString([], {
-    //           hour: "2-digit",
-    //           minute: "2-digit",
-    //         });
-
-    //       messageDiv.appendChild(messageContent);
-    //       messageDiv.appendChild(messageTime);
-    //       chatMessages.appendChild(messageDiv);
-
-    //       // Scroll to bottom
-    //       chatMessages.scrollTop = chatMessages.scrollHeight;
-
-    //       // Save chat history after adding message
-    //       saveChatHistory();
-    //     }
-
-    //     // Function to show/hide loading state
-    //     function setLoadingState(isLoading) {
-    //       const chatInput = document.getElementById("chatInput");
-    //       const chatSendBtn = document.getElementById("chatSendBtn");
-    //       const chatContainer = document.querySelector(".chat-container");
-
-    //       if (isLoading) {
-    //         // Disable input and button
-    //         chatInput.disabled = true;
-    //         chatSendBtn.disabled = true;
-    //         chatSendBtn.style.opacity = "0.6";
-
-    //         // Add loading overlay
-    //         const overlay = document.createElement("div");
-    //         overlay.className = "chat-loading-overlay";
-    //         overlay.innerHTML = `
-    //           <div class="chat-loading-spinner">
-    //             <div class="spinner"></div>
-    //             <div class="loading-text">AI is thinking...</div>
-    //           </div>
-    //         `;
-    //         chatContainer.appendChild(overlay);
-    //       } else {
-    //         // Enable input and button
-    //         chatInput.disabled = false;
-    //         chatSendBtn.disabled = false;
-    //         chatSendBtn.style.opacity = "1";
-
-    //         // Remove loading overlay
-    //         const overlay = document.querySelector(".chat-loading-overlay");
-    //         if (overlay) {
-    //           overlay.remove();
-    //         }
-    //       }
-    //     }
-
-    //     // Function to send message
-    //     function sendMessage() {
-    //       const message = chatInput.value.trim();
-
-    //       // Validation: don't send empty messages
-    //       if (!message) {
-    //         return;
-    //       }
-
-    //       // Add user message to chat
-    //       addMessage(message, true);
-
-    //       // Clear input
-    //       chatInput.value = "";
-
-    //       // Show loading state
-    //       setLoadingState(true);
-
-    //       // Simulate AI response (you can replace this with actual AI integration)
-    //       setTimeout(() => {
-    //         addMessage(
-    //           "Thank you for your message! I'm here to help you with your AI feature requests.",
-    //           false
-    //         );
-    //         // Hide loading state
-    //         setLoadingState(false);
-    //         // Focus the input field again
-    //         chatInput.focus();
-    //       }, 2000);
-    //     }
-
-    //     // Event listeners
-    //     chatSendBtn.addEventListener("click", sendMessage);
-
-    //     chatInput.addEventListener("keypress", function (e) {
-    //       if (e.key === "Enter") {
-    //         e.preventDefault();
-    //         sendMessage();
-    //       }
-    //     });
-
-    //     // Load chat history or add initial AI welcome message
-    //     const hasHistory = loadChatHistory();
-    //     if (!hasHistory) {
-    //       addMessage(
-    //         "Hello! I'm here to help you create AI-powered features. What would you like to build today?",
-    //         false
-    //       );
-    //     }
-    //   },
-    // },
-    // {
-    //   type: "html",
-    //   html: `<div class="prompt-enhance-container">
-    //           <div>
-    //             <label class="input-label">Prompt</label>
-    //           </div>
-    //         </div>`,
-    // },
-    // {
-    //   name: "prompt",
-    //   type: "textarea",
-    //   label: "",
-    //   default: "",
-    //   rows: 12,
-    // },
-    // {
-    //   type: "html",
-    //   html: `
-    //       <div class="prompt-container">
-    //         <div class="prompt-enhance-container">
-    //           <div>
-    //             <button type="button" class="btn btn-secondary enhance-prompt"><i class="fa fa-magic" aria-hidden="true"></i> Enhance prompt</button>
-    //             <button disabled class="btn btn-secondary enhance-prompt-disabled">
-    //               <div class="spinner-holder">
-    //                 <div class="spinner-overlay"></div>
-    //               </div>
-    //               <div>Enhancing...</div>
-    //             </button>
-    //           </div>
-    //           <div>
-    //             <label>Polish your prompt using AI for clarity and detail.</label>
-    //           </div>
-    //         </div>
-    //         <div class="prompt-generate-container">
-    //           <div>
-    //             <button type="button" class="btn btn-primary generate-code"><i class="fa fa-magic" aria-hidden="true"></i> Save and Generate</button>
-    //             <button disabled class="btn btn-primary generate-code-disabled">
-    //               <div class="spinner-holder">
-    //                 <div class="spinner-overlay"></div>
-    //               </div>
-    //               <div>Generating...</div>
-    //             </button>
-    //           </div>
-    //           <div style="text-align: right;">
-    //             <label>Clicking generate will ask AI to create the feature based on your prompt.</label>
-    //           </div>
-    //         </div>
-    //       </div>`,
-    //   ready: function () {
-    //     $(this.$el).find(".generate-code").on("click", generateCode);
-    //     $(this.$el).find(".enhance-prompt").on("click", enhancePrompt);
-    //     toggleLoaderCodeGeneration(false);
-    //     toggleLoaderEnhancePrompt(false);
-    //   },
-    // },
     {
       type: "hidden",
       name: "css",
@@ -4089,79 +3827,6 @@ Make sure each code block is complete and functional.`;
   ],
 });
 
-// function toggleLoaderCodeGeneration(isDisabled) {
-//   const $interface = $(".interface");
-//   const $generateButton = $interface.find(".generate-code");
-//   const $generateButtonDisabled = $interface.find(".generate-code-disabled");
-//   const $textAreas = $interface.find("textarea");
-
-//   $generateButtonDisabled.toggle(isDisabled);
-//   $generateButton.toggle(!isDisabled);
-//   $textAreas.prop("disabled", isDisabled);
-// }
-
-// function toggleLoaderEnhancePrompt(isDisabled) {
-//   const $interface = $(".interface");
-//   const $enhanceButton = $interface.find(".enhance-prompt");
-//   const $enhanceButtonDisabled = $interface.find(".enhance-prompt-disabled");
-//   const $textAreas = $interface.find("textarea");
-
-//   $enhanceButtonDisabled.toggle(isDisabled);
-//   $enhanceButton.toggle(!isDisabled);
-//   $textAreas.prop("disabled", isDisabled);
-// }
-
-// function enhancePrompt() {
-//   toggleLoaderEnhancePrompt(true);
-//   var prompt = Fliplet.Helper.field("prompt").get();
-//   if (prompt) {
-//     let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user’s simple request for HTML/CSS/JS, you must:
-// 	1.	Core Goal
-// Restate the user’s main objective in one clear sentence.
-// 	2.	Context
-// Describe the target audience, use case, and any brand or environment constraints.
-// 	3.	Functional Requirements
-// List all UI elements, interactions, and behaviors the component should support (e.g. hover states, form validation, animations).
-// 	4.	UI & UX Guidelines
-// Define visual hierarchy, interaction patterns, navigation flow, micro-interactions and feedback, error and empty states, consistency with existing components, and overall usability best practices.
-// 	5.	Accessibility
-// Define ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.
-
-// Important:
-//   - Only return the enhanced prompt as a plain string.
-//   - Do not introduce it with any sentence like "Here's the result" or "You can use this prompt."
-//   - Do not add quotation marks or formatting around the result.
-//   - The final output must start directly with the enhanced prompt and include nothing else.`;
-
-//     return Fliplet.AI.createCompletion({
-//       model: "o4-mini",
-//       messages: [
-//         { role: "system", content: systemPrompt },
-//         { role: "user", content: prompt },
-//       ],
-//       reasoning_effort: "low",
-//     })
-//       .then(async function (result) {
-//         // Parse the response
-//         const response = result.choices[0].message.content;
-
-//         const logAiCallResponse = await logAiCall({
-//           "User prompt": prompt,
-//           "AI prompt": response,
-//         });
-
-//         Fliplet.Helper.field("prompt").set(response);
-//         toggleLoaderEnhancePrompt(false);
-//       })
-//       .catch(function (error) {
-//         toggleLoaderEnhancePrompt(false);
-//         return Promise.reject(error);
-//       });
-//   }
-
-//   toggleLoaderEnhancePrompt(false);
-// }
-
 function logAiCall(data) {
   return Fliplet.App.Logs.create(
     {
@@ -4177,27 +3842,32 @@ function logAiCall(data) {
   );
 }
 
-// function generateCode() {
-//   toggleLoaderCodeGeneration(true);
-//   var prompt = Fliplet.Helper.field("prompt").get();
-//   if (prompt) {
-//     return queryAI(prompt)
-//       .then(function (parsedContent) {
-//         // Save the generated code
-//         return saveGeneratedCode(parsedContent);
-//       })
-//       .catch(function (error) {
-//         toggleLoaderCodeGeneration(false);
-//         return Promise.reject(error);
-//       });
-//   } else {
-//     Fliplet.Studio.emit("reload-widget-instance", widgetId);
-//     toggleLoaderCodeGeneration(false);
-//   }
-// }
+function saveGeneratedCode(parsedContent) {
+  Fliplet.Helper.field("layoutHTML").set(parsedContent.html);
+  Fliplet.Helper.field("css").set(parsedContent.css);
+  Fliplet.Helper.field("javascript").set(parsedContent.javascript);
+  Fliplet.Helper.field("regenerateCode").set(true);
 
-// function queryAI(prompt) {
-//   let systemPrompt = `
+  var data = Fliplet.Widget.getData();
+  data.fields.dataSourceId = selectedDataSourceId;
+  data.fields.dataSourceName = selectedDataSourceName;
+  data.fields.layoutHTML = parsedContent.html;
+  data.fields.css = parsedContent.css;
+  data.fields.javascript = parsedContent.javascript;
+  data.fields.regenerateCode = true;
+
+  return Fliplet.Widget.save(data.fields).then(function () {
+    Fliplet.Studio.emit("reload-widget-instance", widgetId);
+    // toggleLoaderCodeGeneration(false);
+    setTimeout(function () {
+      Fliplet.Helper.field("regenerateCode").set(false);
+      data.fields.regenerateCode = false;
+      Fliplet.Widget.save(data.fields);
+    }, 1000);
+  });
+}
+
+// let systemPrompt = `
 // You are to only return the HTML, CSS, JS for the following user request. In the JS make sure that any selectors are using .ai-feature-${widgetId}
 
 // The format of the response should be as follows:
@@ -5189,68 +4859,4 @@ function logAiCall(data) {
 //   }
 // }
 // runChatCompletion();
-// `;
-
-//   return Fliplet.AI.createCompletion({
-//     model: "gpt-4.1",
-//     messages: [
-//       { role: "system", content: systemPrompt },
-//       { role: "user", content: prompt },
-//     ],
-//     response_format: {
-//       type: "json_schema",
-//       json_schema: {
-//         name: "code",
-//         strict: true,
-//         schema: {
-//           type: "object",
-//           properties: {
-//             html: { type: "string" },
-//             css: { type: "string" },
-//             javascript: { type: "string" },
-//           },
-//           required: ["html", "css", "javascript"],
-//           additionalProperties: false,
-//         },
-//       },
-//     },
-//     // reasoning_effort: "low",
-//   }).then(function (result) {
-//     // Parse the response
-//     const response = JSON.parse(result.choices[0].message.content);
-//     let html = response.html;
-//     let css = response.css;
-//     let javascript = response.javascript;
-
-//     return {
-//       html,
-//       css,
-//       javascript,
-//     };
-//   });
-// }
-
-function saveGeneratedCode(parsedContent) {
-  Fliplet.Helper.field("layoutHTML").set(parsedContent.html);
-  Fliplet.Helper.field("css").set(parsedContent.css);
-  Fliplet.Helper.field("javascript").set(parsedContent.javascript);
-  Fliplet.Helper.field("regenerateCode").set(true);
-
-  var data = Fliplet.Widget.getData();
-  data.fields.dataSourceId = selectedDataSourceId;
-  data.fields.dataSourceName = selectedDataSourceName;
-  data.fields.layoutHTML = parsedContent.html;
-  data.fields.css = parsedContent.css;
-  data.fields.javascript = parsedContent.javascript;
-  data.fields.regenerateCode = true;
-
-  return Fliplet.Widget.save(data.fields).then(function () {
-    Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    // toggleLoaderCodeGeneration(false);
-    setTimeout(function () {
-      Fliplet.Helper.field("regenerateCode").set(false);
-      data.fields.regenerateCode = false;
-      Fliplet.Widget.save(data.fields);
-    }, 1000);
-  });
-}
+//  `;

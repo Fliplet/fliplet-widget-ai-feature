@@ -2476,6 +2476,9 @@ Fliplet.Widget.generateInterface({
               "Chat history": AppState.chatHistory,
               "User prompt": userMessage,
               "AI response": aiResponse,
+              "css": AppState.css,
+              "javascript": AppState.javascript,
+              "layoutHTML": AppState.layoutHTML
             });
 
             // Step 3: Parse response using protocol parser
@@ -5302,7 +5305,6 @@ function saveGeneratedCode(parsedContent) {
   var data = Fliplet.Widget.getData();
   data.fields.dataSourceId = selectedDataSourceId;
   data.fields.dataSourceName = selectedDataSourceName;
-  data.fields.prompt = Fliplet.Helper.field("prompt").get(); // tbd
   data.fields.layoutHTML = parsedContent.html;
   data.fields.css = parsedContent.css;
   data.fields.javascript = parsedContent.javascript;

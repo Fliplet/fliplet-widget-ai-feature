@@ -25,7 +25,6 @@ Fliplet.Widget.instance({
       AI.fields = _.assign(
         {
           dataSourceId: "",
-          prompt: "tbd",
           css: "",
           javascript: "",
           layoutHTML: "",
@@ -63,10 +62,6 @@ Fliplet.Widget.instance({
         }
       });
 
-      // if (!AI.fields.prompt) {
-      //   Fliplet.UI.Toast("Please enter a prompt");
-      //   return;
-      // } else 
       if (!AI.fields.regenerateCode) {
         return;
       }
@@ -126,7 +121,6 @@ Fliplet.Widget.instance({
 
           // save logs
           const logAiCallResponse = await logAiCall({
-            prompt: AI.fields.prompt,
             aiCssResponse: AI.fields.css,
             aiJsResponse: AI.fields.javascript,
             aiLayoutResponse: AI.fields.layoutHTML,

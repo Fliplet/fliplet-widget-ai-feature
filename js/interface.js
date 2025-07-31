@@ -2549,6 +2549,10 @@ Fliplet.Widget.generateInterface({
           DOM.chatMessages.appendChild(loadingDiv);
           scrollToBottom();
 
+          AppState.currentHTML = AppState.layoutHTML;
+          AppState.currentCSS = AppState.css;
+          AppState.currentJS = AppState.javascript;
+
           try {
             // Step 1: Build intelligent context
             const currentCode = {

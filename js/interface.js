@@ -158,22 +158,6 @@ Fliplet.Widget.generateInterface({
                 </div>
             </div>
         </div>
-        
-        <!-- Live Preview Area -->
-        <div class="preview-section">
-            <div class="preview-header">
-                <h3>Live Preview</h3>
-                <div class="preview-controls">
-                    <span id="preview-status" class="status">Empty</span>
-                    <input type="button" id="refresh-preview" class="btn-secondary" value="Refresh">
-                </div>
-            </div>
-            <div class="preview-container">
-                <iframe id="preview-frame" title="Code Preview" sandbox="allow-scripts allow-same-origin allow-modals"></iframe>
-            </div>
-        </div>
-
-
     </div>
       `,
       ready: function () {
@@ -2374,12 +2358,6 @@ Fliplet.Widget.generateInterface({
           cssStatus: null,
           /** @type {HTMLElement} JS status indicator */
           jsStatus: null,
-          /** @type {HTMLIFrameElement} Preview iframe */
-          previewFrame: null,
-          /** @type {HTMLElement} Preview status indicator */
-          previewStatus: null,
-          /** @type {HTMLButtonElement} Refresh preview button */
-          refreshPreviewBtn: null,
         };
 
         /**
@@ -2400,9 +2378,6 @@ Fliplet.Widget.generateInterface({
           DOM.htmlStatus = document.getElementById("html-status");
           DOM.cssStatus = document.getElementById("css-status");
           DOM.jsStatus = document.getElementById("js-status");
-          DOM.previewFrame = document.getElementById("preview-frame");
-          DOM.previewStatus = document.getElementById("preview-status");
-          DOM.refreshPreviewBtn = document.getElementById("refresh-preview");
 
           AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get();
           AppState.css = Fliplet.Helper.field("css").get();
@@ -2417,7 +2392,6 @@ Fliplet.Widget.generateInterface({
             "htmlCode",
             "cssCode",
             "jsCode",
-            "previewFrame",
           ];
 
           for (const elementName of requiredElements) {
@@ -2463,13 +2437,6 @@ Fliplet.Widget.generateInterface({
 
           // Reset session
           $(DOM.resetBtn).on("click", handleReset);
-
-
-
-          // Refresh preview
-          DOM.refreshPreviewBtn.addEventListener("click", function () {
-            updateCodePreview();
-          });
         }
 
         /**
@@ -3134,8 +3101,8 @@ Make sure each code block is complete and functional.`;
             jsDiffSection.style.display = "block";
           }
 
-          // Update preview
-          updateCodePreview();
+          // Update
+          updateCode();
 
           console.log("✅ [UI] Code display updated with diffs");
         }
@@ -3809,7 +3776,7 @@ Make sure each code block is complete and functional.`;
          * @param {string} html - HTML content to sanitize
          * @returns {string} Sanitized HTML content
          */
-        function sanitizeHTMLForPreview(html) {
+        function sanitizeHTML(html) {
           console.assert(typeof html === "string", "html must be a string");
 
           console.log("🧹 Sanitizing HTML for preview");
@@ -3852,60 +3819,26 @@ Make sure each code block is complete and functional.`;
         }
 
         /**
-         * Update the live preview iframe with current code
-         * Combines HTML, CSS, and JavaScript into a complete document and displays it safely
+         * Update the code
+         * Combines HTML, CSS, and JavaScript into a complete document
          */
-        function updateCodePreview() {
-          console.log("🖼️ Updating live code preview");
-
-          // Validation - ensure preview elements exist
-          if (!DOM.previewFrame || !DOM.previewStatus) {
-            console.warn("⚠️ Preview elements not found");
-            return;
-          }
+        function updateCode() {
+          console.log("🖼️ Updating code");
 
           try {
-            // Check if we have any code to preview
+            // Check if we have any code to update
             if (
               !AppState.currentHTML &&
               !AppState.currentCSS &&
               !AppState.currentJS
             ) {
-              DOM.previewStatus.textContent = "Empty";
-
-              // Clear the iframe
-              //   DOM.previewFrame.srcdoc = `
-              //     <!DOCTYPE html>
-              //     <html lang="en">
-              //     <head>
-              //         <meta charset="UTF-8">
-              //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              //         <title>Preview</title>
-              //         <style>
-              //             body {
-              //                 font-family: Arial, sans-serif;
-              //                 display: flex;
-              //                 align-items: center;
-              //                 justify-content: center;
-              //                 height: 100vh;
-              //                 margin: 0;
-              //                 background: #f8f9fa;
-              //                 color: #6c757d;
-              //             }
-              //         </style>
-              //     </head>
-              //     <body>
-              //         <p>No code to preview yet...</p>
-              //     </body>
-              //     </html>
-              // `;
               return;
             }
 
             // Build complete HTML document
             const rawHTMLContent =
               AppState.currentHTML || "<p>No HTML content</p>";
-            const htmlContent = sanitizeHTMLForPreview(rawHTMLContent);
+            const htmlContent = sanitizeHTML(rawHTMLContent);
             const cssContent = AppState.currentCSS || "";
             const jsContent = AppState.currentJS || "";
 
@@ -3914,84 +3847,9 @@ Make sure each code block is complete and functional.`;
               css: cssContent,
               javascript: jsContent,
             });
-
-            // Create complete HTML document for preview
-            //     const completeDocument = `
-            //     <!DOCTYPE html>
-            //     <html lang="en">
-            //     <head>
-            //         <meta charset="UTF-8">
-            //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            //         <title>AI Generated Code Preview</title>
-            //         <style>
-            //             /* Reset for preview */
-            //             * { box-sizing: border-box; }
-            //             body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-
-            //             /* Generated CSS */
-            //             ${cssContent}
-            //         </style>
-            //     </head>
-            //     <body>
-            //         ${htmlContent}
-
-            //         <script>
-            //             // Error handling for preview
-            //             window.addEventListener('error', function(e) {
-            //                 console.error('Preview Error:', e.error);
-            //                 document.body.insertAdjacentHTML('beforeend',
-            //                     '<div style="background: #fee; border: 1px solid #fcc; color: #c00; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
-            //                     'Error: ' + e.message + '</div>'
-            //                 );
-            //             });
-
-            //             // Generated JavaScript
-            //             try {
-            //                 ${jsContent}
-            //             } catch (error) {
-            //                 console.error('JavaScript Error:', error);
-            //                 document.body.insertAdjacentHTML('beforeend',
-            //                     '<div style="background: #fee; border: 1px solid #fcc; color: #c00; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
-            //                     'JavaScript Error: ' + error.message + '</div>'
-            //                 );
-            //             }
-            //         </script>
-            //     </body>
-            //     </html>
-            // `;
-
-            //     // Update iframe with complete document
-            //     DOM.previewFrame.srcdoc = completeDocument;
-
-            // Update status
-            const hasHTML = !!AppState.currentHTML;
-            const hasCSS = !!AppState.currentCSS;
-            const hasJS = !!AppState.currentJS;
-
-            let statusParts = [];
-            if (hasHTML) statusParts.push("HTML");
-            if (hasCSS) statusParts.push("CSS");
-            if (hasJS) statusParts.push("JS");
-
-            DOM.previewStatus.textContent =
-              statusParts.length > 0 ? statusParts.join(" + ") : "Empty";
-
-            console.log("✅ Live preview updated successfully");
+            console.log("✅ Updated successfully");
           } catch (error) {
-            console.error("❌ Preview update failed:", error);
-            DOM.previewStatus.textContent = "Error";
-
-            // Show error in iframe
-            DOM.previewFrame.srcdoc = `
-            <!DOCTYPE html>
-            <html>
-            <head><title>Preview Error</title></head>
-            <body style="font-family: Arial; padding: 20px; color: #c53030;">
-                <h3>Preview Error</h3>
-                <p>${escapeHTML(error.message)}</p>
-            </body>
-            </html>
-        `;
+            console.error("❌ Update failed:", error);
           }
         }
 
@@ -4190,10 +4048,9 @@ Make sure each code block is complete and functional.`;
           DOM.htmlStatus.textContent = "Empty";
           DOM.cssStatus.textContent = "Empty";
           DOM.jsStatus.textContent = "Empty";
-          DOM.previewStatus.textContent = "Empty";
 
-          // Reset preview
-          updateCodePreview();
+          // Reset
+          updateCode();
         }
 
 

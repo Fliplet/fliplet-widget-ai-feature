@@ -173,14 +173,7 @@ Fliplet.Widget.generateInterface({
             </div>
         </div>
 
-        <!-- Debug Information -->
-        <div class="debug-section">
-            <div class="debug-header">
-                <h3>Debug Information</h3>
-                <input type="button" id="clear-debug" class="btn-secondary" value="Clear">
-            </div>
-            <div id="debug-log" class="debug-log"></div>
-        </div>
+
     </div>
       `,
       ready: function () {
@@ -289,8 +282,7 @@ Fliplet.Widget.generateInterface({
           OPENAI_MODEL: "gpt-4.1",
           /** @type {number} Temperature for response creativity (0-1) */
           TEMPERATURE: 0.1,
-          /** @type {boolean} Enable debug logging */
-          DEBUG_MODE: true,
+
           /** @type {number} Maximum conversation messages to send to API (includes system prompt) */
           MAX_CONVERSATION_MESSAGES: 20,
         };
@@ -316,11 +308,11 @@ Fliplet.Widget.generateInterface({
           chatHistory: [],
           /** @type {boolean} Whether this is the first generation */
           isFirstGeneration: true,
-          /** @type {number} Request counter for debugging */
+          /** @type {number} Request counter */
           requestCount: 0,
           /** @type {Array<Object>} Change history for context building */
           changeHistory: [],
-          /** @type {Object} Last applied changes for debugging */
+          /** @type {Object} Last applied changes */
           lastAppliedChanges: null,
         };
 
@@ -2375,10 +2367,7 @@ Fliplet.Widget.generateInterface({
           cssCode: null,
           /** @type {HTMLElement} JS code display */
           jsCode: null,
-          /** @type {HTMLElement} Debug log */
-          debugLog: null,
-          /** @type {HTMLButtonElement} Clear debug button */
-          clearDebugBtn: null,
+
           /** @type {HTMLElement} HTML status indicator */
           htmlStatus: null,
           /** @type {HTMLElement} CSS status indicator */
@@ -2407,8 +2396,7 @@ Fliplet.Widget.generateInterface({
           DOM.htmlCode = document.getElementById("html-code");
           DOM.cssCode = document.getElementById("css-code");
           DOM.jsCode = document.getElementById("js-code");
-          DOM.debugLog = document.getElementById("debug-log");
-          DOM.clearDebugBtn = document.getElementById("clear-debug");
+
           DOM.htmlStatus = document.getElementById("html-status");
           DOM.cssStatus = document.getElementById("css-status");
           DOM.jsStatus = document.getElementById("js-status");
@@ -2429,7 +2417,6 @@ Fliplet.Widget.generateInterface({
             "htmlCode",
             "cssCode",
             "jsCode",
-            "debugLog",
             "previewFrame",
           ];
 
@@ -2449,14 +2436,7 @@ Fliplet.Widget.generateInterface({
           if (!historyLoaded) {
             // If no history loaded, the existing system message in HTML template is sufficient
             // No need to add another system message since there's already one in the HTML
-            logDebug("No chat history found, using existing system message");
           }
-
-          // Initialize debug logging
-          logDebug("Application initialized successfully");
-
-          // Check AI configuration
-          logDebug("✅ AI service configured via Fliplet.AI.createCompletion");
 
           console.log("✅ App initialization complete");
         }
@@ -2484,19 +2464,12 @@ Fliplet.Widget.generateInterface({
           // Reset session
           $(DOM.resetBtn).on("click", handleReset);
 
-          // Clear debug log
-          DOM.clearDebugBtn.addEventListener("click", function () {
-            DOM.debugLog.innerHTML = "";
-            logDebug("Debug log cleared");
-          });
+
 
           // Refresh preview
           DOM.refreshPreviewBtn.addEventListener("click", function () {
             updateCodePreview();
-            logDebug("Preview manually refreshed");
           });
-
-          logDebug("Event listeners attached");
         }
 
         /**
@@ -2599,7 +2572,7 @@ Fliplet.Widget.generateInterface({
               "User prompt": userMessage,
               "AI response": aiResponse,
             });
-            logDebug(`Raw AI response: ${aiResponse}`);
+
 
             // Step 3: Parse response using protocol parser
             const changeRequest = protocolParser.parseResponse(aiResponse);
@@ -2691,9 +2664,6 @@ Fliplet.Widget.generateInterface({
               : `❌ Error processing your request: ${error.message}`;
 
             addMessageToChat(errorMessage, "ai");
-            logDebug(
-              `Error in request #${AppState.requestCount}: ${error.message}`
-            );
           }
         }
 
@@ -3873,9 +3843,6 @@ Make sure each code block is complete and functional.`;
           ).length;
 
           if (originalScripts > 0 || originalLinks > 0) {
-            logDebug(
-              `Removed ${originalScripts} external scripts and ${originalLinks} external stylesheets from HTML`
-            );
             console.log(
               `🧹 Sanitized: removed ${originalScripts} external scripts, ${originalLinks} external stylesheets`
             );
@@ -3904,7 +3871,6 @@ Make sure each code block is complete and functional.`;
               !AppState.currentCSS &&
               !AppState.currentJS
             ) {
-              logDebug("No code available for preview");
               DOM.previewStatus.textContent = "Empty";
 
               // Clear the iframe
@@ -4010,11 +3976,9 @@ Make sure each code block is complete and functional.`;
             DOM.previewStatus.textContent =
               statusParts.length > 0 ? statusParts.join(" + ") : "Empty";
 
-            logDebug(`Preview updated with: ${statusParts.join(", ")}`);
             console.log("✅ Live preview updated successfully");
           } catch (error) {
             console.error("❌ Preview update failed:", error);
-            logDebug(`Preview update error: ${error.message}`);
             DOM.previewStatus.textContent = "Error";
 
             // Show error in iframe
@@ -4041,7 +4005,6 @@ Make sure each code block is complete and functional.`;
               storageKey,
               JSON.stringify(AppState.chatHistory)
             );
-            logDebug("Chat history saved to local storage");
           } catch (error) {
             console.error(
               "Failed to save chat history to local storage:",
@@ -4111,9 +4074,6 @@ Make sure each code block is complete and functional.`;
                 }
 
                 scrollToBottom();
-                logDebug(
-                  `Loaded ${parsedHistory.length} messages from local storage`
-                );
                 return true;
               }
             }
@@ -4133,7 +4093,6 @@ Make sure each code block is complete and functional.`;
           try {
             const storageKey = `ai_chat_history_${widgetId}`;
             localStorage.removeItem(storageKey);
-            logDebug("Chat history cleared from local storage");
           } catch (error) {
             console.error(
               "Failed to clear chat history from local storage:",
@@ -4235,35 +4194,9 @@ Make sure each code block is complete and functional.`;
 
           // Reset preview
           updateCodePreview();
-
-          logDebug("Session reset completed");
         }
 
-        /**
-         * Log debug information
-         * @param {string} message - Debug message
-         */
-        function logDebug(message) {
-          console.assert(
-            typeof message === "string",
-            "message must be a string"
-          );
 
-          const timestamp = new Date().toLocaleTimeString();
-          const debugEntry = document.createElement("div");
-          debugEntry.className = "debug-entry";
-          debugEntry.innerHTML = `<span class="debug-timestamp">[${timestamp}]</span> ${escapeHTML(
-            message
-          )}`;
-
-          DOM.debugLog.appendChild(debugEntry);
-          DOM.debugLog.scrollTop = DOM.debugLog.scrollHeight;
-
-          // Also log to console if debug mode is enabled
-          if (CONFIG.DEBUG_MODE) {
-            console.log(`[DEBUG] ${message}`);
-          }
-        }
 
         // Export for testing (if needed)
         if (typeof module !== "undefined" && module.exports) {

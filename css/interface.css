@@ -553,56 +553,7 @@
   }
 }
 
-/* Debug Section */
-.interface .debug-section {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
 
-.interface .debug-header {
-  background: #ed8936;
-  color: white;
-  padding: 15px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.interface .debug-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.interface .debug-log {
-  background: #fffbf0;
-  padding: 20px;
-  max-height: 300px;
-  overflow-y: auto;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.85rem;
-  line-height: 1.4;
-}
-
-.interface .debug-log:empty::before {
-  content: "Debug information will appear here...";
-  color: #a0aec0;
-  font-style: italic;
-}
-
-.interface .debug-entry {
-  margin-bottom: 10px;
-  padding: 8px 12px;
-  border-left: 4px solid #ed8936;
-  background: white;
-  border-radius: 0 4px 4px 0;
-}
-
-.interface .debug-timestamp {
-  color: #805ad5;
-  font-weight: 600;
-}
 
 /* Responsive Design */
 @media (max-width: 768px) {

@@ -4022,13 +4022,13 @@ Make sure each code block is complete and functional.`;
     //           </div>
     //         </div>`,
     // },
-    {
-      name: "prompt",
-      type: "textarea",
-      label: "",
-      default: "",
-      rows: 12,
-    },
+    // {
+    //   name: "prompt",
+    //   type: "textarea",
+    //   label: "",
+    //   default: "",
+    //   rows: 12,
+    // },
     // {
     //   type: "html",
     //   html: `

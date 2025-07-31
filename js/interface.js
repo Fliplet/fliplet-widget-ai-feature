@@ -2475,6 +2475,7 @@ Fliplet.Widget.generateInterface({
 
           // Send message on Enter key press
           $(DOM.userInput).on("keydown", function (event) {
+            event.preventDefault();
             if (event.key === "Enter") {
               handleSendMessage();
             }

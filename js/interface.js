@@ -120,7 +120,44 @@ Fliplet.Widget.generateInterface({
             </div>
         </div>
         
-
+        <!-- Code Display Areas -->
+        <div class="code-section">
+            <div class="code-panel">
+                <div class="code-header">
+                    <h3>Generated HTML</h3>
+                    <span id="html-status" class="status">Empty</span>
+                </div>
+                <pre id="html-code" class="code-display"></pre>
+                <div id="html-diff" class="diff-section" style="display: none;">
+                    <h4>🔍 HTML Changes:</h4>
+                    <div class="diff-content"></div>
+                </div>
+            </div>
+            
+            <div class="code-panel">
+                <div class="code-header">
+                    <h3>Generated CSS</h3>
+                    <span id="css-status" class="status">Empty</span>
+                </div>
+                <pre id="css-code" class="code-display"></pre>
+                <div id="css-diff" class="diff-section" style="display: none;">
+                    <h4>🎨 CSS Changes:</h4>
+                    <div class="diff-content"></div>
+                </div>
+            </div>
+            
+            <div class="code-panel">
+                <div class="code-header">
+                    <h3>Generated JavaScript</h3>
+                    <span id="js-status" class="status">Empty</span>
+                </div>
+                <pre id="js-code" class="code-display"></pre>
+                <div id="js-diff" class="diff-section" style="display: none;">
+                    <h4>⚡ JavaScript Changes:</h4>
+                    <div class="diff-content"></div>
+                </div>
+            </div>
+        </div>
         
         <!-- Live Preview Area -->
         <div class="preview-section">
@@ -2367,8 +2404,14 @@ Fliplet.Widget.generateInterface({
           DOM.userInput = document.getElementById("user-input");
           DOM.sendBtn = document.getElementById("send-btn");
           DOM.resetBtn = document.getElementById("reset-btn");
+          DOM.htmlCode = document.getElementById("html-code");
+          DOM.cssCode = document.getElementById("css-code");
+          DOM.jsCode = document.getElementById("js-code");
           DOM.debugLog = document.getElementById("debug-log");
           DOM.clearDebugBtn = document.getElementById("clear-debug");
+          DOM.htmlStatus = document.getElementById("html-status");
+          DOM.cssStatus = document.getElementById("css-status");
+          DOM.jsStatus = document.getElementById("js-status");
           DOM.previewFrame = document.getElementById("preview-frame");
           DOM.previewStatus = document.getElementById("preview-status");
           DOM.refreshPreviewBtn = document.getElementById("refresh-preview");
@@ -2383,6 +2426,9 @@ Fliplet.Widget.generateInterface({
             "userInput",
             "sendBtn",
             "resetBtn",
+            "htmlCode",
+            "cssCode",
+            "jsCode",
             "debugLog",
             "previewFrame",
           ];
@@ -2603,7 +2649,8 @@ Fliplet.Widget.generateInterface({
             // Step 6b: User message already added to chat history by addMessageToChat() in handleSendMessage()
             // No need to add it again here
 
-
+            // Step 7: Update UI with detailed diff information
+            updateCodeDisplayWithDiffs(applicationResult.changeLog);
 
             // Remove loading indicator
             DOM.chatMessages.removeChild(loadingDiv);
@@ -2936,7 +2983,192 @@ Make sure each code block is complete and functional.`;
           return prompt;
         }
 
+        /**
+         * Update code display with diff information
+         * @param {Object} changeLog - Change log from application
+         */
+        function updateCodeDisplayWithDiffs(changeLog) {
+          console.log("🎨 [UI] Updating code display with diffs...");
 
+          // Update HTML display
+          if (changeLog.html && changeLog.html.length > 0) {
+            const htmlElement = DOM.htmlCode;
+            htmlElement.textContent = AppState.currentHTML;
+            DOM.htmlStatus.textContent = "Updated";
+            DOM.htmlStatus.className = "status updated";
+
+            // Show HTML diff section
+            const htmlDiffSection = document.getElementById("html-diff");
+            const htmlDiffContent =
+              htmlDiffSection.querySelector(".diff-content");
+            htmlDiffContent.innerHTML = "";
+
+            changeLog.html.forEach((change) => {
+              console.log(`📝 [HTML Diff] ${change.description}:`, change);
+
+              const diffItem = document.createElement("div");
+              diffItem.className = "diff-item";
+
+              let diffHTML = `
+                <div class="diff-type">${change.type}</div>
+                <div class="diff-description">${change.description}</div>
+            `;
+
+              // Show actual changes if detected
+              if (change.actualChanges && change.actualChanges.length > 0) {
+                diffHTML +=
+                  '<div class="actual-changes"><strong>Specific Changes:</strong><ul>';
+                change.actualChanges.slice(0, 5).forEach((actualChange) => {
+                  const isAddition = actualChange.startsWith("+");
+                  const isRemoval = actualChange.startsWith("-");
+                  const changeClass = isAddition
+                    ? "addition"
+                    : isRemoval
+                    ? "removal"
+                    : "modification";
+                  diffHTML += `<li class="${changeClass}">${actualChange}</li>`;
+                });
+                if (change.actualChanges.length > 5) {
+                  diffHTML += `<li class="more-changes">... and ${
+                    change.actualChanges.length - 5
+                  } more changes</li>`;
+                }
+                diffHTML += "</ul></div>";
+              } else {
+                // Fallback to before/after preview
+                if (change.before && change.after) {
+                  diffHTML += `<div class="diff-before">Before: ${change.before.substring(
+                    0,
+                    100
+                  )}...</div>`;
+                  diffHTML += `<div class="diff-after">After: ${change.after.substring(
+                    0,
+                    100
+                  )}...</div>`;
+                }
+                if (change.content) {
+                  diffHTML += `<div class="diff-content-preview">Added: ${change.content.substring(
+                    0,
+                    100
+                  )}...</div>`;
+                }
+              }
+
+              diffItem.innerHTML = diffHTML;
+              htmlDiffContent.appendChild(diffItem);
+            });
+
+            htmlDiffSection.style.display = "block";
+          }
+
+          // Update CSS display
+          if (changeLog.css && changeLog.css.length > 0) {
+            const cssElement = DOM.cssCode;
+            cssElement.textContent = AppState.currentCSS;
+            DOM.cssStatus.textContent = "Updated";
+            DOM.cssStatus.className = "status updated";
+
+            // Show CSS diff section
+            const cssDiffSection = document.getElementById("css-diff");
+            const cssDiffContent =
+              cssDiffSection.querySelector(".diff-content");
+            cssDiffContent.innerHTML = "";
+
+            changeLog.css.forEach((change) => {
+              console.log(`🎨 [CSS Diff] ${change.description}:`, change);
+
+              const diffItem = document.createElement("div");
+              diffItem.className = "diff-item";
+              diffItem.innerHTML = `
+                <div class="diff-type">${change.type}</div>
+                <div class="diff-description">${change.description}</div>
+                ${
+                  change.before
+                    ? `<div class="diff-before">Before: ${change.before.substring(
+                        0,
+                        100
+                      )}...</div>`
+                    : ""
+                }
+                ${
+                  change.after
+                    ? `<div class="diff-after">After: ${change.after.substring(
+                        0,
+                        100
+                      )}...</div>`
+                    : ""
+                }
+                ${
+                  change.content
+                    ? `<div class="diff-content-preview">Added: ${change.content.substring(
+                        0,
+                        100
+                      )}...</div>`
+                    : ""
+                }
+            `;
+              cssDiffContent.appendChild(diffItem);
+            });
+
+            cssDiffSection.style.display = "block";
+          }
+
+          // Update JS display
+          if (changeLog.js && changeLog.js.length > 0) {
+            const jsElement = DOM.jsCode;
+            jsElement.textContent = AppState.currentJS;
+            DOM.jsStatus.textContent = "Updated";
+            DOM.jsStatus.className = "status updated";
+
+            // Show JS diff section
+            const jsDiffSection = document.getElementById("js-diff");
+            const jsDiffContent = jsDiffSection.querySelector(".diff-content");
+            jsDiffContent.innerHTML = "";
+
+            changeLog.js.forEach((change) => {
+              console.log(`⚡ [JS Diff] ${change.description}:`, change);
+
+              const diffItem = document.createElement("div");
+              diffItem.className = "diff-item";
+              diffItem.innerHTML = `
+                <div class="diff-type">${change.type}</div>
+                <div class="diff-description">${change.description}</div>
+                ${
+                  change.before
+                    ? `<div class="diff-before">Before: ${change.before.substring(
+                        0,
+                        100
+                      )}...</div>`
+                    : ""
+                }
+                ${
+                  change.after
+                    ? `<div class="diff-after">After: ${change.after.substring(
+                        0,
+                        100
+                      )}...</div>`
+                    : ""
+                }
+                ${
+                  change.content
+                    ? `<div class="diff-content-preview">Added: ${change.content.substring(
+                        0,
+                        100
+                      )}...</div>`
+                    : ""
+                }
+            `;
+              jsDiffContent.appendChild(diffItem);
+            });
+
+            jsDiffSection.style.display = "block";
+          }
+
+          // Update preview
+          updateCodePreview();
+
+          console.log("✅ [UI] Code display updated with diffs");
+        }
 
         /**
          * Generate human-readable changes summary
@@ -2965,6 +3197,641 @@ Make sure each code block is complete and functional.`;
           }
 
           return `📊 **Changes Applied:**\n${summaryParts.join("\n")}`;
+        }
+
+        /**
+         * Apply HTML diff to existing HTML
+         * @param {string} currentHTML - Current HTML code
+         * @param {Object} diff - HTML diff object
+         * @returns {string} Modified HTML
+         */
+        function applyHTMLDiff(currentHTML, diff) {
+          console.assert(
+            typeof currentHTML === "string",
+            "currentHTML must be a string"
+          );
+          console.assert(
+            typeof diff === "object" && diff !== null,
+            "diff must be an object"
+          );
+
+          console.log("🔧 Applying HTML diff:", {
+            operation: diff.operation,
+            target: diff.target,
+          });
+
+          let modifiedHTML = currentHTML;
+
+          switch (diff.operation) {
+            case "add":
+              if (diff.target && diff.content) {
+                // Handle different target types
+                if (diff.target.startsWith(".")) {
+                  // Class-based targeting with pseudo-selector support
+                  const selectorMatch = diff.target.match(
+                    /^\.([^:]+)(?::(.+))?$/
+                  );
+                  if (selectorMatch) {
+                    const className = selectorMatch[1];
+                    const pseudoSelector = selectorMatch[2];
+
+                    if (
+                      pseudoSelector &&
+                      pseudoSelector.startsWith("nth-child(")
+                    ) {
+                      // Handle nth-child selectors
+                      const nthMatch =
+                        pseudoSelector.match(/nth-child\((\d+)\)/);
+                      if (nthMatch) {
+                        const position = parseInt(nthMatch[1]);
+                        console.log("🎯 Processing nth-child selector:", {
+                          className,
+                          position,
+                        });
+
+                        // Find all elements with the class
+                        const classRegex = new RegExp(
+                          `<[^>]*class="[^"]*${className}[^"]*"[^>]*>.*?</[^>]*>`,
+                          "gis"
+                        );
+                        const matches = [...modifiedHTML.matchAll(classRegex)];
+
+                        if (matches.length >= position) {
+                          // Insert after the nth element
+                          const targetElement = matches[position - 1];
+                          const insertAfter =
+                            targetElement.index + targetElement[0].length;
+                          modifiedHTML =
+                            modifiedHTML.slice(0, insertAfter) +
+                            diff.content +
+                            modifiedHTML.slice(insertAfter);
+                          console.log(
+                            "✅ Added content after nth-child element:",
+                            position
+                          );
+                        } else {
+                          console.warn(
+                            "⚠️ nth-child position out of range:",
+                            position,
+                            "of",
+                            matches.length
+                          );
+                        }
+                      }
+                    } else {
+                      // Regular class targeting
+                      const targetRegex = new RegExp(
+                        `(<[^>]*class="[^"]*${className}[^"]*"[^>]*>)`,
+                        "i"
+                      );
+                      if (targetRegex.test(modifiedHTML)) {
+                        modifiedHTML = modifiedHTML.replace(
+                          targetRegex,
+                          `$1${diff.content}`
+                        );
+                        console.log(
+                          "✅ Added content to element with class:",
+                          className
+                        );
+                      } else {
+                        console.warn("⚠️ Target class not found:", className);
+                      }
+                    }
+                  }
+                } else if (diff.target.startsWith("#")) {
+                  // ID-based targeting
+                  const targetId = diff.target.replace("#", "");
+                  const targetRegex = new RegExp(
+                    `(<[^>]*id="${targetId}"[^>]*>)`,
+                    "i"
+                  );
+                  if (targetRegex.test(modifiedHTML)) {
+                    modifiedHTML = modifiedHTML.replace(
+                      targetRegex,
+                      `$1${diff.content}`
+                    );
+                    console.log(
+                      "✅ Added content to element with ID:",
+                      targetId
+                    );
+                  } else {
+                    console.warn("⚠️ Target ID not found:", targetId);
+                  }
+                } else {
+                  // Element-based targeting
+                  const targetRegex = new RegExp(
+                    `(<${diff.target}[^>]*>)`,
+                    "i"
+                  );
+                  if (targetRegex.test(modifiedHTML)) {
+                    modifiedHTML = modifiedHTML.replace(
+                      targetRegex,
+                      `$1${diff.content}`
+                    );
+                    console.log("✅ Added content to element:", diff.target);
+                  } else {
+                    console.warn("⚠️ Target element not found:", diff.target);
+                  }
+                }
+              } else if (diff.position && diff.content) {
+                // Position-based insertion (before/after specific content)
+                if (diff.position === "before" && diff.reference) {
+                  const referenceRegex = new RegExp(
+                    `(${diff.reference.replace(
+                      /[.*+?^${}()|[\]\\]/g,
+                      "\\$&"
+                    )})`,
+                    "i"
+                  );
+                  modifiedHTML = modifiedHTML.replace(
+                    referenceRegex,
+                    `${diff.content}$1`
+                  );
+                  console.log("✅ Added content before reference");
+                } else if (diff.position === "after" && diff.reference) {
+                  const referenceRegex = new RegExp(
+                    `(${diff.reference.replace(
+                      /[.*+?^${}()|[\]\\]/g,
+                      "\\$&"
+                    )})`,
+                    "i"
+                  );
+                  modifiedHTML = modifiedHTML.replace(
+                    referenceRegex,
+                    `$1${diff.content}`
+                  );
+                  console.log("✅ Added content after reference");
+                }
+              } else {
+                // Simple append to end of body
+                const bodyRegex = /<\/body>/i;
+                if (bodyRegex.test(modifiedHTML)) {
+                  modifiedHTML = modifiedHTML.replace(
+                    bodyRegex,
+                    `${diff.content}</body>`
+                  );
+                  console.log("✅ Added content to end of body");
+                } else {
+                  modifiedHTML += diff.content;
+                  console.log("✅ Appended content to HTML");
+                }
+              }
+              break;
+
+            case "remove":
+              if (diff.target) {
+                // Handle different target types for removal
+                if (diff.target.startsWith(".")) {
+                  const className = diff.target.replace(".", "");
+                  const removeRegex = new RegExp(
+                    `<[^>]*class="[^"]*${className}[^"]*"[^>]*>.*?</[^>]*>`,
+                    "gis"
+                  );
+                  modifiedHTML = modifiedHTML.replace(removeRegex, "");
+                  console.log("✅ Removed element with class:", className);
+                } else if (diff.target.startsWith("#")) {
+                  const targetId = diff.target.replace("#", "");
+                  const removeRegex = new RegExp(
+                    `<[^>]*id="${targetId}"[^>]*>.*?</[^>]*>`,
+                    "gis"
+                  );
+                  modifiedHTML = modifiedHTML.replace(removeRegex, "");
+                  console.log("✅ Removed element with ID:", targetId);
+                } else {
+                  const removeRegex = new RegExp(
+                    `<${diff.target}[^>]*>.*?</${diff.target}>`,
+                    "gis"
+                  );
+                  modifiedHTML = modifiedHTML.replace(removeRegex, "");
+                  console.log("✅ Removed element:", diff.target);
+                }
+              }
+              break;
+
+            case "modify":
+              if (diff.target && diff.content) {
+                // Handle different target types for modification
+                if (diff.target.startsWith(".")) {
+                  const className = diff.target.replace(".", "");
+                  const modifyRegex = new RegExp(
+                    `(<[^>]*class="[^"]*${className}[^"]*"[^>]*>).*?(</[^>]*>)`,
+                    "gis"
+                  );
+                  if (modifyRegex.test(modifiedHTML)) {
+                    modifiedHTML = modifiedHTML.replace(
+                      modifyRegex,
+                      `$1${diff.content}$2`
+                    );
+                    console.log("✅ Modified element with class:", className);
+                  } else {
+                    console.warn(
+                      "⚠️ Target class not found for modification:",
+                      className
+                    );
+                  }
+                } else if (diff.target.startsWith("#")) {
+                  const targetId = diff.target.replace("#", "");
+                  const modifyRegex = new RegExp(
+                    `(<[^>]*id="${targetId}"[^>]*>).*?(</[^>]*>)`,
+                    "gis"
+                  );
+                  if (modifyRegex.test(modifiedHTML)) {
+                    modifiedHTML = modifiedHTML.replace(
+                      modifyRegex,
+                      `$1${diff.content}$2`
+                    );
+                    console.log("✅ Modified element with ID:", targetId);
+                  } else {
+                    console.warn(
+                      "⚠️ Target ID not found for modification:",
+                      targetId
+                    );
+                  }
+                } else {
+                  const modifyRegex = new RegExp(
+                    `(<${diff.target}[^>]*>).*?(</${diff.target}>)`,
+                    "gis"
+                  );
+                  if (modifyRegex.test(modifiedHTML)) {
+                    modifiedHTML = modifiedHTML.replace(
+                      modifyRegex,
+                      `$1${diff.content}$2`
+                    );
+                    console.log("✅ Modified element:", diff.target);
+                  } else {
+                    console.warn(
+                      "⚠️ Target element not found for modification:",
+                      diff.target
+                    );
+                  }
+                }
+              }
+              break;
+
+            default:
+              console.warn(
+                "⚠️ Unsupported HTML diff operation:",
+                diff.operation
+              );
+          }
+
+          console.log("🔚 HTML diff application completed");
+          return modifiedHTML;
+        }
+
+        /**
+         * Apply CSS diff to existing CSS
+         * @param {string} currentCSS - Current CSS code
+         * @param {Object} diff - CSS diff object
+         * @returns {string} Modified CSS
+         */
+        function applyCSSDiff(currentCSS, diff) {
+          console.assert(
+            typeof currentCSS === "string",
+            "currentCSS must be a string"
+          );
+          console.assert(
+            typeof diff === "object" && diff !== null,
+            "diff must be an object"
+          );
+
+          console.log("🔧 Applying CSS diff:", {
+            currentCSS: currentCSS.substring(0, 100) + "...",
+            diff,
+          });
+
+          let modifiedCSS = currentCSS;
+
+          if (diff.operation === "modify" && diff.selector && diff.changes) {
+            // Normalize the selector by removing extra whitespace and line breaks
+            const normalizedSelector = diff.selector
+              .replace(/\s+/g, " ")
+              .trim();
+
+            // Create a more flexible regex that handles multi-line selectors
+            // Escape special regex characters in the selector
+            const escapedSelector = normalizedSelector
+              .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special chars
+              .replace(/,\s*/g, ",\\s*") // Allow flexible spacing around commas
+              .replace(/\s+/g, "\\s+"); // Allow flexible whitespace
+
+            // Look for the selector with flexible whitespace handling
+            const selectorRegex = new RegExp(
+              `(${escapedSelector}\\s*\\{)([^}]*)(\\})`,
+              "gis"
+            );
+
+            console.log("🔍 Normalized selector:", normalizedSelector);
+            console.log("🔍 Escaped selector pattern:", escapedSelector);
+
+            const match = modifiedCSS.match(selectorRegex);
+            if (match) {
+              console.log("🎯 Found CSS selector match");
+
+              modifiedCSS = modifiedCSS.replace(
+                selectorRegex,
+                (fullMatch, opening, properties, closing) => {
+                  console.log("🔄 Processing CSS selector:", {
+                    opening,
+                    properties: properties.substring(0, 50) + "...",
+                  });
+
+                  let newProperties = properties;
+
+                  // Apply each change
+                  for (const [property, value] of Object.entries(
+                    diff.changes
+                  )) {
+                    const propertyRegex = new RegExp(
+                      `${property.replace(
+                        /[.*+?^${}()|[\]\\]/g,
+                        "\\$&"
+                      )}\\s*:[^;]*;?`,
+                      "gi"
+                    );
+                    const newRule = `${property}: ${value};`;
+
+                    console.log("🔄 Applying CSS change:", { property, value });
+
+                    if (propertyRegex.test(newProperties)) {
+                      // Replace existing property
+                      newProperties = newProperties.replace(
+                        propertyRegex,
+                        newRule
+                      );
+                      console.log("✅ Replaced existing property");
+                    } else {
+                      // Add new property (ensure proper formatting)
+                      const trimmedProps = newProperties.trim();
+                      if (trimmedProps) {
+                        newProperties = trimmedProps + `\n  ${newRule}`;
+                      } else {
+                        newProperties = `\n  ${newRule}\n`;
+                      }
+                      console.log("➕ Added new property");
+                    }
+                  }
+
+                  const result = opening + newProperties + closing;
+                  console.log("🏁 CSS replacement completed");
+                  return result;
+                }
+              );
+            } else {
+              console.warn("⚠️ CSS selector not found:", normalizedSelector);
+              console.log(
+                "🔍 Available CSS content preview:",
+                currentCSS.substring(0, 200) + "..."
+              );
+            }
+          } else if (diff.operation === "add" && diff.content) {
+            // Add new CSS rules
+            modifiedCSS += "\n\n" + diff.content;
+            console.log("➕ Added new CSS content");
+          } else {
+            console.warn(
+              "⚠️ CSS diff operation not supported or missing required fields:",
+              diff
+            );
+          }
+
+          console.log("🔚 CSS diff application completed");
+          return modifiedCSS;
+        }
+
+        /**
+         * Apply JavaScript diff to existing JavaScript
+         * @param {string} currentJS - Current JavaScript code
+         * @param {Object} diff - JavaScript diff object
+         * @returns {string} Modified JavaScript
+         */
+        function applyJSDiff(currentJS, diff) {
+          console.assert(
+            typeof currentJS === "string",
+            "currentJS must be a string"
+          );
+          console.assert(
+            typeof diff === "object" && diff !== null,
+            "diff must be an object"
+          );
+
+          console.log("🔧 Applying JS diff:", {
+            operation: diff.operation,
+            functionName: diff.functionName,
+          });
+
+          let modifiedJS = currentJS;
+
+          switch (diff.operation) {
+            case "add":
+              if (diff.content) {
+                // Add new function or code block
+                if (diff.position === "before" && diff.reference) {
+                  // Insert before specific content
+                  const referenceRegex = new RegExp(
+                    `(${diff.reference.replace(
+                      /[.*+?^${}()|[\]\\]/g,
+                      "\\$&"
+                    )})`,
+                    "i"
+                  );
+                  modifiedJS = modifiedJS.replace(
+                    referenceRegex,
+                    `${diff.content}\n\n$1`
+                  );
+                  console.log("✅ Added JS content before reference");
+                } else if (diff.position === "after" && diff.reference) {
+                  // Insert after specific content
+                  const referenceRegex = new RegExp(
+                    `(${diff.reference.replace(
+                      /[.*+?^${}()|[\]\\]/g,
+                      "\\$&"
+                    )})`,
+                    "i"
+                  );
+                  modifiedJS = modifiedJS.replace(
+                    referenceRegex,
+                    `$1\n\n${diff.content}`
+                  );
+                  console.log("✅ Added JS content after reference");
+                } else {
+                  // Append to end
+                  modifiedJS += `\n\n${diff.content}`;
+                  console.log("✅ Added JS content to end");
+                }
+              }
+              break;
+
+            case "modify":
+              if (diff.functionName && diff.content) {
+                // Handle flexible function references
+                let targetPatterns = [];
+
+                if (diff.functionName.includes("DOMContentLoaded")) {
+                  // Handle DOMContentLoaded callback references
+                  targetPatterns = [
+                    // document.addEventListener('DOMContentLoaded', function() { ... });
+                    new RegExp(
+                      `(document\\.addEventListener\\s*\\(\\s*['"]DOMContentLoaded['"]\\s*,\\s*function\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\}\\s*\\);?)`,
+                      "gi"
+                    ),
+                    // document.addEventListener('DOMContentLoaded', () => { ... });
+                    new RegExp(
+                      `(document\\.addEventListener\\s*\\(\\s*['"]DOMContentLoaded['"]\\s*,\\s*\\([^)]*\\)\\s*=>\\s*\\{)([\\s\\S]*?)(\\}\\s*\\);?)`,
+                      "gi"
+                    ),
+                  ];
+                } else {
+                  // Handle different function declaration patterns
+                  const escapedName = diff.functionName.replace(
+                    /[.*+?^${}()|[\]\\]/g,
+                    "\\$&"
+                  );
+                  targetPatterns = [
+                    // function name() { }
+                    new RegExp(
+                      `(function\\s+${escapedName}\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\})`,
+                      "gis"
+                    ),
+                    // const name = function() { }
+                    new RegExp(
+                      `(const\\s+${escapedName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\})`,
+                      "gis"
+                    ),
+                    // let name = function() { }
+                    new RegExp(
+                      `(let\\s+${escapedName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\})`,
+                      "gis"
+                    ),
+                    // var name = function() { }
+                    new RegExp(
+                      `(var\\s+${escapedName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\})`,
+                      "gis"
+                    ),
+                    // name: function() { }
+                    new RegExp(
+                      `(${escapedName}\\s*:\\s*function\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\})`,
+                      "gis"
+                    ),
+                    // Arrow functions: const name = () => { }
+                    new RegExp(
+                      `(const\\s+${escapedName}\\s*=\\s*\\([^)]*\\)\\s*=>\\s*\\{)([\\s\\S]*?)(\\})`,
+                      "gis"
+                    ),
+                  ];
+                }
+
+                let replaced = false;
+                for (const pattern of targetPatterns) {
+                  if (pattern.test(modifiedJS)) {
+                    if (diff.operation === "add_to_function") {
+                      // Add content within the function
+                      modifiedJS = modifiedJS.replace(
+                        pattern,
+                        (match, opening, content, closing) => {
+                          return (
+                            opening + content + "\n\n" + diff.content + closing
+                          );
+                        }
+                      );
+                    } else {
+                      // Replace entire function content
+                      modifiedJS = modifiedJS.replace(pattern, diff.content);
+                    }
+                    console.log("✅ Modified JS function:", diff.functionName);
+                    replaced = true;
+                    break;
+                  }
+                }
+
+                if (!replaced) {
+                  console.warn(
+                    "⚠️ JS function not found for modification:",
+                    diff.functionName
+                  );
+                  console.log(
+                    "🔍 Available JS content preview:",
+                    modifiedJS.substring(0, 200) + "..."
+                  );
+                }
+              } else if (diff.target && diff.content) {
+                // Modify specific code block by content matching
+                const targetRegex = new RegExp(
+                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                  "gi"
+                );
+                if (targetRegex.test(modifiedJS)) {
+                  modifiedJS = modifiedJS.replace(targetRegex, diff.content);
+                  console.log("✅ Modified JS target content");
+                } else {
+                  console.warn("⚠️ JS target content not found:", diff.target);
+                }
+              }
+              break;
+
+            case "remove":
+              if (diff.functionName) {
+                // Handle different function declaration patterns for removal
+                const functionPatterns = [
+                  new RegExp(
+                    `function\\s+${diff.functionName}\\s*\\([^)]*\\)\\s*\\{[^}]*\\}`,
+                    "gis"
+                  ),
+                  new RegExp(
+                    `const\\s+${diff.functionName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{[^}]*\\};?`,
+                    "gis"
+                  ),
+                  new RegExp(
+                    `let\\s+${diff.functionName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{[^}]*\\};?`,
+                    "gis"
+                  ),
+                  new RegExp(
+                    `var\\s+${diff.functionName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{[^}]*\\};?`,
+                    "gis"
+                  ),
+                  new RegExp(
+                    `${diff.functionName}\\s*:\\s*function\\s*\\([^)]*\\)\\s*\\{[^}]*\\},?`,
+                    "gis"
+                  ),
+                  new RegExp(
+                    `const\\s+${diff.functionName}\\s*=\\s*\\([^)]*\\)\\s*=>\\s*\\{[^}]*\\};?`,
+                    "gis"
+                  ),
+                ];
+
+                let removed = false;
+                for (const pattern of functionPatterns) {
+                  if (pattern.test(modifiedJS)) {
+                    modifiedJS = modifiedJS.replace(pattern, "");
+                    console.log("✅ Removed JS function:", diff.functionName);
+                    removed = true;
+                    break;
+                  }
+                }
+
+                if (!removed) {
+                  console.warn(
+                    "⚠️ JS function not found for removal:",
+                    diff.functionName
+                  );
+                }
+              } else if (diff.target) {
+                // Remove specific code block
+                const targetRegex = new RegExp(
+                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                  "gi"
+                );
+                modifiedJS = modifiedJS.replace(targetRegex, "");
+                console.log("✅ Removed JS target content");
+              }
+              break;
+
+            default:
+              console.warn("⚠️ Unsupported JS diff operation:", diff.operation);
+          }
+
+          console.log("🔚 JS diff application completed");
+          return modifiedJS;
         }
 
         /**
@@ -3402,6 +4269,9 @@ Make sure each code block is complete and functional.`;
         if (typeof module !== "undefined" && module.exports) {
           module.exports = {
             AppState,
+            applyHTMLDiff,
+            applyCSSDiff,
+            applyJSDiff,
             escapeHTML,
           };
         }
@@ -3727,9 +4597,9 @@ Make sure each code block is complete and functional.`;
 //   toggleLoaderEnhancePrompt(true);
 //   var prompt = Fliplet.Helper.field("prompt").get();
 //   if (prompt) {
-//     let systemPrompt = `You are a "Prompt Enhancer" for front-end feature requests. When given a user's simple request for HTML/CSS/JS, you must:
+//     let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user’s simple request for HTML/CSS/JS, you must:
 // 	1.	Core Goal
-// Restate the user's main objective in one clear sentence.
+// Restate the user’s main objective in one clear sentence.
 // 	2.	Context
 // Describe the target audience, use case, and any brand or environment constraints.
 // 	3.	Functional Requirements

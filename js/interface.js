@@ -2588,6 +2588,12 @@ Fliplet.Widget.generateInterface({
               userMessage,
               context
             );
+
+            const logAiCallResponse = await logAiCall({
+              "Chat history": AppState.chatHistory,
+              "User prompt": userMessage,
+              "AI response": aiResponse,
+            });
             logDebug(`Raw AI response: ${aiResponse}`);
 
             // Step 3: Parse response using protocol parser
@@ -2706,7 +2712,10 @@ Fliplet.Widget.generateInterface({
           recentHistory.forEach((historyItem) => {
             if (historyItem.message && historyItem.type) {
               // Skip the current user message to avoid duplication
-              if (historyItem.message === userMessage && historyItem.type === "user") {
+              if (
+                historyItem.message === userMessage &&
+                historyItem.type === "user"
+              ) {
                 return;
               }
               // Convert our internal format to OpenAI format
@@ -3894,31 +3903,31 @@ Make sure each code block is complete and functional.`;
               DOM.previewStatus.textContent = "Empty";
 
               // Clear the iframe
-            //   DOM.previewFrame.srcdoc = `
-            //     <!DOCTYPE html>
-            //     <html lang="en">
-            //     <head>
-            //         <meta charset="UTF-8">
-            //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            //         <title>Preview</title>
-            //         <style>
-            //             body { 
-            //                 font-family: Arial, sans-serif; 
-            //                 display: flex; 
-            //                 align-items: center; 
-            //                 justify-content: center; 
-            //                 height: 100vh; 
-            //                 margin: 0; 
-            //                 background: #f8f9fa; 
-            //                 color: #6c757d;
-            //             }
-            //         </style>
-            //     </head>
-            //     <body>
-            //         <p>No code to preview yet...</p>
-            //     </body>
-            //     </html>
-            // `;
+              //   DOM.previewFrame.srcdoc = `
+              //     <!DOCTYPE html>
+              //     <html lang="en">
+              //     <head>
+              //         <meta charset="UTF-8">
+              //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              //         <title>Preview</title>
+              //         <style>
+              //             body {
+              //                 font-family: Arial, sans-serif;
+              //                 display: flex;
+              //                 align-items: center;
+              //                 justify-content: center;
+              //                 height: 100vh;
+              //                 margin: 0;
+              //                 background: #f8f9fa;
+              //                 color: #6c757d;
+              //             }
+              //         </style>
+              //     </head>
+              //     <body>
+              //         <p>No code to preview yet...</p>
+              //     </body>
+              //     </html>
+              // `;
               return;
             }
 
@@ -3936,52 +3945,52 @@ Make sure each code block is complete and functional.`;
             });
 
             // Create complete HTML document for preview
-        //     const completeDocument = `
-        //     <!DOCTYPE html>
-        //     <html lang="en">
-        //     <head>
-        //         <meta charset="UTF-8">
-        //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        //         <title>AI Generated Code Preview</title>
-        //         <style>
-        //             /* Reset for preview */
-        //             * { box-sizing: border-box; }
-        //             body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-                    
-        //             /* Generated CSS */
-        //             ${cssContent}
-        //         </style>
-        //     </head>
-        //     <body>
-        //         ${htmlContent}
-                
-        //         <script>
-        //             // Error handling for preview
-        //             window.addEventListener('error', function(e) {
-        //                 console.error('Preview Error:', e.error);
-        //                 document.body.insertAdjacentHTML('beforeend', 
-        //                     '<div style="background: #fee; border: 1px solid #fcc; color: #c00; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
-        //                     'Error: ' + e.message + '</div>'
-        //                 );
-        //             });
-                    
-        //             // Generated JavaScript
-        //             try {
-        //                 ${jsContent}
-        //             } catch (error) {
-        //                 console.error('JavaScript Error:', error);
-        //                 document.body.insertAdjacentHTML('beforeend', 
-        //                     '<div style="background: #fee; border: 1px solid #fcc; color: #c00; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
-        //                     'JavaScript Error: ' + error.message + '</div>'
-        //                 );
-        //             }
-        //         </script>
-        //     </body>
-        //     </html>
-        // `;
+            //     const completeDocument = `
+            //     <!DOCTYPE html>
+            //     <html lang="en">
+            //     <head>
+            //         <meta charset="UTF-8">
+            //         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            //         <title>AI Generated Code Preview</title>
+            //         <style>
+            //             /* Reset for preview */
+            //             * { box-sizing: border-box; }
+            //             body { margin: 0; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
 
-        //     // Update iframe with complete document
-        //     DOM.previewFrame.srcdoc = completeDocument;
+            //             /* Generated CSS */
+            //             ${cssContent}
+            //         </style>
+            //     </head>
+            //     <body>
+            //         ${htmlContent}
+
+            //         <script>
+            //             // Error handling for preview
+            //             window.addEventListener('error', function(e) {
+            //                 console.error('Preview Error:', e.error);
+            //                 document.body.insertAdjacentHTML('beforeend',
+            //                     '<div style="background: #fee; border: 1px solid #fcc; color: #c00; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
+            //                     'Error: ' + e.message + '</div>'
+            //                 );
+            //             });
+
+            //             // Generated JavaScript
+            //             try {
+            //                 ${jsContent}
+            //             } catch (error) {
+            //                 console.error('JavaScript Error:', error);
+            //                 document.body.insertAdjacentHTML('beforeend',
+            //                     '<div style="background: #fee; border: 1px solid #fcc; color: #c00; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; font-size: 12px;">' +
+            //                     'JavaScript Error: ' + error.message + '</div>'
+            //                 );
+            //             }
+            //         </script>
+            //     </body>
+            //     </html>
+            // `;
+
+            //     // Update iframe with complete document
+            //     DOM.previewFrame.srcdoc = completeDocument;
 
             // Update status
             const hasHTML = !!AppState.currentHTML;
@@ -4023,10 +4032,16 @@ Make sure each code block is complete and functional.`;
         function saveChatHistoryToStorage() {
           try {
             const storageKey = `ai_chat_history_${widgetId}`;
-            localStorage.setItem(storageKey, JSON.stringify(AppState.chatHistory));
+            localStorage.setItem(
+              storageKey,
+              JSON.stringify(AppState.chatHistory)
+            );
             logDebug("Chat history saved to local storage");
           } catch (error) {
-            console.error("Failed to save chat history to local storage:", error);
+            console.error(
+              "Failed to save chat history to local storage:",
+              error
+            );
           }
         }
 
@@ -4037,42 +4052,49 @@ Make sure each code block is complete and functional.`;
           try {
             const storageKey = `ai_chat_history_${widgetId}`;
             const storedHistory = localStorage.getItem(storageKey);
-            
+
             if (storedHistory) {
               const parsedHistory = JSON.parse(storedHistory);
               if (Array.isArray(parsedHistory)) {
                 // Filter out system messages and ensure all messages have the correct format
                 const filteredHistory = parsedHistory
-                  .filter(item => item.type !== "system" && item.message && item.type)
-                  .map(item => ({
+                  .filter(
+                    (item) =>
+                      item.type !== "system" && item.message && item.type
+                  )
+                  .map((item) => ({
                     message: item.message,
                     type: item.type,
-                    timestamp: item.timestamp || new Date().toISOString()
+                    timestamp: item.timestamp || new Date().toISOString(),
                   }));
-                
+
                 // Update AppState with filtered history
                 AppState.chatHistory = filteredHistory;
-                
+
                 // Repopulate chat interface
                 DOM.chatMessages.innerHTML = "";
-                filteredHistory.forEach(item => {
+                filteredHistory.forEach((item) => {
                   const messageDiv = document.createElement("div");
                   messageDiv.className = `message ${item.type}-message`;
 
                   const prefix =
-                    item.type === "user" ? "You" : item.type === "ai" ? "AI" : "System";
+                    item.type === "user"
+                      ? "You"
+                      : item.type === "ai"
+                      ? "AI"
+                      : "System";
                   messageDiv.innerHTML = `<strong>${prefix}:</strong> ${escapeHTML(
                     item.message
                   )}`;
 
                   DOM.chatMessages.appendChild(messageDiv);
                 });
-                
+
                 // Set code display elements with Fliplet field values if chat history exists
                 const layoutHTML = Fliplet.Helper.field("layoutHTML").get();
                 const css = Fliplet.Helper.field("css").get();
                 const javascript = Fliplet.Helper.field("javascript").get();
-                
+
                 if (layoutHTML) {
                   DOM.htmlCode.textContent = layoutHTML;
                 }
@@ -4082,14 +4104,19 @@ Make sure each code block is complete and functional.`;
                 if (javascript) {
                   DOM.jsCode.textContent = javascript;
                 }
-                
+
                 scrollToBottom();
-                logDebug(`Loaded ${parsedHistory.length} messages from local storage`);
+                logDebug(
+                  `Loaded ${parsedHistory.length} messages from local storage`
+                );
                 return true;
               }
             }
           } catch (error) {
-            console.error("Failed to load chat history from local storage:", error);
+            console.error(
+              "Failed to load chat history from local storage:",
+              error
+            );
           }
           return false;
         }
@@ -4103,7 +4130,10 @@ Make sure each code block is complete and functional.`;
             localStorage.removeItem(storageKey);
             logDebug("Chat history cleared from local storage");
           } catch (error) {
-            console.error("Failed to clear chat history from local storage:", error);
+            console.error(
+              "Failed to clear chat history from local storage:",
+              error
+            );
           }
         }
 

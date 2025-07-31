@@ -4060,6 +4060,21 @@ Make sure each code block is complete and functional.`;
                   DOM.chatMessages.appendChild(messageDiv);
                 });
                 
+                // Set code display elements with Fliplet field values if chat history exists
+                const layoutHTML = Fliplet.Helper.field("layoutHTML").get();
+                const css = Fliplet.Helper.field("css").get();
+                const javascript = Fliplet.Helper.field("javascript").get();
+                
+                if (layoutHTML) {
+                  DOM.htmlCode.textContent = layoutHTML;
+                }
+                if (css) {
+                  DOM.cssCode.textContent = css;
+                }
+                if (javascript) {
+                  DOM.jsCode.textContent = javascript;
+                }
+                
                 scrollToBottom();
                 logDebug(`Loaded ${parsedHistory.length} messages from local storage`);
                 return true;

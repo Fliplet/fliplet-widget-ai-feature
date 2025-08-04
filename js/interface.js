@@ -113,7 +113,7 @@ Fliplet.Widget.generateInterface({
             </div>
             
             <div class="chat-input">
-                <input type="text" id="user-input" placeholder="Ask for code generation or changes..." />
+                <input type="text" id="user-input" placeholder="Ask for code generation or changes" />
                 <input type="button" id="send-btn" class="btn-primary" value="Send">
             </div>
         </div>

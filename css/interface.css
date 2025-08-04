@@ -215,7 +215,7 @@
   border: 1px solid #007bff;
   background: #007bff;
   color: white;
-  font-size: 14px;
+  font-size: 12px;
   height: 46px;
   box-sizing: border-box;
   transition: all 0.2s ease;
@@ -319,14 +319,6 @@
   padding: 0;
 }
 
-.interface h1 {
-  text-align: center;
-  color: #1a365d;
-  margin-bottom: 30px;
-  font-size: 2.5rem;
-  font-weight: 600;
-}
-
 /* Chat Interface */
 .interface .chat-section {
   background: white;
@@ -337,23 +329,27 @@
 }
 
 .interface .chat-header {
-  background: #4299e1;
+  background: #00647a;
   color: white;
   padding: 15px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  display: flex;
+  justify-content: space-between;
 }
 
 .interface .chat-header h2 {
   margin: 0;
-  font-size: 1.5rem;
+  font-size: 18px;
+  color: #fff;
+  font-weight: bold;
 }
 
 .interface .chat-messages {
-  height: 300px;
+  height: 75vh;
   overflow-y: auto;
-  padding: 20px;
+  padding: 10px;
   background: #fafafa;
   border-bottom: 1px solid #e2e8f0;
 }
@@ -395,7 +391,7 @@
   padding: 15px 15px;
   border: 2px solid #e2e8f0;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 12px;
   outline: none;
   transition: border-color 0.2s;
 }
@@ -411,7 +407,7 @@
   border: none;
   padding: 12px 24px;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 12px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
@@ -426,7 +422,7 @@
   border: none;
   padding: 8px 16px;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: 13px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
@@ -459,39 +455,6 @@
   align-items: center;
 }
 
-.interface .code-header h3 {
-  margin: 0;
-  font-size: 1.2rem;
-}
-
-.interface .status {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  font-weight: 600;
-}
-
-.interface .code-display {
-  background: #1a202c;
-  color: #e2e8f0;
-  padding: 20px;
-  margin: 0;
-  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.9rem;
-  line-height: 1.5;
-  overflow-x: auto;
-  min-height: 200px;
-  white-space: pre-wrap;
-}
-
-.interface .code-display:empty::before {
-  content: "No code generated yet...";
-  color: #718096;
-  font-style: italic;
-}
-
 /* Code Highlighting Classes */
 .interface .code-new {
   background-color: rgba(52, 211, 153, 0.2);
@@ -518,18 +481,6 @@
 .interface .code-existing {
   color: #e2e8f0;
   opacity: 0.8;
-}
-
-.interface .code-removed {
-  background-color: rgba(248, 113, 113, 0.2);
-  color: #f87171;
-  text-decoration: line-through;
-  padding: 2px 4px;
-  border-radius: 3px;
-  border-left: 3px solid #f87171;
-  margin: 2px 0;
-  display: inline-block;
-  animation: fadeInGlow 1s ease-in-out;
 }
 
 /* Animation for new code highlights */
@@ -561,49 +512,26 @@
     padding: 0;
   }
 
-  .interface h1 {
-    font-size: 2rem;
-  }
-
   .interface .code-section {
     grid-template-columns: 1fr;
   }
 
   .interface .chat-header {
-    flex-direction: column;
     gap: 10px;
-    align-items: flex-start;
+    align-items: center;
   }
 
   .interface .message {
-    max-width: 95%;
+    max-width: 90%;
   }
 
   /* .interface .chat-input {
     flex-direction: column;
   } */
 
-  .interface #user-input {
+  /* .interface #user-input {
     margin-bottom: 10px;
-  }
-}
-
-/* Syntax Highlighting Hints */
-.interface .code-display .keyword {
-  color: #f56565;
-}
-
-.interface .code-display .string {
-  color: #68d391;
-}
-
-.interface .code-display .comment {
-  color: #a0aec0;
-  font-style: italic;
-}
-
-.interface .code-display .number {
-  color: #63b3ed;
+  } */
 }
 
 /* Loading Animation */
@@ -627,86 +555,6 @@
   }
 }
 
-/* NEW ARCHITECTURE: Diff Visualization Styles */
-.interface .diff-section {
-  margin-top: 15px;
-  padding: 15px;
-  background: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e2e8f0;
-}
-
-.interface .diff-section h4 {
-  margin: 0 0 10px 0;
-  color: #4a5568;
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.interface .diff-content {
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.interface .diff-item {
-  margin-bottom: 10px;
-  padding: 8px;
-  background: white;
-  border-radius: 6px;
-  border-left: 3px solid #cbd5e0;
-  font-size: 0.85rem;
-}
-
-.interface .diff-type {
-  font-weight: 600;
-  color: #2d3748;
-  text-transform: uppercase;
-  font-size: 0.75rem;
-  margin-bottom: 4px;
-}
-
-.interface .diff-description {
-  color: #4a5568;
-  margin-bottom: 6px;
-  font-weight: 500;
-}
-
-.interface .diff-before {
-  background: #fed7d7;
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.8rem;
-  margin: 2px 0;
-  color: #c53030;
-}
-
-.interface .diff-after {
-  background: #c6f6d5;
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.8rem;
-  margin: 2px 0;
-  color: #2f855a;
-}
-
-.interface .diff-content-preview {
-  background: #ebf8ff;
-  padding: 4px 6px;
-  border-radius: 4px;
-  font-family: monospace;
-  font-size: 0.8rem;
-  margin: 2px 0;
-  color: #2b6cb0;
-}
-
-.interface .status.updated {
-  background: #c6f6d5;
-  color: #2f855a;
-  animation: pulse 2s ease-in-out;
-}
-
 @keyframes pulse {
 
   0%,
@@ -717,48 +565,4 @@
   50% {
     opacity: 0.7;
   }
-}
-
-/* Actual Changes Display */
-.interface .actual-changes {
-  margin-top: 8px;
-  font-size: 0.8rem;
-}
-
-.interface .actual-changes ul {
-  margin: 4px 0 0 0;
-  padding-left: 16px;
-}
-
-.interface .actual-changes li {
-  margin: 2px 0;
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-family: monospace;
-}
-
-.interface .actual-changes li.addition {
-  background-color: #c6f6d5;
-  color: #2f855a;
-  border-left: 2px solid #38a169;
-}
-
-.interface .actual-changes li.removal {
-  background-color: #fed7d7;
-  color: #c53030;
-  border-left: 2px solid #e53e3e;
-  text-decoration: line-through;
-}
-
-.interface .actual-changes li.modification {
-  background-color: #fef5e7;
-  color: #d69e2e;
-  border-left: 2px solid #ed8936;
-}
-
-.interface .actual-changes li.more-changes {
-  color: #718096;
-  font-style: italic;
-  background: none;
-  border: none;
 }

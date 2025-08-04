@@ -99,8 +99,6 @@ Fliplet.Widget.generateInterface({
     {
       type: "html",
       html: `<div class="container">
-        <h1>AI Coding Tool Test Interface</h1>
-        
         <!-- Chat Interface -->
         <div class="chat-section">
             <div class="chat-header">
@@ -2621,7 +2619,6 @@ Fliplet.Widget.generateInterface({
             model: AIConfig.model,
             messages: messages,
             temperature: AIConfig.temperature,
-            max_tokens: 2000,
             response_format: {
               type: "json_schema",
               json_schema: {
@@ -3872,7 +3869,7 @@ Make sure each code block is complete and functional.`;
             return "✅ No code changes were needed.";
           }
 
-          return `📊 **Changes Applied:**\n${summaryParts.join("\n")}`;
+          return '';
         }
 
         /**

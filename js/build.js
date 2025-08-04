@@ -183,8 +183,18 @@ Fliplet.Widget.instance({
         // Check if delimiters exist in the old code
         if (oldCode.includes(start) && oldCode.includes(end)) {
           // Replace content between delimiters
+          // For CSS, we need to escape the special characters properly
+          let patternStart, patternEnd;
+          if (type == "js") {
+            patternStart = start;
+            patternEnd = end;
+          } else {
+            patternStart = `/\\* start-ai-feature ${widgetId} \\*/`;
+            patternEnd = `/\\* end-ai-feature ${widgetId} \\*/`;
+          }
+          
           return oldCode.replace(
-            new RegExp(start + "[\\s\\S]*?" + end, "g"),
+            new RegExp(patternStart + "[\\s\\S]*?" + patternEnd, "g"),
             start + "\n" + newCode + "\n" + end
           );
         } else {

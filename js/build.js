@@ -146,7 +146,7 @@ Fliplet.Widget.instance({
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container
         $wrapper.find(`.ai-feature-dev-${widgetId}`).remove();
-        // Find `<fl-ai-feature>` and add a sibling after it
+        // Find `<fl-ai-feature-dev>` and add a sibling after it
         $wrapper.find(`fl-ai-feature-dev[cid="${widgetId}"]`).after(codeGenContainer);
         return $wrapper.html();
       }
@@ -154,7 +154,7 @@ Fliplet.Widget.instance({
       function removeHtmlCode(currentSettings) {
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container
-        $wrapper.find(`.ai-feature-${widgetId}`).remove();
+        $wrapper.find(`.ai-feature-dev-${widgetId}`).remove();
         return $wrapper.html();
       }
 

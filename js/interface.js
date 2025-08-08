@@ -182,7 +182,7 @@ Fliplet.Widget.generateInterface({
         }
         
         // Recalculate after a short delay to ensure all elements are rendered
-        setTimeout(calculateChatMessagesHeight, 300);
+        setTimeout(calculateChatMessagesHeight, 5000);
         
         /**
          * AI Coding Tool Test Application

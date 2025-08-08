@@ -120,6 +120,70 @@ Fliplet.Widget.generateInterface({
     </div>
       `,
       ready: function () {
+        // Function to calculate and set chat messages height
+        function calculateChatMessagesHeight() {
+          const chatMessages = document.getElementById('chat-messages');
+          if (!chatMessages) return;
+          
+          // Get all elements in the interface except #chat-messages
+          const interfaceElement = document.querySelector('.interface');
+          if (!interfaceElement) return;
+          
+          // Get all direct children of .interface
+          const allElements = Array.from(interfaceElement.children);
+          let totalHeight = 0;
+          
+          // Calculate height of all elements except #chat-messages
+          allElements.forEach(element => {
+            // Skip the element that contains #chat-messages
+            if (element.querySelector('#chat-messages')) {
+              return;
+            }
+            
+            const rect = element.getBoundingClientRect();
+            const computedStyle = window.getComputedStyle(element);
+            const marginTop = parseFloat(computedStyle.marginTop);
+            const marginBottom = parseFloat(computedStyle.marginBottom);
+            
+            totalHeight += rect.height + marginTop + marginBottom;
+          });
+          
+          // Get the chat section element
+          const chatSection = document.querySelector('.chat-section');
+          if (chatSection) {
+            // Get all elements within chat-section except #chat-messages
+            const chatSectionElements = Array.from(chatSection.children);
+            let chatSectionHeight = 0;
+            
+            chatSectionElements.forEach(element => {
+              if (element.id === 'chat-messages') {
+                return;
+              }
+              
+              const rect = element.getBoundingClientRect();
+              const computedStyle = window.getComputedStyle(element);
+              const marginTop = parseFloat(computedStyle.marginTop);
+              const marginBottom = parseFloat(computedStyle.marginBottom);
+              
+              chatSectionHeight += rect.height + marginTop + marginBottom;
+            });
+            
+            // Calculate available height for chat-messages
+            const viewportHeight = window.innerHeight;
+            const availableHeight = viewportHeight - totalHeight - chatSectionHeight;
+            
+            // Set minimum height of 200px and maximum of available height
+            const finalHeight = Math.max(200, availableHeight);
+            
+            // Apply the calculated height
+            chatMessages.style.height = finalHeight + 'px';
+            chatMessages.style.maxHeight = finalHeight + 'px';
+          }
+        }
+        
+        // Recalculate after a short delay to ensure all elements are rendered
+        setTimeout(calculateChatMessagesHeight, 300);
+        
         /**
          * AI Coding Tool Test Application
          * Uses Fliplet.AI.createCompletion for code generation with diff processing and code merging

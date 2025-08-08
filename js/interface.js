@@ -28,7 +28,6 @@ Fliplet.Widget.generateInterface({
                 Select a data source if you want your feature to use a data source.
                 <br>
                 <br>
-                <br>
                 The following features are available via your prompt:
                 <br>
                 1. Read, insert, update, delete, join data source names (ensure you configure the security rules)
@@ -2372,6 +2371,9 @@ Fliplet.Widget.generateInterface({
 
           // Reset session
           $(DOM.resetBtn).on("click", handleReset);
+
+          // Make chat messages resizable
+          makeChatMessagesResizable();
         }
 
         /**
@@ -4763,6 +4765,71 @@ Make sure each code block is complete and functional.`;
 
           // Reset
           updateCode();
+        }
+
+        /**
+         * Make the chat messages div resizable with custom resize handle
+         */
+        function makeChatMessagesResizable() {
+          const chatMessages = document.getElementById('chat-messages');
+          if (!chatMessages) return;
+
+          // Create resize handle
+          const resizeHandle = document.createElement('div');
+          resizeHandle.className = 'resize-handle';
+          resizeHandle.innerHTML = '⋮⋮';
+          resizeHandle.style.cssText = `
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 20px;
+            height: 20px;
+            background: #e2e8f0;
+            border: 1px solid #cbd5e0;
+            border-radius: 3px;
+            cursor: nw-resize;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #718096;
+            user-select: none;
+            z-index: 10;
+          `;
+
+          // Add resize handle to chat messages
+          chatMessages.style.position = 'relative';
+          chatMessages.appendChild(resizeHandle);
+
+          let isResizing = false;
+          let startY, startHeight;
+
+          // Mouse events for resizing
+          resizeHandle.addEventListener('mousedown', function(e) {
+            isResizing = true;
+            startY = e.clientY;
+            startHeight = chatMessages.offsetHeight;
+            document.body.style.cursor = 'nw-resize';
+            e.preventDefault();
+          });
+
+          document.addEventListener('mousemove', function(e) {
+            if (!isResizing) return;
+            
+            const deltaY = startY - e.clientY;
+            const newHeight = startHeight + deltaY;
+            
+            if (newHeight > 100) { // Minimum height
+              chatMessages.style.height = newHeight + 'px';
+            }
+          });
+
+          document.addEventListener('mouseup', function() {
+            if (isResizing) {
+              isResizing = false;
+              document.body.style.cursor = '';
+            }
+          });
         }
 
         // Export for testing (if needed)

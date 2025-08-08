@@ -2391,18 +2391,35 @@ Fliplet.Widget.generateInterface({
          * @param {ClipboardEvent} event - The paste event
          */
         function handleImagePaste(event) {
+          console.log("🔍 Paste event triggered");
+          console.log("Event object:", event);
+          console.log("ClipboardData:", event.clipboardData);
+          
           // Check if clipboardData exists and has items
           if (!event.clipboardData || !event.clipboardData.items) {
             console.log("⚠️ No clipboard data available");
+            console.log("Available properties:", Object.keys(event.clipboardData || {}));
             return;
           }
           
           const items = event.clipboardData.items;
+          console.log("📋 Clipboard items:", items);
+          console.log("Number of items:", items.length);
           
           for (let i = 0; i < items.length; i++) {
             const item = items[i];
+            console.log(`Item ${i}:`, item);
+            console.log(`Item type: ${item.type}`);
             
-            if (item.type.indexOf('image') !== -1) {
+            // Check for various image formats
+            if (item.type.indexOf('image') !== -1 || 
+                item.type.indexOf('png') !== -1 || 
+                item.type.indexOf('jpeg') !== -1 || 
+                item.type.indexOf('jpg') !== -1 ||
+                item.type.indexOf('gif') !== -1 ||
+                item.type.indexOf('webp') !== -1) {
+              
+              console.log("🎯 Image found:", item.type);
               event.preventDefault();
               
               const file = item.getAsFile();
@@ -2411,10 +2428,16 @@ Fliplet.Widget.generateInterface({
                 return;
               }
               
+              console.log("📁 File retrieved:", file);
+              console.log("File name:", file.name);
+              console.log("File size:", file.size);
+              console.log("File type:", file.type);
+              
               const reader = new FileReader();
               
               reader.onload = function(e) {
                 const imageData = e.target.result;
+                console.log("✅ Image converted to base64, length:", imageData.length);
                 const imageMessage = `[Image pasted: ${file.name}]`;
                 
                 // Add image message to chat
@@ -2427,8 +2450,8 @@ Fliplet.Widget.generateInterface({
                 processUserMessage(imageMessage, imageData);
               };
               
-              reader.onerror = function() {
-                console.error("❌ Error reading image file");
+              reader.onerror = function(error) {
+                console.error("❌ Error reading image file:", error);
               };
               
               reader.readAsDataURL(file);
@@ -2438,6 +2461,7 @@ Fliplet.Widget.generateInterface({
           
           // If no image found, allow normal paste behavior
           console.log("ℹ️ No image found in clipboard, allowing normal paste");
+          console.log("Available types:", Array.from(items).map(item => item.type));
         }
 
         /**

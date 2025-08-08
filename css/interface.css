@@ -587,6 +587,7 @@
   border: 1px solid #bae6fd;
   border-radius: 8px;
   border-left: 4px solid #0ea5e9;
+  user-select: none;
 }
 
 .interface .info-container {

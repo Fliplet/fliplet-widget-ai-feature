@@ -262,6 +262,10 @@ Fliplet.Widget.generateInterface({
           changeHistory: [],
           /** @type {Object} Last applied changes */
           lastAppliedChanges: null,
+          /** @type {string} Pending image name */
+          pendingImageName: null,
+          /** @type {string} Pending image data */
+          pendingImageData: null,
         };
 
         /**
@@ -2441,16 +2445,20 @@ Fliplet.Widget.generateInterface({
               reader.onload = function(e) {
                 const imageData = e.target.result;
                 console.log("✅ Image converted to base64, length:", imageData.length);
-                const imageMessage = `[Image pasted: ${file.name}]`;
                 
-                // Add image message to chat
-                addMessageToChat(imageMessage, "user", imageData);
+                // Store the image data for later use
+                AppState.pendingImageData = imageData;
+                AppState.pendingImageName = file.name;
                 
-                // Clear input
-                DOM.userInput.value = "";
+                // Show a preview in the input field
+                const currentValue = DOM.userInput.value;
+                const imagePreview = `[Image: ${file.name}] `;
+                DOM.userInput.value = imagePreview + currentValue;
                 
-                // Process the message with image data
-                processUserMessage(imageMessage, imageData);
+                // Add a visual indicator that image is ready
+                addMessageToChat(`📎 Image "${file.name}" ready for analysis. Type your message and press Send.`, "system");
+                
+                console.log("📎 Image stored for later processing");
               };
               
               reader.onerror = function(error) {
@@ -2481,14 +2489,27 @@ Fliplet.Widget.generateInterface({
 
           console.log("📤 User message:", userMessage);
 
-          // Add user message to chat
-          addMessageToChat(userMessage, "user");
+          // Check if there's pending image data
+          const imageData = AppState.pendingImageData;
+          const imageName = AppState.pendingImageName;
+          
+          // Clear pending image data
+          AppState.pendingImageData = null;
+          AppState.pendingImageName = null;
+
+          // Add user message to chat (with image if available)
+          if (imageData) {
+            const imageMessage = `[Image: ${imageName}] ${userMessage}`;
+            addMessageToChat(imageMessage, "user", imageData);
+          } else {
+            addMessageToChat(userMessage, "user");
+          }
 
           // Clear input
           DOM.userInput.value = "";
 
-          // Process the message
-          processUserMessage(userMessage);
+          // Process the message with image data if available
+          processUserMessage(userMessage, imageData);
         }
 
         /**
@@ -4900,6 +4921,8 @@ Make sure each code block is complete and functional.`;
           AppState.chatHistory = [];
           AppState.isFirstGeneration = true;
           AppState.requestCount = 0;
+          AppState.pendingImageData = null;
+          AppState.pendingImageName = null;
 
           // Clear local storage
           clearChatHistoryFromStorage();

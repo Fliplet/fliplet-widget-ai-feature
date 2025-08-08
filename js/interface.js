@@ -2392,17 +2392,20 @@ Fliplet.Widget.generateInterface({
          */
         function handleImagePaste(event) {
           console.log("🔍 Paste event triggered");
-          console.log("Event object:", event);
-          console.log("ClipboardData:", event.clipboardData);
+          
+          // Get the original event from jQuery wrapper
+          const originalEvent = event.originalEvent || event;
+          console.log("Original event:", originalEvent);
+          console.log("ClipboardData:", originalEvent.clipboardData);
           
           // Check if clipboardData exists and has items
-          if (!event.clipboardData || !event.clipboardData.items) {
+          if (!originalEvent.clipboardData || !originalEvent.clipboardData.items) {
             console.log("⚠️ No clipboard data available");
-            console.log("Available properties:", Object.keys(event.clipboardData || {}));
+            console.log("Available properties:", Object.keys(originalEvent.clipboardData || {}));
             return;
           }
           
-          const items = event.clipboardData.items;
+          const items = originalEvent.clipboardData.items;
           console.log("📋 Clipboard items:", items);
           console.log("Number of items:", items.length);
           
@@ -2420,7 +2423,7 @@ Fliplet.Widget.generateInterface({
                 item.type.indexOf('webp') !== -1) {
               
               console.log("🎯 Image found:", item.type);
-              event.preventDefault();
+              originalEvent.preventDefault();
               
               const file = item.getAsFile();
               if (!file) {

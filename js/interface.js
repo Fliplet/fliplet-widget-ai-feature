@@ -110,7 +110,7 @@ Fliplet.Widget.generateInterface({
             </div>
             
             <div class="chat-input">
-                <input type="text" id="user-input" placeholder="How can I help?" autocomplete="off" />
+                <input type="text" id="user-input" placeholder="How can I help? (You can paste images too!)" autocomplete="off" />
                 <input type="button" id="send-btn" class="btn-primary" value="Send">
             </div>
         </div>
@@ -2376,11 +2376,50 @@ Fliplet.Widget.generateInterface({
             }
           });
 
+          // Handle paste events for images
+          $(DOM.userInput).on("paste", handleImagePaste);
+
           // Reset session
           $(DOM.resetBtn).on("click", handleReset);
 
           // Make chat messages resizable
           makeChatMessagesResizable();
+        }
+
+        /**
+         * Handle image paste events
+         * @param {ClipboardEvent} event - The paste event
+         */
+        function handleImagePaste(event) {
+          const items = event.clipboardData.items;
+          
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            
+            if (item.type.indexOf('image') !== -1) {
+              event.preventDefault();
+              
+              const file = item.getAsFile();
+              const reader = new FileReader();
+              
+              reader.onload = function(e) {
+                const imageData = e.target.result;
+                const imageMessage = `[Image pasted: ${file.name}]`;
+                
+                // Add image message to chat
+                addMessageToChat(imageMessage, "user", imageData);
+                
+                // Clear input
+                DOM.userInput.value = "";
+                
+                // Process the message with image data
+                processUserMessage(imageMessage, imageData);
+              };
+              
+              reader.readAsDataURL(file);
+              return;
+            }
+          }
         }
 
         /**
@@ -2414,8 +2453,9 @@ Fliplet.Widget.generateInterface({
         /**
          * NEW ARCHITECTURE: Process user message with reliable code handling
          * @param {string} userMessage - User's message
+         * @param {string} imageData - Optional base64 image data
          */
-        async function processUserMessage(userMessage) {
+        async function processUserMessage(userMessage, imageData = null) {
           console.assert(
             typeof userMessage === "string",
             "userMessage must be a string"
@@ -2475,7 +2515,8 @@ Fliplet.Widget.generateInterface({
             // Step 2: Call AI with optimized context
             const aiResponse = await callOpenAIWithNewArchitecture(
               userMessage,
-              context
+              context,
+              imageData
             );
 
             // Step 3: Parse response using protocol parser
@@ -2584,9 +2625,10 @@ Fliplet.Widget.generateInterface({
          * Call AI with new architecture and optimized context
          * @param {string} userMessage - User's message
          * @param {Object} context - Built context
+         * @param {string} imageData - Optional base64 image data
          * @returns {string} AI response
          */
-        async function callOpenAIWithNewArchitecture(userMessage, context) {
+        async function callOpenAIWithNewArchitecture(userMessage, context, imageData = null) {
           console.log("🌐 [AI] Making API call with optimized context...");
 
           const systemPrompt = buildSystemPromptWithContext(context);
@@ -2615,8 +2657,12 @@ Fliplet.Widget.generateInterface({
             }
           });
 
-          // Add current user message
-          messages.push({ role: "user", content: userMessage });
+          // Add current user message with image data if provided
+          let userContent = userMessage;
+          if (imageData) {
+            userContent += `\n\n[Image attached: ${imageData.substring(0, 100)}...]`;
+          }
+          messages.push({ role: "user", content: userContent });
 
           console.log("📤 [AI] Request messages with history:", messages);
           console.log(
@@ -2720,6 +2766,13 @@ Fliplet.Widget.generateInterface({
           console.log("📝 [AI] Building system prompt with context...");
 
           let prompt = `You are an expert web developer chat assistant for a Fliplet app. Your job is to help users create and modify HTML, CSS, and JavaScript code reliably.
+
+Image Analysis Capabilities:
+- If the user provides an image, analyze its visual content and design elements
+- Describe what you see in the image (layout, colors, components, etc.)
+- Suggest HTML/CSS/JS code to recreate the design or implement similar functionality
+- Consider the visual hierarchy, spacing, and styling patterns in the image
+- If the image shows a UI mockup, provide code to implement that interface
 
 General instructions:
 
@@ -4660,6 +4713,7 @@ Make sure each code block is complete and functional.`;
                   .map((item) => ({
                     message: item.message,
                     type: item.type,
+                    imageData: item.imageData || null,
                     timestamp: item.timestamp || new Date().toISOString(),
                   }));
 
@@ -4678,9 +4732,15 @@ Make sure each code block is complete and functional.`;
                       : item.type === "ai"
                       ? "AI"
                       : "System";
-                  messageDiv.innerHTML = `<strong>${prefix}:</strong> ${escapeHTML(
-                    item.message
-                  )}`;
+                  
+                  let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(item.message)}`;
+                  
+                  // Add image if present
+                  if (item.imageData) {
+                    messageContent += `<br><img src="${item.imageData}" alt="Pasted image" style="max-width: 300px; max-height: 200px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">`;
+                  }
+                  
+                  messageDiv.innerHTML = messageContent;
 
                   DOM.chatMessages.appendChild(messageDiv);
                 });
@@ -4717,8 +4777,9 @@ Make sure each code block is complete and functional.`;
          * Add message to chat interface
          * @param {string} message - The message content
          * @param {string} type - Message type ('user', 'ai', 'system')
+         * @param {string} imageData - Optional base64 image data
          */
-        function addMessageToChat(message, type) {
+        function addMessageToChat(message, type, imageData = null) {
           console.assert(
             typeof message === "string",
             "message must be a string"
@@ -4733,9 +4794,15 @@ Make sure each code block is complete and functional.`;
 
           const prefix =
             type === "user" ? "You" : type === "ai" ? "AI" : "System";
-          messageDiv.innerHTML = `<strong>${prefix}:</strong> ${escapeHTML(
-            message
-          )}`;
+          
+          let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(message)}`;
+          
+          // Add image if provided
+          if (imageData) {
+            messageContent += `<br><img src="${imageData}" alt="Pasted image" style="max-width: 300px; max-height: 200px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">`;
+          }
+          
+          messageDiv.innerHTML = messageContent;
 
           DOM.chatMessages.appendChild(messageDiv);
           scrollToBottom();
@@ -4744,6 +4811,7 @@ Make sure each code block is complete and functional.`;
           AppState.chatHistory.push({
             message,
             type,
+            imageData,
             timestamp: new Date().toISOString(),
           });
 

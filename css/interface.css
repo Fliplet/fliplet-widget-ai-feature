@@ -397,6 +397,47 @@
   border-color: #4299e1;
 }
 
+/* Image paste functionality */
+.interface #user-input {
+  position: relative;
+}
+
+.interface #user-input::placeholder {
+  color: #6c757d;
+  opacity: 1;
+}
+
+.interface .image-paste-hint {
+  position: absolute;
+  top: -25px;
+  left: 0;
+  font-size: 11px;
+  color: #6c757d;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.interface #user-input:focus + .image-paste-hint {
+  opacity: 1;
+}
+
+.interface .message img {
+  max-width: 300px;
+  max-height: 200px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-top: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.interface .message.user-message img {
+  border-color: #007bff;
+}
+
+.interface .message.ai-message img {
+  border-color: #28a745;
+}
+
 /* Buttons */
 .interface .btn-primary {
   background: #4299e1;

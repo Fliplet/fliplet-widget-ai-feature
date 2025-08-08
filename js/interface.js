@@ -14,11 +14,43 @@ Fliplet.Widget.generateInterface({
   fields: [
     {
       type: "html",
-      html: `Use this component to generate features within a screen using AI. The code created will be available in the developer tools.
-            <br>
-            <br>
-            Select a data source if you want your feature to use a data source.
-            <br><br>`,
+      html: `
+        <div class="panel-group" id="accordion-1">
+          <div class="panel panel-default focus-outline" data-collapse-id="3543664" data-collapse-uuid="497033ba-6a63-4bdc-9180-80a7937f27e6" tabindex="0">
+            <h4 class="panel-title collapsed" data-target="#collapse-3543664" data-toggle="collapse" data-parent="#accordion-1">
+              Instructions
+            </h4>
+            <div class="panel-collapse collapse" id="collapse-3543664">
+              <div class="panel-body"> 
+                Use this component to generate features within a screen using AI. The code created will be available in the developer tools.
+                <br>
+                <br>
+                Select a data source if you want your feature to use a data source.
+                <br>
+                <br>
+                <br>
+                The following features are available via your prompt:
+                <br>
+                1. Read, insert, update, delete, join data source names (ensure you configure the security rules)
+                <br>
+                2. Load screen names or URLs
+                <br>
+                3. User data based on the columns in the user data source
+                <br>
+                4. Charts using eCharts library (Add echarts via Dev Tools > Libraries)
+                <br>
+                5. Tables using DataTables (Add datatables via Dev Tools > Libraries)
+                <br>
+                6. The ability to send Emails
+                <br>
+		7. The ability to query AI
+  		<br>
+                Note: Only the information in your prompt is shared with AI. AI cannot access your data or app.
+              </div>
+            </div>
+          </div>
+        </div>
+      `,
     },
     {
       type: "provider",
@@ -65,39 +97,6 @@ Fliplet.Widget.generateInterface({
     },
     {
       type: "html",
-      html: `
-        <div class="panel-group" id="accordion-1">
-          <div class="panel panel-default focus-outline" data-collapse-id="3543664" data-collapse-uuid="497033ba-6a63-4bdc-9180-80a7937f27e6" tabindex="0">
-            <h4 class="panel-title collapsed" data-target="#collapse-3543664" data-toggle="collapse" data-parent="#accordion-1">
-              What features are available?
-            </h4>
-            <div class="panel-collapse collapse" id="collapse-3543664">
-              <div class="panel-body"> 
-                The following features are available via your prompt:
-                <br>
-                1. Read, insert, update, delete, join data source names (ensure you configure the security rules)
-                <br>
-                2. Load screen names or URLs
-                <br>
-                3. User data based on the columns in the user data source
-                <br>
-                4. Charts using eCharts library (Add echarts via Dev Tools > Libraries)
-                <br>
-                5. Tables using DataTables (Add datatables via Dev Tools > Libraries)
-                <br>
-                6. The ability to send Emails
-                <br>
-		7. The ability to query AI
-  		<br>
-                Note: Only the information in your prompt is shared with AI. AI cannot access your data or app.
-              </div>
-            </div>
-          </div>
-        </div>
-      `,
-    },
-    {
-      type: "html",
       html: `<div class="container">
         <!-- Chat Interface -->
         <div class="chat-section">
@@ -120,72 +119,6 @@ Fliplet.Widget.generateInterface({
     </div>
       `,
       ready: function () {
-        // Function to calculate and set chat messages height
-        function calculateChatMessagesHeight() {
-          const chatMessages = document.getElementById('chat-messages');
-          if (!chatMessages) return;
-          
-          // Get all elements in the interface except #chat-messages
-          const interfaceElement = document.querySelector('.interface');
-          if (!interfaceElement) return;
-          
-          // Recursive function to get all elements within the interface
-          function getAllElements(element, excludeElement) {
-            const elements = [];
-            
-            // Skip the element we want to exclude
-            if (element === excludeElement) {
-              return elements;
-            }
-            
-            // Add current element if it's not the excluded one
-            if (element !== excludeElement) {
-              elements.push(element);
-            }
-            
-            // Recursively get all child elements
-            const children = Array.from(element.children);
-            children.forEach(child => {
-              elements.push(...getAllElements(child, excludeElement));
-            });
-            
-            return elements;
-          }
-          
-          // Get all elements in the interface except #chat-messages
-          const allElements = getAllElements(interfaceElement, chatMessages);
-          let totalHeight = 0;
-          
-          // Calculate height of all elements except #chat-messages
-          allElements.forEach(element => {
-            // Skip elements that are part of the chat-messages or its children
-            if (element === chatMessages || element.closest('#chat-messages')) {
-              return;
-            }
-            
-            const rect = element.getBoundingClientRect();
-            const computedStyle = window.getComputedStyle(element);
-            const marginTop = parseFloat(computedStyle.marginTop);
-            const marginBottom = parseFloat(computedStyle.marginBottom);
-            
-            totalHeight += rect.height + marginTop + marginBottom;
-          });
-          
-          // Calculate available height for chat-messages
-          const viewportHeight = window.innerHeight;
-          const availableHeight = viewportHeight - totalHeight;
-          
-          // Set minimum height of 200px and maximum of available height
-          const finalHeight = Math.max(200, availableHeight);
-          
-          // Apply the calculated height
-          chatMessages.style.height = finalHeight + 'px';
-          chatMessages.style.maxHeight = finalHeight + 'px';
-        }
-        
-        // Recalculate after a short delay to ensure all elements are rendered
-        setTimeout(calculateChatMessagesHeight, 5000);
-        
         /**
          * AI Coding Tool Test Application
          * Uses Fliplet.AI.createCompletion for code generation with diff processing and code merging

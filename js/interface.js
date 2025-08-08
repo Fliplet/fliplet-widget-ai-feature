@@ -112,6 +112,9 @@ Fliplet.Widget.generateInterface({
             <div class="chat-input">
                 <input type="text" id="user-input" placeholder="How can I help? (You can paste images too!)" autocomplete="off" />
                 <input type="button" id="send-btn" class="btn-primary" value="Send">
+                <div class="shortcuts-hint">
+                    📎 Paste images with Ctrl+V | 🗑️ Clear all: Ctrl+D | Remove last: Ctrl+Z
+                </div>
             </div>
         </div>
         <input type="button" id="reset-btn" class="btn-secondary" value="Reset Session">
@@ -262,10 +265,8 @@ Fliplet.Widget.generateInterface({
           changeHistory: [],
           /** @type {Object} Last applied changes */
           lastAppliedChanges: null,
-          /** @type {string} Pending image name */
-          pendingImageName: null,
-          /** @type {string} Pending image data */
-          pendingImageData: null,
+          /** @type {Array<Object>} Pending images for processing */
+          pendingImages: [],
         };
 
         /**
@@ -2378,6 +2379,22 @@ Fliplet.Widget.generateInterface({
               event.preventDefault();
               handleSendMessage();
             }
+            
+            // Keyboard shortcuts for image management
+            if (event.ctrlKey || event.metaKey) {
+              switch (event.key) {
+                case 'd':
+                  event.preventDefault();
+                  clearAllPendingImages();
+                  break;
+                case 'z':
+                  event.preventDefault();
+                  if (AppState.pendingImages.length > 0) {
+                    removePendingImage(AppState.pendingImages.length - 1);
+                  }
+                  break;
+              }
+            }
           });
 
           // Handle paste events for images
@@ -2447,16 +2464,16 @@ Fliplet.Widget.generateInterface({
                 console.log("✅ Image converted to base64, length:", imageData.length);
                 
                 // Store the image data for later use
-                AppState.pendingImageData = imageData;
-                AppState.pendingImageName = file.name;
+                AppState.pendingImages.push({
+                  name: file.name,
+                  data: imageData,
+                });
                 
-                // Show a preview in the input field
-                const currentValue = DOM.userInput.value;
-                const imagePreview = `[Image: ${file.name}] `;
-                DOM.userInput.value = imagePreview + currentValue;
+                // Update input preview with all pending images
+                updateInputPreview();
                 
                 // Add a visual indicator that image is ready
-                addMessageToChat(`📎 Image "${file.name}" ready for analysis. Type your message and press Send.`, "system");
+                addMessageToChat(`📎 Image "${file.name}" added. Type your message and press Send. (${AppState.pendingImages.length} image${AppState.pendingImages.length > 1 ? 's' : ''} ready)`, "system");
                 
                 console.log("📎 Image stored for later processing");
               };
@@ -2476,6 +2493,41 @@ Fliplet.Widget.generateInterface({
         }
 
         /**
+         * Update the input field preview with pending images
+         */
+        function updateInputPreview() {
+          const currentValue = DOM.userInput.value;
+          const imagePreviews = AppState.pendingImages.map((img, index) => 
+            `[Image${AppState.pendingImages.length > 1 ? index + 1 : ''}: ${img.name}]`
+          ).join(' ');
+          
+          // Remove any existing image previews from the input
+          const cleanValue = currentValue.replace(/\[Image\d*: [^\]]+\]\s*/g, '').trim();
+          DOM.userInput.value = imagePreviews + (cleanValue ? ' ' + cleanValue : '');
+        }
+
+        /**
+         * Remove a specific image from pending images
+         * @param {number} index - Index of image to remove
+         */
+        function removePendingImage(index) {
+          if (index >= 0 && index < AppState.pendingImages.length) {
+            const removedImage = AppState.pendingImages.splice(index, 1)[0];
+            updateInputPreview();
+            addMessageToChat(`🗑️ Removed image: ${removedImage.name}`, "system");
+          }
+        }
+
+        /**
+         * Clear all pending images
+         */
+        function clearAllPendingImages() {
+          AppState.pendingImages = [];
+          updateInputPreview();
+          addMessageToChat("🗑️ All pending images cleared", "system");
+        }
+
+        /**
          * Handle sending a message to the AI
          */
         function handleSendMessage() {
@@ -2489,18 +2541,24 @@ Fliplet.Widget.generateInterface({
 
           console.log("📤 User message:", userMessage);
 
-          // Check if there's pending image data
-          const imageData = AppState.pendingImageData;
-          const imageName = AppState.pendingImageName;
+          // Check if there are pending images
+          const pendingImages = [...AppState.pendingImages];
           
-          // Clear pending image data
-          AppState.pendingImageData = null;
-          AppState.pendingImageName = null;
+          // Clear all pending images after sending
+          AppState.pendingImages = [];
 
-          // Add user message to chat (with image if available)
-          if (imageData) {
-            const imageMessage = `[Image: ${imageName}] ${userMessage}`;
-            addMessageToChat(imageMessage, "user", imageData);
+          // Add user message to chat (with images if available)
+          if (pendingImages.length > 0) {
+            const imageNames = pendingImages.map(img => img.name).join(', ');
+            const imageMessage = `[Images: ${imageNames}] ${userMessage}`;
+            addMessageToChat(imageMessage, "user", pendingImages[0].data); // Show first image in chat
+            
+            // If multiple images, add them as additional data
+            if (pendingImages.length > 1) {
+              pendingImages.slice(1).forEach((img, index) => {
+                addMessageToChat(`[Additional Image ${index + 2}: ${img.name}]`, "user", img.data);
+              });
+            }
           } else {
             addMessageToChat(userMessage, "user");
           }
@@ -2508,8 +2566,9 @@ Fliplet.Widget.generateInterface({
           // Clear input
           DOM.userInput.value = "";
 
-          // Process the message with image data if available
-          processUserMessage(userMessage, imageData);
+          // Process the message with all image data
+          const allImageData = pendingImages.map(img => img.data).join('\n\n');
+          processUserMessage(userMessage, allImageData);
         }
 
         /**
@@ -4865,7 +4924,7 @@ Make sure each code block is complete and functional.`;
           
           // Add image if provided
           if (imageData) {
-            messageContent += `<br><img src="${imageData}" alt="Pasted image" style="max-width: 300px; max-height: 200px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px;">`;
+            messageContent += `<div class="image-container"><img src="${imageData}" alt="Pasted image" style="max-width: 100%; max-height: 400px; border: 1px solid #ccc; border-radius: 4px; margin-top: 8px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); object-fit: contain; display: block;"></div>`;
           }
           
           messageDiv.innerHTML = messageContent;
@@ -4921,8 +4980,7 @@ Make sure each code block is complete and functional.`;
           AppState.chatHistory = [];
           AppState.isFirstGeneration = true;
           AppState.requestCount = 0;
-          AppState.pendingImageData = null;
-          AppState.pendingImageName = null;
+          AppState.pendingImages = [];
 
           // Clear local storage
           clearChatHistoryFromStorage();

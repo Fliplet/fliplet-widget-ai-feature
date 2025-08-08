@@ -422,12 +422,14 @@
 }
 
 .interface .message img {
-  max-width: 300px;
-  max-height: 200px;
+  max-width: 100%;
+  max-height: 400px;
   border: 1px solid #ccc;
   border-radius: 4px;
   margin-top: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  object-fit: contain;
+  display: block;
 }
 
 .interface .message.user-message img {
@@ -436,6 +438,53 @@
 
 .interface .message.ai-message img {
   border-color: #28a745;
+}
+
+.interface .message.system-message img {
+  border-color: #6c757d;
+}
+
+/* Image container for better responsive design */
+.interface .image-container {
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 4px;
+  margin: 8px 0;
+}
+
+/* Multiple images layout */
+.interface .multiple-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.interface .multiple-images img {
+  max-width: calc(50% - 4px);
+  max-height: 200px;
+  flex: 1;
+  min-width: 150px;
+}
+
+/* Image preview in input */
+.interface .image-preview {
+  display: inline-block;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin: 2px;
+  font-size: 12px;
+  color: #6c757d;
+}
+
+/* Keyboard shortcuts hint */
+.interface .shortcuts-hint {
+  font-size: 11px;
+  color: #6c757d;
+  margin-top: 4px;
+  opacity: 0.8;
 }
 
 /* Buttons */

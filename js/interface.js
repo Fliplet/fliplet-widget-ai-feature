@@ -101,7 +101,6 @@ Fliplet.Widget.generateInterface({
         <div class="chat-section">
             <div class="chat-header">
                 <h2>Chat Interface</h2>
-                <input type="button" id="reset-btn" class="btn-secondary" value="Reset Session">
             </div>
             
             <div id="chat-messages" class="chat-messages">
@@ -113,6 +112,15 @@ Fliplet.Widget.generateInterface({
             <div class="chat-input">
                 <input type="text" id="user-input" placeholder="How can I help?" autocomplete="off" />
                 <input type="button" id="send-btn" class="btn-primary" value="Send">
+            </div>
+        </div>
+        <input type="button" id="reset-btn" class="btn-secondary" value="Reset Session">
+        <div class="btn-info">
+            <div class="info-container">
+                <i class="fa fa-info-circle info-icon"></i>
+                <div class="info-content">
+                    <p>This will clear your chat history but keep your generated code intact. Your HTML, CSS, and JavaScript files will remain unchanged.</p>
+                </div>
             </div>
         </div>
     </div>

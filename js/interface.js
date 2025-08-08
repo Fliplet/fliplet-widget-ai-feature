@@ -129,14 +129,37 @@ Fliplet.Widget.generateInterface({
           const interfaceElement = document.querySelector('.interface');
           if (!interfaceElement) return;
           
-          // Get all direct children of .interface
-          const allElements = Array.from(interfaceElement.children);
+          // Recursive function to get all elements within the interface
+          function getAllElements(element, excludeElement) {
+            const elements = [];
+            
+            // Skip the element we want to exclude
+            if (element === excludeElement) {
+              return elements;
+            }
+            
+            // Add current element if it's not the excluded one
+            if (element !== excludeElement) {
+              elements.push(element);
+            }
+            
+            // Recursively get all child elements
+            const children = Array.from(element.children);
+            children.forEach(child => {
+              elements.push(...getAllElements(child, excludeElement));
+            });
+            
+            return elements;
+          }
+          
+          // Get all elements in the interface except #chat-messages
+          const allElements = getAllElements(interfaceElement, chatMessages);
           let totalHeight = 0;
           
           // Calculate height of all elements except #chat-messages
           allElements.forEach(element => {
-            // Skip the element that contains #chat-messages
-            if (element.querySelector('#chat-messages')) {
+            // Skip elements that are part of the chat-messages or its children
+            if (element === chatMessages || element.closest('#chat-messages')) {
               return;
             }
             
@@ -148,37 +171,16 @@ Fliplet.Widget.generateInterface({
             totalHeight += rect.height + marginTop + marginBottom;
           });
           
-          // Get the chat section element
-          const chatSection = document.querySelector('.chat-section');
-          if (chatSection) {
-            // Get all elements within chat-section except #chat-messages
-            const chatSectionElements = Array.from(chatSection.children);
-            let chatSectionHeight = 0;
-            
-            chatSectionElements.forEach(element => {
-              if (element.id === 'chat-messages') {
-                return;
-              }
-              
-              const rect = element.getBoundingClientRect();
-              const computedStyle = window.getComputedStyle(element);
-              const marginTop = parseFloat(computedStyle.marginTop);
-              const marginBottom = parseFloat(computedStyle.marginBottom);
-              
-              chatSectionHeight += rect.height + marginTop + marginBottom;
-            });
-            
-            // Calculate available height for chat-messages
-            const viewportHeight = window.innerHeight;
-            const availableHeight = viewportHeight - totalHeight - chatSectionHeight;
-            
-            // Set minimum height of 200px and maximum of available height
-            const finalHeight = Math.max(200, availableHeight);
-            
-            // Apply the calculated height
-            chatMessages.style.height = finalHeight + 'px';
-            chatMessages.style.maxHeight = finalHeight + 'px';
-          }
+          // Calculate available height for chat-messages
+          const viewportHeight = window.innerHeight;
+          const availableHeight = viewportHeight - totalHeight;
+          
+          // Set minimum height of 200px and maximum of available height
+          const finalHeight = Math.max(200, availableHeight);
+          
+          // Apply the calculated height
+          chatMessages.style.height = finalHeight + 'px';
+          chatMessages.style.maxHeight = finalHeight + 'px';
         }
         
         // Recalculate after a short delay to ensure all elements are rendered

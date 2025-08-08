@@ -439,6 +439,8 @@
   font-weight: 500;
   cursor: pointer;
   margin-bottom: 0;
+  width: 100%;
+  display: block;
 }
 
 /* Code Display Section */

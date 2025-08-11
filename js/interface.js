@@ -112,7 +112,8 @@ Fliplet.Widget.generateInterface({
             <div class="chat-input">
                 <input type="text" id="user-input" placeholder="How can I help?" autocomplete="off" />
                 <input type="button" id="send-btn" class="btn-primary" value="Send">
-                <div class="image-paste-hint">💡 Tip: You can paste images directly into the input field!</div>
+            </div>
+            <div class="image-paste-hint">💡 Tip: You can paste images directly into the input field!</div>
             </div>
             <div class="uploaded-images">
                 <div class="no-images-placeholder">No images attached</div>
@@ -2580,26 +2581,24 @@ Fliplet.Widget.generateInterface({
             return;
           }
 
-          // Build enhanced message with images
+          // Simply append image information to the user's message if images are present
           let enhancedMessage = userMessage;
           if (pastedImages.length > 0) {
             const imageInfo = pastedImages.map(img => 
               `[Image: ${img.name} (${img.type}, ${formatFileSize(img.size)})]`
             ).join('\n');
             
-            if (userMessage) {
-              enhancedMessage = `${userMessage}\n\nAttached Images:\n${imageInfo}`;
-            } else {
-              enhancedMessage = `Analyze these images:\n${imageInfo}`;
-            }
+            enhancedMessage = userMessage ? `${userMessage}\n\nImages: ${imageInfo}` : `Images: ${imageInfo}`;
           }
 
           console.log("📤 User message:", enhancedMessage);
           console.log("🖼️ Images attached:", pastedImages.length);
 
-          // Add user message to chat (show original message + image count)
-          const displayMessage = userMessage || `Analyzing ${pastedImages.length} image(s)`;
-          addMessageToChat(displayMessage, "user");
+          // Add user message to chat (show original message + image count if applicable)
+          const displayMessage = userMessage || (pastedImages.length > 0 ? `Analyzing ${pastedImages.length} image(s)` : '');
+          if (displayMessage) {
+            addMessageToChat(displayMessage, "user");
+          }
 
           // Clear input and images
           DOM.userInput.value = "";

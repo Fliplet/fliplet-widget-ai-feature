@@ -408,17 +408,12 @@
 }
 
 .interface .image-paste-hint {
-  position: absolute;
-  top: -25px;
-  left: 0;
   font-size: 11px;
   color: #6c757d;
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.interface #user-input:focus + .image-paste-hint {
-  opacity: 1;
+  margin-top: 8px;
+  text-align: center;
+  opacity: 0.8;
+  font-style: italic;
 }
 
 .interface .message img {
@@ -485,6 +480,109 @@
   color: #6c757d;
   margin-top: 4px;
   opacity: 0.8;
+}
+
+/* Uploaded images section */
+.interface .uploaded-images {
+  display: none;
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.interface .pasted-image-container {
+  position: relative;
+  display: inline-block;
+  margin: 5px;
+  padding: 5px;
+  background: white;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.interface .pasted-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 3px;
+  display: block;
+}
+
+.interface .remove-image-btn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  transition: background-color 0.2s;
+}
+
+.interface .remove-image-btn:hover {
+  background: #c82333;
+}
+
+.interface .image-info {
+  margin-top: 5px;
+  text-align: center;
+  font-size: 11px;
+  color: #6c757d;
+}
+
+.interface .image-name {
+  display: block;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.interface .image-size {
+  display: block;
+  color: #adb5bd;
+  font-size: 10px;
+}
+
+.interface .uploaded-images::-webkit-scrollbar {
+  width: 6px;
+}
+
+.interface .uploaded-images::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.interface .uploaded-images::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.interface .uploaded-images::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.interface .no-images-placeholder {
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+  padding: 20px;
+  font-size: 14px;
 }
 
 /* Buttons */

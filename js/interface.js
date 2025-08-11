@@ -2597,7 +2597,7 @@ Fliplet.Widget.generateInterface({
           // Add user message to chat (show original message + image count if applicable)
           const displayMessage = userMessage || (pastedImages.length > 0 ? `Analyzing ${pastedImages.length} image(s)` : '');
           if (displayMessage) {
-            addMessageToChat(displayMessage, "user");
+            addMessageToChat(displayMessage, "user", pastedImages);
           }
 
           // Clear input and images
@@ -4882,6 +4882,7 @@ Make sure each code block is complete and functional.`;
                     message: item.message,
                     type: item.type,
                     timestamp: item.timestamp || new Date().toISOString(),
+                    images: item.images || [] // Include images if they exist
                   }));
 
                 // Update AppState with filtered history
@@ -4890,20 +4891,7 @@ Make sure each code block is complete and functional.`;
                 // Repopulate chat interface
                 DOM.chatMessages.innerHTML = "";
                 filteredHistory.forEach((item) => {
-                  const messageDiv = document.createElement("div");
-                  messageDiv.className = `message ${item.type}-message`;
-
-                  const prefix =
-                    item.type === "user"
-                      ? "You"
-                      : item.type === "ai"
-                      ? "AI"
-                      : "System";
-                  messageDiv.innerHTML = `<strong>${prefix}:</strong> ${escapeHTML(
-                    item.message
-                  )}`;
-
-                  DOM.chatMessages.appendChild(messageDiv);
+                  addMessageToChat(item.message, item.type, item.images);
                 });
 
                 scrollToBottom();
@@ -4939,7 +4927,7 @@ Make sure each code block is complete and functional.`;
          * @param {string} message - The message content
          * @param {string} type - Message type ('user', 'ai', 'system')
          */
-        function addMessageToChat(message, type) {
+        function addMessageToChat(message, type, images = []) {
           console.assert(
             typeof message === "string",
             "message must be a string"
@@ -4954,9 +4942,23 @@ Make sure each code block is complete and functional.`;
 
           const prefix =
             type === "user" ? "You" : type === "ai" ? "AI" : "System";
-          messageDiv.innerHTML = `<strong>${prefix}:</strong> ${escapeHTML(
-            message
-          )}`;
+          
+          // Build message content
+          let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(message)}`;
+          
+          // Add images if present
+          if (images && images.length > 0) {
+            const imagesHTML = images.map(img => 
+              `<div class="chat-image-container">
+                <img src="${img.dataUrl}" alt="${img.name}" class="chat-image" />
+                <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
+               </div>`
+            ).join('');
+            
+            messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+          }
+          
+          messageDiv.innerHTML = messageContent;
 
           DOM.chatMessages.appendChild(messageDiv);
           scrollToBottom();
@@ -4966,6 +4968,7 @@ Make sure each code block is complete and functional.`;
             message,
             type,
             timestamp: new Date().toISOString(),
+            images: images || [] // Store images in history
           });
 
           // Save to local storage

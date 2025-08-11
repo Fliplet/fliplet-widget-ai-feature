@@ -2369,11 +2369,9 @@ Fliplet.Widget.generateInterface({
          * Setup image paste handling functionality
          */
         function setupImagePasteHandling() {
-          // Add paste event listener to the input field
+          // Add paste event listener to the input field only
+          // This prevents duplicate processing when pasting into the input
           DOM.userInput.addEventListener('paste', handleImagePaste);
-          
-          // Also add paste event listener to the document for broader capture
-          document.addEventListener('paste', handleImagePaste);
         }
 
         /**
@@ -2386,6 +2384,7 @@ Fliplet.Widget.generateInterface({
           if (!items) return;
           
           let hasImages = false;
+          let processedFiles = new Set(); // Track processed files to prevent duplicates
           
           for (let i = 0; i < items.length; i++) {
             const item = items[i];
@@ -2393,7 +2392,8 @@ Fliplet.Widget.generateInterface({
             if (item.type.indexOf('image') !== -1) {
               hasImages = true;
               const file = item.getAsFile();
-              if (file) {
+              if (file && !processedFiles.has(file.name + file.size + file.lastModified)) {
+                processedFiles.add(file.name + file.size + file.lastModified);
                 processPastedImage(file);
               }
             }

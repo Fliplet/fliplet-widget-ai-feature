@@ -2363,6 +2363,12 @@ Fliplet.Widget.generateInterface({
             // No need to add another system message since there's already one in the HTML
           }
 
+          // Ensure resize handle is present after initialization
+          setTimeout(ensureResizeHandlePresent, 100);
+          
+          // Set up periodic check to ensure resize handle is always present
+          setInterval(ensureResizeHandlePresent, 2000);
+
           console.log("✅ App initialization complete");
         }
 
@@ -4893,6 +4899,12 @@ Make sure each code block is complete and functional.`;
                 filteredHistory.forEach((item) => {
                   addMessageToChat(item.message, item.type, item.images);
                 });
+                
+                // Ensure resize handle is added back after repopulating
+                if (window.chatResizeHandle && !DOM.chatMessages.contains(window.chatResizeHandle)) {
+                  DOM.chatMessages.style.position = 'relative';
+                  DOM.chatMessages.appendChild(window.chatResizeHandle);
+                }
 
                 scrollToBottom();
                 return true;
@@ -4961,6 +4973,10 @@ Make sure each code block is complete and functional.`;
           messageDiv.innerHTML = messageContent;
 
           DOM.chatMessages.appendChild(messageDiv);
+          
+          // Ensure resize handle is present after adding message
+          ensureResizeHandlePresent();
+          
           scrollToBottom();
 
           // Add to history
@@ -5022,6 +5038,12 @@ Make sure each code block is complete and functional.`;
           DOM.chatMessages.innerHTML =
             '<div class="message system-message"><strong>System:</strong> Ready to generate code! Ask for HTML, CSS, or JavaScript to get started.</div>';
 
+          // Ensure resize handle is added back after clearing
+          if (window.chatResizeHandle && !DOM.chatMessages.contains(window.chatResizeHandle)) {
+            DOM.chatMessages.style.position = 'relative';
+            DOM.chatMessages.appendChild(window.chatResizeHandle);
+          }
+
           // Reset
           updateCode();
         }
@@ -5031,64 +5053,138 @@ Make sure each code block is complete and functional.`;
          */
         function makeChatMessagesResizable() {
           const chatMessages = document.getElementById('chat-messages');
-          if (!chatMessages) return;
+          if (!chatMessages) {
+            console.warn('⚠️ Chat messages element not found');
+            return;
+          }
+          
+          console.log('🔧 Setting up chat messages resizable functionality');
 
-          // Create resize handle
-          const resizeHandle = document.createElement('div');
-          resizeHandle.className = 'resize-handle';
-          resizeHandle.innerHTML = '⋮⋮';
-          resizeHandle.style.cssText = `
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 20px;
-            height: 20px;
-            background: #e2e8f0;
-            border: 1px solid #cbd5e0;
-            border-radius: 3px;
-            cursor: nw-resize;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: #718096;
-            user-select: none;
-            z-index: 10;
-          `;
+          // Store the resize handle globally so we can re-add it when needed
+          if (!window.chatResizeHandle) {
+            window.chatResizeHandle = document.createElement('div');
+            window.chatResizeHandle.className = 'resize-handle';
+            window.chatResizeHandle.innerHTML = '⋮⋮';
+            window.chatResizeHandle.style.cssText = `
+              position: absolute;
+              bottom: 0;
+              right: 0;
+              width: 20px;
+              height: 20px;
+              background: #e2e8f0;
+              border: 1px solid #cbd5e0;
+              border-radius: 3px;
+              cursor: nw-resize;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 12px;
+              color: #718096;
+              user-select: none;
+              z-index: 10;
+            `;
 
-          // Add resize handle to chat messages
-          chatMessages.style.position = 'relative';
-          chatMessages.appendChild(resizeHandle);
+            let isResizing = false;
+            let startY, startHeight;
 
-          let isResizing = false;
-          let startY, startHeight;
+            // Mouse events for resizing
+            window.chatResizeHandle.addEventListener('mousedown', function(e) {
+              isResizing = true;
+              startY = e.clientY;
+              startHeight = chatMessages.offsetHeight;
+              document.body.style.cursor = 'nw-resize';
+              e.preventDefault();
+            });
 
-          // Mouse events for resizing
-          resizeHandle.addEventListener('mousedown', function(e) {
-            isResizing = true;
-            startY = e.clientY;
-            startHeight = chatMessages.offsetHeight;
-            document.body.style.cursor = 'nw-resize';
-            e.preventDefault();
-          });
+            document.addEventListener('mousemove', function(e) {
+              if (!isResizing) return;
+              
+              const deltaY = startY - e.clientY;
+              const newHeight = startHeight + deltaY;
+              
+              if (newHeight > 100) { // Minimum height
+                chatMessages.style.height = newHeight + 'px';
+              }
+            });
 
-          document.addEventListener('mousemove', function(e) {
-            if (!isResizing) return;
-            
-            const deltaY = startY - e.clientY;
-            const newHeight = startHeight + deltaY;
-            
-            if (newHeight > 100) { // Minimum height
-              chatMessages.style.height = newHeight + 'px';
+            document.addEventListener('mouseup', function() {
+              if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = '';
+              }
+            });
+          }
+
+          // Function to add resize handle
+          function addResizeHandle() {
+            if (chatMessages && window.chatResizeHandle && !chatMessages.contains(window.chatResizeHandle)) {
+              chatMessages.style.position = 'relative';
+              chatMessages.appendChild(window.chatResizeHandle);
             }
-          });
+          }
 
-          document.addEventListener('mouseup', function() {
-            if (isResizing) {
-              isResizing = false;
-              document.body.style.cursor = '';
-            }
-          });
+          // Add resize handle initially
+          addResizeHandle();
+
+          // Set up a MutationObserver to watch for changes to chat messages
+          if (!window.chatMessagesObserver) {
+            window.chatMessagesObserver = new MutationObserver(function(mutations) {
+              let resizeHandleRemoved = false;
+              
+              mutations.forEach(function(mutation) {
+                if (mutation.type === 'childList') {
+                  // Check if resize handle was removed
+                  if (mutation.removedNodes) {
+                    for (let i = 0; i < mutation.removedNodes.length; i++) {
+                      if (mutation.removedNodes[i] === window.chatResizeHandle) {
+                        resizeHandleRemoved = true;
+                        break;
+                      }
+                    }
+                  }
+                  
+                  // Check if resize handle is no longer in the container
+                  if (!chatMessages.contains(window.chatResizeHandle)) {
+                    resizeHandleRemoved = true;
+                  }
+                }
+              });
+              
+              // If resize handle was removed, add it back
+              if (resizeHandleRemoved) {
+                setTimeout(addResizeHandle, 100);
+              }
+            });
+
+            window.chatMessagesObserver.observe(chatMessages, {
+              childList: true,
+              subtree: true
+            });
+          }
+        }
+
+        /**
+         * Ensure the resize handle is present in the chat messages
+         */
+        function ensureResizeHandlePresent() {
+          if (!window.chatResizeHandle || !DOM.chatMessages) {
+            return;
+          }
+          
+          // Check if resize handle is already present
+          if (DOM.chatMessages.contains(window.chatResizeHandle)) {
+            return;
+          }
+          
+          // Ensure chat messages has relative positioning
+          if (DOM.chatMessages.style.position !== 'relative') {
+            DOM.chatMessages.style.position = 'relative';
+          }
+          
+          // Add the resize handle
+          DOM.chatMessages.appendChild(window.chatResizeHandle);
+          
+          console.log('✅ Resize handle added to chat messages');
         }
 
         // Export for testing (if needed)

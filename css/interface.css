@@ -1,3 +1,39 @@
+/* Resize handle styles */
+.resize-handle {
+  position: absolute !important;
+  bottom: 0 !important;
+  right: 0 !important;
+  width: 20px !important;
+  height: 20px !important;
+  background: #e2e8f0 !important;
+  border: 1px solid #cbd5e0 !important;
+  border-radius: 3px !important;
+  cursor: nw-resize !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 12px !important;
+  color: #718096 !important;
+  user-select: none !important;
+  z-index: 1000 !important;
+  transition: background-color 0.2s ease !important;
+}
+
+.resize-handle:hover {
+  background: #cbd5e0 !important;
+}
+
+.resize-handle:active {
+  background: #a0aec0 !important;
+}
+
+/* Ensure chat messages container has relative positioning for resize handle */
+#chat-messages {
+  position: relative !important;
+  min-height: 200px !important;
+  resize: none !important;
+}
+
 /* .interface .generate-code-disabled .spinner-holder {
   display: block;
   margin-right: 10px;

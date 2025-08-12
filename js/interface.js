@@ -4733,12 +4733,13 @@ Make sure each code block is complete and functional.`;
 
           const prefix =
             type === "user" ? "You" : type === "ai" ? "AI" : "System";
-          messageDiv.innerHTML = `<strong>${prefix}:</strong> ${escapeHTML(
-            message
-          )}`;
+          messageDiv.innerHTML = `<strong>${prefix}:</strong> ${escapeHTML(message)}`;
 
           DOM.chatMessages.appendChild(messageDiv);
           scrollToBottom();
+
+          // Ensure resize handle is present after adding new messages
+          makeChatMessagesResizable();
 
           // Add to history
           AppState.chatHistory.push({
@@ -4795,6 +4796,9 @@ Make sure each code block is complete and functional.`;
           DOM.chatMessages.innerHTML =
             '<div class="message system-message"><strong>System:</strong> Ready to generate code! Ask for HTML, CSS, or JavaScript to get started.</div>';
 
+          // Ensure resize handle is present after reset
+          makeChatMessagesResizable();
+
           // Reset
           updateCode();
         }
@@ -4805,6 +4809,11 @@ Make sure each code block is complete and functional.`;
         function makeChatMessagesResizable() {
           const chatMessages = document.getElementById('chat-messages');
           if (!chatMessages) return;
+
+          // Check if resize handle already exists
+          if (chatMessages.querySelector('.resize-handle')) {
+            return; // Already has resize handle
+          }
 
           // Create resize handle
           const resizeHandle = document.createElement('div');
@@ -4876,7 +4885,7 @@ Make sure each code block is complete and functional.`;
         }
         // Initialize app when DOM is ready
         initializeApp();
-      },
+      }
     },
     {
       type: "hidden",

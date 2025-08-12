@@ -203,30 +203,6 @@
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
-.interface .chat-send-btn {
-  border-radius: 0 20px 20px 0;
-  border: 1px solid #00abd1;
-  background: #00abd1;
-  color: white;
-  font-size: 14px;
-  height: 46px;
-  box-sizing: border-box;
-  transition: all 0.2s ease;
-}
-
-.interface .chat-send-btn:hover {
-  background: #0056b3;
-  border-color: #0056b3;
-}
-
-.interface .chat-send-btn:active {
-  transform: translateY(1px);
-}
-
-.interface .chat-send-btn i {
-  margin-right: 5px;
-}
-
 /* Chat loading overlay styles */
 .interface .chat-loading-overlay {
   position: absolute;
@@ -638,6 +614,10 @@
   transition: background-color 0.2s;
 }
 
+.interface .btn-primary:hover {
+  background-color: #00819e;
+}
+
 .interface .btn-secondary {
   color: #474974;
   background-color: #eae9ec;
@@ -668,58 +648,6 @@
   display: block;
 }
 
-/* Code Display Section */
-.interface .code-section {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.interface .code-panel {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-}
-
-.interface .code-header {
-  background: #667eea;
-  color: white;
-  padding: 15px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-/* Code Highlighting Classes */
-.interface .code-new {
-  background-color: rgba(52, 211, 153, 0.2);
-  color: #10b981;
-  padding: 2px 4px;
-  border-radius: 3px;
-  border-left: 3px solid #10b981;
-  margin: 2px 0;
-  display: inline-block;
-  animation: fadeInGlow 1s ease-in-out;
-}
-
-.interface .code-modified {
-  background-color: rgba(251, 191, 36, 0.2);
-  color: #f59e0b;
-  padding: 2px 4px;
-  border-radius: 3px;
-  border-left: 3px solid #f59e0b;
-  margin: 2px 0;
-  display: inline-block;
-  animation: fadeInGlow 1s ease-in-out;
-}
-
-.interface .code-existing {
-  color: #e2e8f0;
-  opacity: 0.8;
-}
-
 /* Animation for new code highlights */
 @keyframes fadeInGlow {
   0% {
@@ -747,10 +675,6 @@
 @media (max-width: 768px) {
   .interface .container {
     padding: 0;
-  }
-
-  .interface .code-section {
-    grid-template-columns: 1fr;
   }
 
   .interface .chat-header {

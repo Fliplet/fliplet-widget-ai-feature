@@ -1,7 +1,7 @@
 /* Resize handle styles */
 .resize-handle {
   position: absolute !important;
-  bottom: 60px !important;
+  bottom: 82px !important; /* 60px for iltacon */
   right: 5px !important;
   width: 20px !important;
   height: 20px !important;

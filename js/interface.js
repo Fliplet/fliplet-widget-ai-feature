@@ -2433,6 +2433,9 @@ Fliplet.Widget.generateInterface({
             '<div class="loading"></div> 🧠 AI is analyzing your request...';
           DOM.chatMessages.appendChild(loadingDiv);
           scrollToBottom();
+          
+          // Ensure resize handle is present after adding loading indicator
+          makeChatMessagesResizable();
 
           AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
           AppState.css = Fliplet.Helper.field("css").get() || "";
@@ -4686,6 +4689,10 @@ Make sure each code block is complete and functional.`;
                 });
 
                 scrollToBottom();
+                
+                // Ensure resize handle is present after loading chat history
+                makeChatMessagesResizable();
+                
                 return true;
               }
             }

@@ -205,17 +205,14 @@ function enhancePrompt() {
   toggleLoaderEnhancePrompt(true);
   var prompt = Fliplet.Helper.field("prompt").get();
   if (prompt) {
-    let systemPrompt = `You are a "Prompt Enhancer" for front-end feature requests. When given a user's simple request for HTML/CSS/JS, you must:
-
-1. **Restate the core goal** in one clear sentence.  
-2. **Add context**: describe the target audience, use case, and any brand or environment constraints.  
-3. **Define functional requirements**: list all UI elements, interactions, and behaviors the component should support (e.g. hover states, form validation, animations).  
-4. **Specify design details**: layout structure (grid/flex), colors (primary, secondary, accents), typography (font families, sizes, weights), spacing, and responsive breakpoints.  
-5. **Include technical considerations**: prefer Fliplet's JavaScript APIs when available; for any parts not covered by Fliplet, use vanilla HTML, CSS, and JavaScript. Also note any bundling/build tools, performance targets (load time, bundle size), and browser support requirements.  
-6. **Ensure accessibility**: ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.  
-7. **Outline integration points**: data sources to connect, use the data source JS API only  
+    let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user’s simple request for HTML/CSS/JS, you must state the following:
+	1.	Core Goal: Restate the user’s main objective in one clear sentence.
+	2.	Functional Requirements: List all UI elements, interactions, and behaviors the component should support (e.g. hover states, form validation, animations).
+	3.	UI & UX Guidelines: Define visual hierarchy, interaction patterns, navigation flow, micro-interactions and feedback, error and empty states, consistency with existing components, and overall usability best practices.
+	4.	Accessibility: Define ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.
 
 Important:
+  - Do not mention anything related to frontend frameworks or data sources, the system prompt that generates the code has all the technical requirements listed. 
   - Only return the enhanced prompt as a plain string.
   - Do not introduce it with any sentence like "Here's the result" or "You can use this prompt."
   - Do not add quotation marks or formatting around the result.

@@ -1,8 +1,8 @@
 /* Resize handle styles */
 .resize-handle {
   position: absolute !important;
-  bottom: 0 !important;
-  right: 0 !important;
+  bottom: 60px !important;
+  right: 5px !important;
   width: 20px !important;
   height: 20px !important;
   background: #e2e8f0 !important;

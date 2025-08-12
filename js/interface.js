@@ -4834,24 +4834,6 @@ Make sure each code block is complete and functional.`;
           const resizeHandle = document.createElement('div');
           resizeHandle.className = 'resize-handle';
           resizeHandle.innerHTML = '⋮⋮';
-          resizeHandle.style.cssText = `
-            position: absolute;
-            bottom: 60px;
-            right: 5px;
-            width: 20px;
-            height: 20px;
-            background: #e2e8f0;
-            border: 1px solid #cbd5e0;
-            border-radius: 3px;
-            cursor: ns-resize;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-            color: #718096;
-            user-select: none;
-            z-index: 10;
-          `;
 
           // Find the chat-section container and add resize handle to it
           const chatSection = document.querySelector('.chat-section');
@@ -4863,8 +4845,6 @@ Make sure each code block is complete and functional.`;
             chatMessages.style.position = 'relative';
             chatMessages.appendChild(resizeHandle);
           }
-
-
 
           let isResizing = false;
           let startY, startHeight;

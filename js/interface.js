@@ -5053,114 +5053,58 @@ Make sure each code block is complete and functional.`;
          */
         function makeChatMessagesResizable() {
           const chatMessages = document.getElementById('chat-messages');
-          if (!chatMessages) {
-            console.warn('⚠️ Chat messages element not found');
-            return;
-          }
-          
-          console.log('🔧 Setting up chat messages resizable functionality');
+          if (!chatMessages) return;
 
-          // Store the resize handle globally so we can re-add it when needed
-          if (!window.chatResizeHandle) {
-            window.chatResizeHandle = document.createElement('div');
-            window.chatResizeHandle.className = 'resize-handle';
-            window.chatResizeHandle.innerHTML = '⋮⋮';
-            window.chatResizeHandle.style.cssText = `
-              position: absolute;
-              bottom: 0;
-              right: 0;
-              width: 20px;
-              height: 20px;
-              background: #e2e8f0;
-              border: 1px solid #cbd5e0;
-              border-radius: 3px;
-              cursor: nw-resize;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              font-size: 12px;
-              color: #718096;
-              user-select: none;
-              z-index: 10;
-            `;
-
-            let isResizing = false;
-            let startY, startHeight;
-
-            // Mouse events for resizing
-            window.chatResizeHandle.addEventListener('mousedown', function(e) {
-              isResizing = true;
-              startY = e.clientY;
-              startHeight = chatMessages.offsetHeight;
-              document.body.style.cursor = 'nw-resize';
-              e.preventDefault();
-            });
-
-            document.addEventListener('mousemove', function(e) {
-              if (!isResizing) return;
-              
-              const deltaY = startY - e.clientY;
-              const newHeight = startHeight + deltaY;
-              
-              if (newHeight > 100) { // Minimum height
-                chatMessages.style.height = newHeight + 'px';
-              }
-            });
-
-            document.addEventListener('mouseup', function() {
-              if (isResizing) {
-                isResizing = false;
-                document.body.style.cursor = '';
-              }
-            });
+          // Check if resize handle already exists
+          if (chatMessages.querySelector('.resize-handle')) {
+            return; // Already has resize handle
           }
 
-          // Function to add resize handle
-          function addResizeHandle() {
-            if (chatMessages && window.chatResizeHandle && !chatMessages.contains(window.chatResizeHandle)) {
-              chatMessages.style.position = 'relative';
-              chatMessages.appendChild(window.chatResizeHandle);
+          // Create resize handle
+          const resizeHandle = document.createElement('div');
+          resizeHandle.className = 'resize-handle';
+          resizeHandle.innerHTML = '⋮⋮';
+
+          // Find the chat-section container and add resize handle to it
+          const chatSection = document.querySelector('.chat-section');
+          if (chatSection) {
+            chatSection.style.position = 'relative';
+            chatSection.appendChild(resizeHandle);
+          } else {
+            // Fallback to chat messages if chat-section not found
+            chatMessages.style.position = 'relative';
+            chatMessages.appendChild(resizeHandle);
+          }
+
+          let isResizing = false;
+          let startY, startHeight;
+
+          // Mouse events for resizing
+          resizeHandle.addEventListener('mousedown', function(e) {
+            isResizing = true;
+            startY = e.clientY;
+            startHeight = chatMessages.offsetHeight;
+            document.body.style.cursor = 'ns-resize';
+            e.preventDefault();
+          });
+
+          document.addEventListener('mousemove', function(e) {
+            if (!isResizing) return;
+            
+            const deltaY = e.clientY - startY;
+            const newHeight = startHeight + deltaY;
+            
+            if (newHeight > 100) { // Minimum height
+              chatMessages.style.height = newHeight + 'px';
             }
-          }
+          });
 
-          // Add resize handle initially
-          addResizeHandle();
-
-          // Set up a MutationObserver to watch for changes to chat messages
-          if (!window.chatMessagesObserver) {
-            window.chatMessagesObserver = new MutationObserver(function(mutations) {
-              let resizeHandleRemoved = false;
-              
-              mutations.forEach(function(mutation) {
-                if (mutation.type === 'childList') {
-                  // Check if resize handle was removed
-                  if (mutation.removedNodes) {
-                    for (let i = 0; i < mutation.removedNodes.length; i++) {
-                      if (mutation.removedNodes[i] === window.chatResizeHandle) {
-                        resizeHandleRemoved = true;
-                        break;
-                      }
-                    }
-                  }
-                  
-                  // Check if resize handle is no longer in the container
-                  if (!chatMessages.contains(window.chatResizeHandle)) {
-                    resizeHandleRemoved = true;
-                  }
-                }
-              });
-              
-              // If resize handle was removed, add it back
-              if (resizeHandleRemoved) {
-                setTimeout(addResizeHandle, 100);
-              }
-            });
-
-            window.chatMessagesObserver.observe(chatMessages, {
-              childList: true,
-              subtree: true
-            });
-          }
+          document.addEventListener('mouseup', function() {
+            if (isResizing) {
+              isResizing = false;
+              document.body.style.cursor = '';
+            }
+          });
         }
 
         /**

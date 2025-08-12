@@ -639,8 +639,8 @@
 }
 
 .interface .btn-secondary {
-  background: #e2e8f0;
-  color: #333;
+  color: #474974;
+  background-color: #eae9ec;
   border: none;
   padding: 8px 16px;
   border-radius: 6px;

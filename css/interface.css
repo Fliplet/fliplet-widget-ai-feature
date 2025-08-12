@@ -638,6 +638,23 @@
   transition: background-color 0.2s;
 }
 
+.interface .btn-secondary {
+  background: #e2e8f0;
+  color: #333;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.interface .btn-secondary:hover {
+  background: #cbd5e0;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 /* Reset button specific styling */
 .interface #reset-btn {
   border: none;

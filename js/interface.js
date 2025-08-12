@@ -2436,6 +2436,8 @@ Fliplet.Widget.generateInterface({
           
           // Ensure resize handle is present after adding loading indicator
           makeChatMessagesResizable();
+          
+
 
           AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
           AppState.css = Fliplet.Helper.field("css").get() || "";
@@ -4693,6 +4695,8 @@ Make sure each code block is complete and functional.`;
                 // Ensure resize handle is present after loading chat history
                 makeChatMessagesResizable();
                 
+
+                
                 return true;
               }
             }
@@ -4747,6 +4751,8 @@ Make sure each code block is complete and functional.`;
 
           // Ensure resize handle is present after adding new messages
           makeChatMessagesResizable();
+          
+
 
           // Add to history
           AppState.chatHistory.push({
@@ -4805,6 +4811,8 @@ Make sure each code block is complete and functional.`;
 
           // Ensure resize handle is present after reset
           makeChatMessagesResizable();
+          
+
 
           // Reset
           updateCode();
@@ -4828,8 +4836,8 @@ Make sure each code block is complete and functional.`;
           resizeHandle.innerHTML = '⋮⋮';
           resizeHandle.style.cssText = `
             position: absolute;
-            bottom: 0;
-            right: 0;
+            bottom: 5px;
+            right: 5px;
             width: 20px;
             height: 20px;
             background: #e2e8f0;
@@ -4845,9 +4853,11 @@ Make sure each code block is complete and functional.`;
             z-index: 10;
           `;
 
-          // Add resize handle to chat messages
+          // Add resize handle to chat messages container
           chatMessages.style.position = 'relative';
           chatMessages.appendChild(resizeHandle);
+
+
 
           let isResizing = false;
           let startY, startHeight;

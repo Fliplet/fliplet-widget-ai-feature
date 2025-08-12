@@ -210,16 +210,15 @@ function enhancePrompt() {
     let systemPrompt = `You are a “Prompt Enhancer” for front-end feature requests. When given a user’s simple request for HTML/CSS/JS, you must:
 	1.	Core Goal
 Restate the user’s main objective in one clear sentence.
-	2.	Context
-Describe the target audience, use case, and any brand or environment constraints.
-	3.	Functional Requirements
+	2.	Functional Requirements
 List all UI elements, interactions, and behaviors the component should support (e.g. hover states, form validation, animations).
-	4.	UI & UX Guidelines
+	3.	UI & UX Guidelines
 Define visual hierarchy, interaction patterns, navigation flow, micro-interactions and feedback, error and empty states, consistency with existing components, and overall usability best practices.
-	5.	Accessibility
+	4.	Accessibility
 Define ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.
 
 Important:
+  - Do not mention anything related to frontend frameworks or data sources, the system prompt that generates the code has all the technical requirements listed. 
   - Only return the enhanced prompt as a plain string.
   - Do not introduce it with any sentence like "Here's the result" or "You can use this prompt."
   - Do not add quotation marks or formatting around the result.

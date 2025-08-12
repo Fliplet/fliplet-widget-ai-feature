@@ -4836,7 +4836,7 @@ Make sure each code block is complete and functional.`;
           resizeHandle.innerHTML = '⋮⋮';
           resizeHandle.style.cssText = `
             position: absolute;
-            bottom: 5px;
+            bottom: 60px;
             right: 5px;
             width: 20px;
             height: 20px;
@@ -4853,9 +4853,16 @@ Make sure each code block is complete and functional.`;
             z-index: 10;
           `;
 
-          // Add resize handle to chat messages container
-          chatMessages.style.position = 'relative';
-          chatMessages.appendChild(resizeHandle);
+          // Find the chat-section container and add resize handle to it
+          const chatSection = document.querySelector('.chat-section');
+          if (chatSection) {
+            chatSection.style.position = 'relative';
+            chatSection.appendChild(resizeHandle);
+          } else {
+            // Fallback to chat messages if chat-section not found
+            chatMessages.style.position = 'relative';
+            chatMessages.appendChild(resizeHandle);
+          }
 
 
 

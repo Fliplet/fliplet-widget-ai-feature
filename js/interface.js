@@ -4843,7 +4843,7 @@ Make sure each code block is complete and functional.`;
             background: #e2e8f0;
             border: 1px solid #cbd5e0;
             border-radius: 3px;
-            cursor: nw-resize;
+            cursor: ns-resize;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -4867,14 +4867,14 @@ Make sure each code block is complete and functional.`;
             isResizing = true;
             startY = e.clientY;
             startHeight = chatMessages.offsetHeight;
-            document.body.style.cursor = 'nw-resize';
+            document.body.style.cursor = 'ns-resize';
             e.preventDefault();
           });
 
           document.addEventListener('mousemove', function(e) {
             if (!isResizing) return;
             
-            const deltaY = startY - e.clientY;
+            const deltaY = e.clientY - startY;
             const newHeight = startHeight + deltaY;
             
             if (newHeight > 100) { // Minimum height

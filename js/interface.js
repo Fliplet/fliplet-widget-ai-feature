@@ -2614,6 +2614,13 @@ Fliplet.Widget.generateInterface({
           // Remove from state
           AppState.pastedImages = AppState.pastedImages.filter(img => img.id !== imageId);
           
+          // Log the current state after removal
+          console.log('🗑️ Image removed:', {
+            removedId: imageId,
+            remainingImages: AppState.pastedImages.length,
+            remainingImageIds: AppState.pastedImages.map(img => img.id)
+          });
+          
           // Remove from UI
           const imageContainer = document.querySelector(`[data-image-id="${imageId}"]`);
           if (imageContainer) {
@@ -2625,8 +2632,6 @@ Fliplet.Widget.generateInterface({
             DOM.uploadedImages.innerHTML = '<div class="no-images-placeholder">No images attached</div>';
             DOM.uploadedImages.style.display = 'none';
           }
-          
-          console.log('🗑️ Image removed:', imageId);
         }
 
         // Make removePastedImage globally accessible for onclick handlers
@@ -2855,10 +2860,30 @@ Fliplet.Widget.generateInterface({
             });
 
             // Step 2: Call AI with optimized context
+            // Filter to only include images that still exist in the current state
+            const currentImages = AppState.pastedImages.filter(img => 
+              img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+            );
+            
+            console.log("📸 [Main] Current images for AI processing:", {
+              originalCount: pastedImages.length,
+              currentCount: currentImages.length,
+              originalImages: pastedImages.map(img => ({ name: img.name, id: img.id, status: img.status })),
+              currentImages: currentImages.map(img => ({ name: img.name, id: img.id, status: img.status, flipletUrl: !!img.flipletUrl, flipletFileId: !!img.flipletFileId }))
+            });
+            
+            // Additional safety check: log any discrepancies
+            if (pastedImages.length !== currentImages.length) {
+              console.warn("⚠️ [Main] Image count mismatch detected:", {
+                pastedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+                currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
+              });
+            }
+            
             const aiResponse = await callOpenAIWithNewArchitecture(
               userMessage,
               context,
-              pastedImages
+              currentImages
             );
 
             // Step 3: Parse response using protocol parser
@@ -2999,29 +3024,43 @@ Fliplet.Widget.generateInterface({
           });
 
           // Add current user message with image data
-          if (pastedImages.length > 0) {
+          if (pastedImages && pastedImages.length > 0) {
             // Use OpenAI's image input format
             const content = [
               { type: "text", text: userMessage }
             ];
             
-            // Add images that have been successfully uploaded
-            const uploadedImages = pastedImages.filter(img => img.status === 'uploaded' && img.flipletUrl);
-            uploadedImages.forEach((img) => {
-              content.push({
-                type: "image_url",
-                image_url: { url: img.flipletUrl }
+            // Double-check that images are valid and still exist
+            const validImages = pastedImages.filter(img => 
+              img && 
+              img.status === 'uploaded' && 
+              img.flipletUrl && 
+              img.flipletFileId &&
+              // Additional safety check: ensure the image still exists in AppState
+              AppState.pastedImages.some(stateImg => stateImg.id === img.id)
+            );
+            
+            if (validImages.length > 0) {
+              validImages.forEach((img) => {
+                content.push({
+                  type: "image_url",
+                  image_url: { url: img.flipletUrl }
+                });
               });
-            });
-            
-            messages.push({ role: "user", content: content });
-            
-            // Log what we're sending
-            console.log("📤 [AI] Sending message with images:", {
-              textLength: userMessage.length,
-              imageCount: uploadedImages.length,
-              images: uploadedImages.map(img => ({ name: img.name, url: img.flipletUrl }))
-            });
+              
+              messages.push({ role: "user", content: content });
+              
+              // Log what we're sending
+              console.log("📤 [AI] Sending message with images:", {
+                textLength: userMessage.length,
+                imageCount: validImages.length,
+                images: validImages.map(img => ({ name: img.name, url: img.flipletUrl, id: img.id }))
+              });
+            } else {
+              // No valid images, send text-only message
+              messages.push({ role: "user", content: userMessage });
+              console.log("⚠️ [AI] No valid images found, sending text-only message");
+            }
           } else {
             messages.push({ role: "user", content: userMessage });
           }

@@ -2353,6 +2353,9 @@ Fliplet.Widget.generateInterface({
             }
           }
 
+          // Check available Fliplet Media methods
+          checkFlipletMediaAvailability();
+
           // Setup event listeners
           setupEventListeners();
 
@@ -2370,6 +2373,56 @@ Fliplet.Widget.generateInterface({
           setInterval(ensureResizeHandlePresent, 2000);
 
           console.log("✅ App initialization complete");
+        }
+        
+        /**
+         * Check what Fliplet Media methods are available
+         * 
+         * IMAGE DELETION ISSUE FIX:
+         * The original code used Fliplet.Media.Files.delete() which may not exist in all
+         * Fliplet environments. This has been updated to try multiple deletion methods:
+         * 1. Fliplet.Media.Files.delete() - Original method
+         * 2. Fliplet.Media.Files.remove() - Alternative method
+         * 3. Fliplet.Media.delete() - Alternative method  
+         * 4. Fliplet.Media.Files.destroy() - Alternative method
+         * 5. Direct AJAX call - Fallback method
+         * 
+         * The code now provides detailed logging and user feedback for all scenarios.
+         */
+        function checkFlipletMediaAvailability() {
+          console.log("🔍 Checking Fliplet Media API availability...");
+          
+          if (typeof Fliplet !== 'undefined' && Fliplet.Media) {
+            console.log("✅ Fliplet.Media is available");
+            console.log("📋 Available Fliplet.Media methods:", Object.getOwnPropertyNames(Fliplet.Media));
+            
+            if (Fliplet.Media.Files) {
+              console.log("✅ Fliplet.Media.Files is available");
+              console.log("📋 Available Fliplet.Media.Files methods:", Object.getOwnPropertyNames(Fliplet.Media.Files));
+              
+              // Check specific methods
+              const methods = ['delete', 'remove', 'destroy', 'upload'];
+              methods.forEach(method => {
+                if (typeof Fliplet.Media.Files[method] === 'function') {
+                  console.log(`✅ Fliplet.Media.Files.${method} is available`);
+                } else {
+                  console.log(`❌ Fliplet.Media.Files.${method} is NOT available`);
+                }
+              });
+            } else {
+              console.warn("⚠️ Fliplet.Media.Files is NOT available");
+            }
+          } else {
+            console.warn("⚠️ Fliplet.Media is NOT available");
+          }
+          
+          // Also check if we're in a Fliplet environment
+          if (typeof Fliplet !== 'undefined') {
+            console.log("✅ Fliplet global object is available");
+            console.log("📋 Available Fliplet methods:", Object.getOwnPropertyNames(Fliplet));
+          } else {
+            console.warn("⚠️ Fliplet global object is NOT available");
+          }
         }
 
         /**
@@ -2477,6 +2530,13 @@ Fliplet.Widget.generateInterface({
               
                              if (uploadResult && uploadResult.length) {
                  const uploadedFile = uploadResult[0];
+                 
+                 console.log('📤 [DEBUG] Upload result received:', {
+                   uploadResult,
+                   uploadedFile,
+                   hasId: !!uploadedFile.id,
+                   hasUrl: !!uploadedFile.url
+                 });
                   
                  // Update image data with Fliplet Media URL and file ID
                  imageData.flipletUrl = Fliplet.Media.authenticate(uploadedFile.url);
@@ -2494,7 +2554,8 @@ Fliplet.Widget.generateInterface({
                                  console.log('✅ Image uploaded to Fliplet Media successfully:', {
                    name: imageData.name,
                    flipletUrl: imageData.flipletUrl,
-                   flipletFileId: imageData.flipletFileId
+                   flipletFileId: imageData.flipletFileId,
+                   fullImageData: imageData
                  });
               } else {
                 throw new Error('No files returned from Fliplet Media upload');
@@ -2583,7 +2644,7 @@ Fliplet.Widget.generateInterface({
           
           container.innerHTML = `
             ${imageHtml}
-            <button class="remove-image-btn" onclick="handleImageRemove('${imageData.id}')" title="Remove image">×</button>
+            <button class="remove-image-btn" onclick="handleImageRemove('${imageData.flipletFileId || imageData.id}', '${imageData.id}')" title="Remove image">×</button>
             <div class="image-info">
               <span class="image-name">${imageData.name}</span>
               <span class="image-size">${formatFileSize(imageData.size)}</span>
@@ -2594,43 +2655,157 @@ Fliplet.Widget.generateInterface({
 
         /**
          * Remove a pasted image
-         * @param {string} imageId - The ID of the image to remove
+         * @param {string} flipletFileId - The Fliplet Media file ID to remove (or local ID if not uploaded yet)
+         * @param {string} localId - The local image ID for UI operations
          */
-        async function removePastedImage(imageId) {
-          // Find the image data first
-          const imageData = AppState.pastedImages.find(img => img.id === imageId);
+        async function removePastedImage(flipletFileId, localId) {
+          // Find the image data first - try flipletFileId first, then fall back to localId
+          let imageData = AppState.pastedImages.find(img => img.flipletFileId === flipletFileId);
           
-          if (imageData && imageData.flipletFileId) {
-            try {
-              // Delete the file from Fliplet Media using the stored file ID
-              await Fliplet.Media.Files.delete(imageData.flipletFileId);
-              console.log('🗑️ File deleted from Fliplet Media:', imageData.flipletFileId);
-            } catch (deleteError) {
-              console.error('❌ Failed to delete file from Fliplet Media:', deleteError);
-              // Continue with local removal even if Fliplet deletion fails
-            }
+          // If not found by flipletFileId, try localId (for images that haven't uploaded yet)
+          if (!imageData && localId) {
+            imageData = AppState.pastedImages.find(img => img.id === localId);
           }
           
-          // Remove from state
-          AppState.pastedImages = AppState.pastedImages.filter(img => img.id !== imageId);
-          
-          // Log the current state after removal
-          console.log('🗑️ Image removed:', {
-            removedId: imageId,
-            remainingImages: AppState.pastedImages.length,
-            remainingImageIds: AppState.pastedImages.map(img => img.id)
+          console.log('🗑️ [DEBUG] Attempting to remove image:', {
+            flipletFileId,
+            imageData,
+            localId: imageData?.id,
+            flipletUrl: imageData?.flipletUrl
           });
           
-          // Remove from UI
-          const imageContainer = document.querySelector(`[data-image-id="${imageId}"]`);
-          if (imageContainer) {
-            imageContainer.remove();
+          if (imageData) {
+            // Only attempt Fliplet Media deletion if we have a flipletFileId
+            if (imageData.flipletFileId && flipletFileId === imageData.flipletFileId) {
+              try {
+                // Check if Fliplet.Media.Files.delete exists
+                if (typeof Fliplet.Media.Files.delete === 'function') {
+                  console.log('✅ Fliplet.Media.Files.delete function found, attempting deletion...');
+                  await Fliplet.Media.Files.delete(flipletFileId);
+                  console.log('🗑️ File deleted from Fliplet Media:', flipletFileId);
+                  Fliplet.UI.Toast.success('Image deleted successfully from Fliplet Media');
+                } else {
+                  console.warn('⚠️ Fliplet.Media.Files.delete function not found. Available methods:', Object.keys(Fliplet.Media.Files || {}));
+                  console.log('🔍 [DEBUG] Full Fliplet.Media object:', Fliplet.Media);
+                  console.log('🔍 [DEBUG] Full Fliplet.Media.Files object:', Fliplet.Media.Files);
+                  
+                  // Try alternative deletion methods
+                  let deletionSuccessful = false;
+                  
+                  // Method 1: Fliplet.Media.Files.remove
+                  if (Fliplet.Media.Files && Fliplet.Media.Files.remove) {
+                    try {
+                      console.log('🔄 Trying Fliplet.Media.Files.remove...');
+                      await Fliplet.Media.Files.remove(flipletFileId);
+                      console.log('🗑️ File removed using .remove method:', flipletFileId);
+                      deletionSuccessful = true;
+                      Fliplet.UI.Toast.success('Image removed successfully using alternative method');
+                    } catch (error) {
+                      console.warn('⚠️ Fliplet.Media.Files.remove failed:', error);
+                    }
+                  }
+                  
+                  // Method 2: Fliplet.Media.delete
+                  if (!deletionSuccessful && Fliplet.Media && Fliplet.Media.delete) {
+                    try {
+                      console.log('🔄 Trying Fliplet.Media.delete...');
+                      await Fliplet.Media.delete(flipletFileId);
+                      console.log('🗑️ File deleted using Fliplet.Media.delete:', flipletFileId);
+                      deletionSuccessful = true;
+                      Fliplet.UI.Toast.success('Image deleted successfully using alternative method');
+                    } catch (error) {
+                      console.warn('⚠️ Fliplet.Media.delete failed:', error);
+                    }
+                  }
+                  
+                  // Method 3: Fliplet.Media.Files.destroy
+                  if (!deletionSuccessful && Fliplet.Media.Files && Fliplet.Media.Files.destroy) {
+                    try {
+                      console.log('🔄 Trying Fliplet.Media.Files.destroy...');
+                      await Fliplet.Media.Files.destroy(flipletFileId);
+                      console.log('🗑️ File destroyed using .destroy method:', flipletFileId);
+                      deletionSuccessful = true;
+                      Fliplet.UI.Toast.success('Image destroyed successfully using alternative method');
+                    } catch (error) {
+                      console.warn('⚠️ Fliplet.Media.Files.destroy failed:', error);
+                    }
+                  }
+                  
+                  // Method 4: Try using AJAX directly if Fliplet methods fail
+                  if (!deletionSuccessful) {
+                    try {
+                      console.log('🔄 Trying direct AJAX deletion...');
+                      const appId = Fliplet.Env.get('appId') || Fliplet.Env.get('masterAppId');
+                      const deleteUrl = `/v1/media/files/${flipletFileId}`;
+                      
+                      const response = await fetch(deleteUrl, {
+                        method: 'DELETE',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'X-Fliplet-App-Id': appId
+                        }
+                      });
+                      
+                      if (response.ok) {
+                        console.log('🗑️ File deleted using direct AJAX:', flipletFileId);
+                        deletionSuccessful = true;
+                        Fliplet.UI.Toast.success('Image deleted successfully using direct API call');
+                      } else {
+                        console.warn('⚠️ Direct AJAX deletion failed:', response.status, response.statusText);
+                      }
+                    } catch (error) {
+                      console.warn('⚠️ Direct AJAX deletion failed:', error);
+                    }
+                  }
+                  
+                  if (!deletionSuccessful) {
+                    console.error('❌ All deletion methods failed. File may remain in Fliplet Media.');
+                    console.error('❌ Available Fliplet.Media methods:', Object.getOwnPropertyNames(Fliplet.Media || {}));
+                    console.error('❌ Available Fliplet.Media.Files methods:', Object.getOwnPropertyNames(Fliplet.Media.Files || {}));
+                    
+                    // Show user-friendly message
+                    Fliplet.UI.Toast.warning('Image removed locally but may still exist in Fliplet Media. Please check your media library.');
+                  }
+                }
+              } catch (deleteError) {
+                console.error('❌ Failed to delete file from Fliplet Media:', deleteError);
+                console.error('❌ Error details:', {
+                  message: deleteError.message,
+                  stack: deleteError.stack,
+                  flipletFileId: flipletFileId
+                });
+                // Continue with local removal even if Fliplet deletion fails
+              }
+            } else {
+              console.log('ℹ️ No Fliplet Media deletion attempted - image may not have been uploaded yet');
+            }
+          } else {
+            console.log('ℹ️ No Fliplet Media deletion attempted - image may not have been uploaded yet');
           }
           
-          // Hide uploaded-images section if no images left
-          if (AppState.pastedImages.length === 0 && DOM.uploadedImages) {
-            DOM.uploadedImages.innerHTML = '<div class="no-images-placeholder">No images attached</div>';
-            DOM.uploadedImages.style.display = 'none';
+          // Remove from state using the local ID from the found image data
+          if (imageData) {
+            AppState.pastedImages = AppState.pastedImages.filter(img => img.id !== imageData.id);
+            
+            // Log the current state after removal
+            console.log('🗑️ Image removed:', {
+              removedFlipletFileId: flipletFileId,
+              removedLocalId: imageData.id,
+              remainingImages: AppState.pastedImages.length,
+              remainingImageIds: AppState.pastedImages.map(img => img.id)
+            });
+            
+            // Remove from UI using the local ID
+            const imageContainer = document.querySelector(`[data-image-id="${imageData.id}"]`);
+            if (imageContainer) {
+              imageContainer.remove();
+            }
+            
+            // Hide uploaded-images section if no images left
+            if (AppState.pastedImages.length === 0 && DOM.uploadedImages) {
+              DOM.uploadedImages.innerHTML = '<div class="no-images-placeholder">No images attached</div>';
+              DOM.uploadedImages.style.display = 'none';
+            }
           }
         }
 
@@ -2640,19 +2815,20 @@ Fliplet.Widget.generateInterface({
         /**
          * Handle image removal from onclick handlers
          * This function handles the async operation and provides user feedback
-         * @param {string} imageId - The ID of the image to remove
+         * @param {string} flipletFileId - The Fliplet Media file ID to remove (or local ID if not uploaded yet)
+         * @param {string} localId - The local image ID for UI operations
          */
-        async function handleImageRemove(imageId) {
+        async function handleImageRemove(flipletFileId, localId) {
           try {
             // Show loading state on the button
-            const button = document.querySelector(`[onclick="handleImageRemove('${imageId}')"]`);
+            const button = document.querySelector(`[onclick="handleImageRemove('${flipletFileId}', '${localId}')"]`);
             if (button) {
               const originalText = button.innerHTML;
               button.innerHTML = '⏳';
               button.disabled = true;
               
-              // Remove the image
-              await removePastedImage(imageId);
+              // Remove the image using the flipletFileId
+              await removePastedImage(flipletFileId, localId);
               
               // Button will be removed with the container, so no need to restore
             }
@@ -2661,7 +2837,7 @@ Fliplet.Widget.generateInterface({
             Fliplet.UI.Toast.error('Failed to remove image. Please try again.');
             
             // Restore button state if there was an error
-            const button = document.querySelector(`[onclick="handleImageRemove('${imageId}')"]`);
+            const button = document.querySelector(`[onclick="handleImageRemove('${flipletFileId}', '${localId}')"]`);
             if (button) {
               button.innerHTML = '×';
               button.disabled = false;
@@ -2702,8 +2878,47 @@ Fliplet.Widget.generateInterface({
             .filter(img => img.flipletFileId)
             .map(async (img) => {
               try {
-                await Fliplet.Media.Files.delete(img.flipletFileId);
-                console.log('🗑️ File deleted from Fliplet Media:', img.flipletFileId);
+                // Try the same deletion logic as removePastedImage
+                if (typeof Fliplet.Media.Files.delete === 'function') {
+                  await Fliplet.Media.Files.delete(img.flipletFileId);
+                  console.log('🗑️ File deleted from Fliplet Media:', img.flipletFileId);
+                } else {
+                  // Try alternative methods
+                  let deletionSuccessful = false;
+                  
+                  if (Fliplet.Media.Files && Fliplet.Media.Files.remove) {
+                    try {
+                      await Fliplet.Media.Files.remove(img.flipletFileId);
+                      deletionSuccessful = true;
+                    } catch (error) {
+                      console.warn('⚠️ Fliplet.Media.Files.remove failed:', error);
+                    }
+                  }
+                  
+                  if (!deletionSuccessful && Fliplet.Media && Fliplet.Media.delete) {
+                    try {
+                      await Fliplet.Media.delete(img.flipletFileId);
+                      deletionSuccessful = true;
+                    } catch (error) {
+                      console.warn('⚠️ Fliplet.Media.delete failed:', error);
+                    }
+                  }
+                  
+                  if (!deletionSuccessful && Fliplet.Media.Files && Fliplet.Media.Files.destroy) {
+                    try {
+                      await Fliplet.Media.Files.destroy(img.flipletFileId);
+                      deletionSuccessful = true;
+                    } catch (error) {
+                      console.warn('⚠️ Fliplet.Media.Files.destroy failed:', error);
+                    }
+                  }
+                  
+                  if (deletionSuccessful) {
+                    console.log('🗑️ File deleted using alternative method:', img.flipletFileId);
+                  } else {
+                    console.warn('⚠️ Could not delete file from Fliplet Media:', img.flipletFileId);
+                  }
+                }
               } catch (deleteError) {
                 console.error('❌ Failed to delete file from Fliplet Media:', deleteError);
               }

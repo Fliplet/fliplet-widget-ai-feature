@@ -2432,9 +2432,9 @@ Fliplet.Widget.generateInterface({
             return;
           }
           
-          // Create image data object first
-          const imageData = {
-            id: Date.now() + Math.random(),
+          // Create temporary image data object for upload status
+          const tempImageData = {
+            id: 'temp-' + Date.now() + Math.random(), // Temporary ID until upload completes
             name: file.name || 'pasted-image',
             type: file.type,
             size: file.size,
@@ -2446,11 +2446,11 @@ Fliplet.Widget.generateInterface({
           };
           
           try {
-            // Add to state immediately
-            AppState.pastedImages.push(imageData);
+            // Add to state immediately with temporary ID
+            AppState.pastedImages.push(tempImageData);
             
             // Display in UI with upload status
-            displayPastedImage(imageData);
+            displayPastedImage(tempImageData);
             
             // Upload to Fliplet Media using the proper API
             // FormData structure follows Fliplet Media API requirements:
@@ -2475,27 +2475,34 @@ Fliplet.Widget.generateInterface({
                 folderId: null // Optional: specify folderId if you want to organize images
               });
               
-                             if (uploadResult && uploadResult.length) {
-                 const uploadedFile = uploadResult[0];
+              if (uploadResult && uploadResult.length) {
+                const uploadedFile = uploadResult[0];
+                
+                // Find the temporary image data in state and update it with the real Fliplet Media data
+                const imageIndex = AppState.pastedImages.findIndex(img => img.id === tempImageData.id);
+                if (imageIndex !== -1) {
+                  // Update the existing object with the real Fliplet Media ID and URL
+                  const imageData = AppState.pastedImages[imageIndex];
+                  imageData.id = uploadedFile.id; // Use the uploaded image response ID
+                  imageData.flipletUrl = Fliplet.Media.authenticate(uploadedFile.url);
+                  imageData.flipletFileId = uploadedFile.id; // Store the file ID for deletion
+                  imageData.status = 'uploaded';
                   
-                 // Update image data with Fliplet Media URL and file ID
-                 imageData.flipletUrl = Fliplet.Media.authenticate(uploadedFile.url);
-                 imageData.flipletFileId = uploadedFile.id; // Store the file ID for deletion
-                 imageData.status = 'uploaded';
-                
-                // Create a data URL for local display
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                  imageData.dataUrl = e.target.result;
-                  updateImageDisplay(imageData);
-                };
-                reader.readAsDataURL(file);
-                
-                                 console.log('✅ Image uploaded to Fliplet Media successfully:', {
-                   name: imageData.name,
-                   flipletUrl: imageData.flipletUrl,
-                   flipletFileId: imageData.flipletFileId
-                 });
+                  // Create a data URL for local display
+                  const reader = new FileReader();
+                  reader.onload = function(e) {
+                    imageData.dataUrl = e.target.result;
+                    updateImageDisplay(imageData);
+                  };
+                  reader.readAsDataURL(file);
+                  
+                  console.log('✅ Image uploaded to Fliplet Media successfully:', {
+                    name: imageData.name,
+                    flipletUrl: imageData.flipletUrl,
+                    flipletFileId: imageData.flipletFileId,
+                    realId: imageData.id
+                  });
+                }
               } else {
                 throw new Error('No files returned from Fliplet Media upload');
               }
@@ -2508,7 +2515,7 @@ Fliplet.Widget.generateInterface({
             console.error('❌ Failed to upload image to Fliplet Media:', error);
             
             // Update status to failed
-            const failedImage = AppState.pastedImages.find(img => img.id === imageData.id);
+            const failedImage = AppState.pastedImages.find(img => img.id === tempImageData.id);
             if (failedImage) {
               failedImage.status = 'failed';
               updateImageDisplay(failedImage);
@@ -2552,7 +2559,26 @@ Fliplet.Widget.generateInterface({
          */
         function updateImageDisplay(imageData, container = null) {
           if (!container) {
+            // Try to find container by current ID first
             container = document.querySelector(`[data-image-id="${imageData.id}"]`);
+            
+            // If not found, try to find by temporary ID pattern (for when ID changes from temp to real)
+            if (!container && imageData.id && !imageData.id.startsWith('temp-')) {
+              // Look for any container that might have a temporary ID
+              const tempContainers = document.querySelectorAll('[data-image-id^="temp-"]');
+              for (const tempContainer of tempContainers) {
+                // Check if this temp container matches our image data by other properties
+                const tempId = tempContainer.getAttribute('data-image-id');
+                const tempImage = AppState.pastedImages.find(img => img.id === tempId);
+                if (tempImage && tempImage.name === imageData.name && tempImage.size === imageData.size) {
+                  container = tempContainer;
+                  // Update the container's data-image-id to the new real ID
+                  container.setAttribute('data-image-id', imageData.id);
+                  break;
+                }
+              }
+            }
+            
             if (!container) return;
           }
           

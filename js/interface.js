@@ -2474,8 +2474,8 @@ Fliplet.Widget.generateInterface({
                 folderId: null // Optional: specify folderId if you want to organize images
               });
               
-              if (uploadResult && uploadResult.files && uploadResult.files.length > 0) {
-                const uploadedFile = uploadResult.files[0];
+              if (uploadResult && uploadResult.length) {
+                const uploadedFile = uploadResult[0];
                 
                 // Update image data with Fliplet Media URL
                 imageData.flipletUrl = uploadedFile.url;

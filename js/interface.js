@@ -2775,11 +2775,11 @@ Fliplet.Widget.generateInterface({
             addMessageToChat(displayMessage, "user", pastedImages);
           }
 
-          // Clear input and images
+          // Clear input only - don't clear images yet
+          // Images will be cleared after processing in processUserMessage()
           DOM.userInput.value = "";
-          clearPastedImages();
 
-          // Process the message with images - pass the CLEAN user message
+          // Process the message with images - pass the current images
           processUserMessage(userMessage, pastedImages);
         }
 
@@ -2871,6 +2871,14 @@ Fliplet.Widget.generateInterface({
               });
             }
             
+            // Final validation: ensure we're sending the correct images
+            console.log("🔍 [Main] Final image validation before AI call:", {
+              currentImagesCount: currentImages.length,
+              currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+              appStateImagesCount: AppState.pastedImages.length,
+              appStateImages: AppState.pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
+            });
+
             const aiResponse = await callOpenAIWithNewArchitecture(
               userMessage,
               context,
@@ -2956,6 +2964,9 @@ Fliplet.Widget.generateInterface({
               console.log("✅ [Main] First generation completed");
             }
 
+            // Clear pasted images after successful processing
+            await clearPastedImages();
+
             console.log(
               `✅ [Main] Request #${AppState.requestCount} completed successfully`
             );
@@ -2976,6 +2987,9 @@ Fliplet.Widget.generateInterface({
               : `❌ Error processing your request: ${error.message}`;
 
             addMessageToChat(errorMessage, "ai");
+
+            // Clear pasted images even on error to prevent stale state
+            await clearPastedImages();
           }
         }
 

@@ -245,6 +245,8 @@ Fliplet.Widget.generateInterface({
          * @type {Object}
          */
         const AppState = {
+          /** @type {string} Unique identifier for this AppState instance */
+          instanceId: Date.now() + '_' + Math.random(),
           /** @type {string} Current HTML code */
           currentHTML: "",
           /** @type {string} Current CSS code */
@@ -2448,6 +2450,14 @@ Fliplet.Widget.generateInterface({
           try {
             // Add to state immediately
             AppState.pastedImages.push(imageData);
+            console.log('📥 Image added to AppState.pastedImages:', {
+              id: imageData.id,
+              name: imageData.name,
+              status: imageData.status,
+              appStateInstanceId: AppState.instanceId
+            });
+            console.log('📥 Total images in state after adding:', AppState.pastedImages.length);
+            console.log('📥 All IDs in state:', AppState.pastedImages.map(img => img.id));
             
             // Display in UI with upload status
             displayPastedImage(imageData);
@@ -2633,13 +2643,30 @@ Fliplet.Widget.generateInterface({
          */
         async function removePastedImage(imageId) {
           console.log('🔍 Starting image removal process for ID:', imageId);
+          console.log('🔍 Current AppState.pastedImages:', AppState.pastedImages);
+          console.log('🔍 AppState.pastedImages length:', AppState.pastedImages.length);
+          console.log('🔍 All image IDs in state:', AppState.pastedImages.map(img => img.id));
+          console.log('🔍 AppState instance ID:', AppState.instanceId);
           
           // Find the image data first
           const imageData = AppState.pastedImages.find(img => img.id === imageId);
           
           if (!imageData) {
             console.error('❌ Image data not found for ID:', imageId);
-            return;
+            console.error('❌ Available IDs:', AppState.pastedImages.map(img => img.id));
+            console.error('❌ Searching for:', imageId);
+            console.error('❌ Type of search ID:', typeof imageId);
+            console.error('❌ Type of stored IDs:', AppState.pastedImages.map(img => typeof img.id));
+            
+            // Try to find by string comparison
+            const stringMatch = AppState.pastedImages.find(img => String(img.id) === String(imageId));
+            if (stringMatch) {
+              console.log('🔍 Found match using string comparison:', stringMatch);
+              // Use this match instead
+              imageData = stringMatch;
+            } else {
+              return;
+            }
           }
           
           console.log('🔍 Found image data:', {
@@ -2815,11 +2842,19 @@ Fliplet.Widget.generateInterface({
           $(document).on('click', '.remove-image-btn', function(event) {
             event.preventDefault();
             const imageId = this.dataset.imageId;
+            console.log('🗑️ Remove button clicked!');
+            console.log('🗑️ Button element:', this);
+            console.log('🗑️ Button dataset:', this.dataset);
+            console.log('🗑️ Extracted imageId:', imageId);
+            console.log('🗑️ Type of imageId:', typeof imageId);
+            
             if (imageId) {
               console.log('🗑️ Remove button clicked for image ID:', imageId);
               handleImageRemove(imageId);
             } else {
               console.error('❌ No image ID found in remove button dataset');
+              console.error('❌ Button HTML:', this.outerHTML);
+              console.error('❌ Parent container:', this.closest('.pasted-image-container'));
             }
           });
 
@@ -5527,6 +5562,15 @@ Make sure each code block is complete and functional.`;
               hasRemoveButton: !!container.querySelector('.remove-image-btn'),
               removeButtonOnclick: container.querySelector('.remove-image-btn')?.getAttribute('onclick')
             });
+          });
+          
+          // Check if AppState is the same reference
+          console.log('🔍 AppState reference check:', {
+            isAppStateDefined: typeof AppState !== 'undefined',
+            AppStateType: typeof AppState,
+            hasPastedImages: AppState && 'pastedImages' in AppState,
+            pastedImagesType: AppState ? typeof AppState.pastedImages : 'undefined',
+            isArray: AppState ? Array.isArray(AppState.pastedImages) : false
           });
         }
 

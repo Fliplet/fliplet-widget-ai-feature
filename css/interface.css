@@ -550,6 +550,22 @@
   min-height: 60px;
 }
 
+.interface .uploaded-images::before {
+  content: "📁 Drop images here";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  color: #6c757d;
+  opacity: 0.5;
+  pointer-events: none;
+  text-align: center;
+  z-index: 1;
+  transition: opacity 0.3s ease;
+  animation: gentlePulse 2s ease-in-out infinite;
+}
+
 @keyframes gentlePulse {
   0%, 100% {
     opacity: 0.5;
@@ -649,6 +665,19 @@
 /* Drag and drop hint styling */
 .interface .chat-input {
   position: relative;
+}
+
+.interface .chat-input::after {
+  content: "📁 Drag & drop images here";
+  position: absolute;
+  top: -25px;
+  left: 0;
+  font-size: 11px;
+  color: #6c757d;
+  opacity: 0.7;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  white-space: nowrap;
 }
 
 .interface .chat-input:hover::after {

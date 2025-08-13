@@ -3869,9 +3869,9 @@ Fliplet.Widget.generateInterface({
         async function callOpenAIWithNewArchitecture(userMessage, context, pastedImages = []) {
           console.log("🌐 [AI] Making API call with optimized context...");
 
-          // CRITICAL: For the CURRENT message only, use AppState.pastedImages as the source of truth
+          // CRITICAL: ALWAYS use AppState.pastedImages as the source of truth for current images
           // The passed pastedImages parameter might be stale if images were removed
-          // This ensures we never send removed images to the AI for the current request
+          // This ensures we never send removed images to the AI
           const currentImages = AppState.pastedImages.filter(img => 
             img && 
             img.status === 'uploaded' && 
@@ -3895,7 +3895,6 @@ Fliplet.Widget.generateInterface({
           });
 
           // CRITICAL: Get the most current images right before building the system prompt
-          // These images are ONLY for the system prompt context, not for conversation history
           const finalCurrentImages = AppState.pastedImages.filter(img => 
             img && 
             img.status === 'uploaded' && 
@@ -3923,18 +3922,14 @@ Fliplet.Widget.generateInterface({
             }))
           });
           
-          // CRITICAL: Use the most current images for the system prompt ONLY
-          // This ensures the AI knows about current context but doesn't affect historical messages
+          // CRITICAL: Use the most current images for the system prompt
           const systemPrompt = buildSystemPromptWithContext(context, finalCurrentImages);
 
           // Build complete conversation history
           const messages = [{ role: "system", content: systemPrompt }];
 
           // Add conversation history (keep last 6 messages to stay within token limits)
-          // CRITICAL SEPARATION:
-          // - Current message images: Filtered based on current AppState.pastedImages state
-          // - Historical message images: Preserved exactly as they were originally stored
-          // - System prompt images: Only reference current images for context
+          // Filter out the current user message to avoid duplication
           const recentHistory = AppState.chatHistory.slice(-6); // Last 6 messages
           console.log("📚 [AI] Processing conversation history:", {
             totalHistory: AppState.chatHistory.length,
@@ -3952,50 +3947,20 @@ Fliplet.Widget.generateInterface({
                 console.log("⏭️ [AI] Skipping duplicate current user message in history");
                 return;
               }
-              
-              // CRITICAL: For historical messages, preserve their original content exactly as sent
-              // This includes any images that were originally attached to those messages
-              // We should NOT re-filter or modify historical message content
+              // Convert our internal format to OpenAI format
               const role = historyItem.type === "user" ? "user" : "assistant";
-              
-              // Check if this historical message had images attached
-              if (historyItem.images && Array.isArray(historyItem.images) && historyItem.images.length > 0) {
-                // This message originally had images - preserve them in the conversation history
-                const content = [
-                  { type: "text", text: historyItem.message }
-                ];
-                
-                // Add the original images that were sent with this message
-                historyItem.images.forEach((img) => {
-                  content.push({
-                    type: "image_url",
-                    image_url: { url: img.flipletUrl }
-                  });
-                });
-                
-                messages.push({
-                  role: role,
-                  content: content
-                });
-                
-                console.log(`📝 [AI] Added historical message with images: ${role} - ${historyItem.message.substring(0, 50)}... (${historyItem.images.length} images)`);
-              } else {
-                // This message was text-only - preserve as is
-                messages.push({
-                  role: role,
-                  content: historyItem.message,
-                });
-                console.log(`📝 [AI] Added historical text-only message: ${role} - ${historyItem.message.substring(0, 50)}...`);
-              }
+              messages.push({
+                role: role,
+                content: historyItem.message,
+              });
+              console.log(`📝 [AI] Added history message: ${role} - ${historyItem.message.substring(0, 50)}...`);
             }
           });
 
           // Add current user message with image data
-          // NOTE: Only the CURRENT message is filtered based on current state
-          // Historical messages preserve their original images without re-filtering
           if (finalCurrentImages && finalCurrentImages.length > 0) {
             // Final validation: ensure all images are still valid and haven't been removed
-            console.log('🔍 [AI] Starting final image validation for CURRENT message only...');
+            console.log('🔍 [AI] Starting final image validation...');
             console.log('🔍 [AI] AppState.pastedImages before final validation:', AppState.pastedImages.map(img => ({ 
               id: img.id, 
               name: img.name, 
@@ -4141,34 +4106,21 @@ Fliplet.Widget.generateInterface({
             ).length
           });
           
-          // FINAL VALIDATION: Check if current message has images but current state is empty
-          // This could happen if images were removed after the message was processed
-          // NOTE: Historical messages should keep their images regardless of current state
-          const currentMessageHasImages = messages.some(msg => 
-            msg.role === 'user' && 
-            Array.isArray(msg.content) && 
-            msg.content.some(c => c.type === 'image_url')
-          );
-          
-          if (currentMessageHasImages && AppState.pastedImages.filter(img => 
+          // If we have images in the request but no valid images in state, this is an error
+          if (finalImageValidation > 0 && AppState.pastedImages.filter(img => 
             img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
           ).length === 0) {
-            console.warn('⚠️ [AI] Current message has images but AppState has no valid images');
-            console.warn('⚠️ [AI] This suggests images were removed after processing - keeping historical images intact');
+            console.error('❌ [AI] CRITICAL ERROR: Request contains images but AppState has no valid images!');
+            console.error('❌ [AI] This should never happen - images were removed after filtering');
             
-            // Only remove images from the current message, preserve historical ones
-            // Find the current user message (should be the last one)
-            const currentUserMessage = messages.find(msg => 
-              msg.role === 'user' && 
-              Array.isArray(msg.content) && 
-              msg.content.some(c => c.type === 'image_url')
-            );
+            // Force remove all images from the request
+            messages.forEach(msg => {
+              if (msg.role === 'user' && Array.isArray(msg.content)) {
+                msg.content = msg.content.filter(c => c.type !== 'image_url');
+              }
+            });
             
-            if (currentUserMessage && Array.isArray(currentUserMessage.content)) {
-              // Remove only image content from current message, keep text
-              currentUserMessage.content = currentUserMessage.content.filter(c => c.type !== 'image_url');
-              console.log('🔧 [AI] Removed images from current message only, preserved historical images');
-            }
+            console.log('🔧 [AI] Forced removal of all images from request due to state mismatch');
           }
 
           const requestBody = {
@@ -4286,7 +4238,11 @@ Fliplet.Widget.generateInterface({
           console.log("📝 [AI] Building system prompt with context...");
           console.log("📝 [AI] Images passed to system prompt:", {
             passedImagesCount: pastedImages.length,
-            passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
+            passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+            currentAppStateImages: AppState.pastedImages.length,
+            currentAppStateValidImages: AppState.pastedImages.filter(img => 
+              img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+            ).length
           });
 
           let prompt = `You are an expert web developer chat assistant for a Fliplet app. Your job is to help users create and modify HTML, CSS, and JavaScript code reliably.
@@ -4327,7 +4283,9 @@ Charts and utilities: highcharts, jssocials, jwt-decode, lodash-joins, mixitup, 
 
 Ask the user if you need clarification on the requirements, do not start creating code if you are not clear on the requirements.    
 
-          ${pastedImages.length > 0 ? `IMPORTANT: The user has attached ${pastedImages.length} image(s) to analyze. These images are being sent directly to you in OpenAI's image input format, so you can see and analyze them directly. Please examine these images carefully and incorporate their content into your response. The images may contain:
+          ${pastedImages.length > 0 && AppState.pastedImages.filter(img => 
+            img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+          ).length > 0 ? `IMPORTANT: The user has attached ${pastedImages.length} image(s) to analyze. These images are being sent directly to you in OpenAI's image input format, so you can see and analyze them directly. Please examine these images carefully and incorporate their content into your response. The images may contain:
 - Design mockups or wireframes
 - UI/UX requirements or specifications
 - Visual examples to replicate

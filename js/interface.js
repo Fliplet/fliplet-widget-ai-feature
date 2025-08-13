@@ -3002,7 +3002,23 @@ Fliplet.Widget.generateInterface({
         async function callOpenAIWithNewArchitecture(userMessage, context, pastedImages = []) {
           console.log("🌐 [AI] Making API call with optimized context...");
 
-          const systemPrompt = buildSystemPromptWithContext(context, pastedImages);
+          // ALWAYS use AppState.pastedImages as the source of truth for current images
+          // The passed pastedImages parameter might be stale if images were removed
+          const currentImages = AppState.pastedImages.filter(img => 
+            img && 
+            img.status === 'uploaded' && 
+            img.flipletUrl && 
+            img.flipletFileId
+          );
+
+          console.log("🔍 [AI] Image validation in callOpenAIWithNewArchitecture:", {
+            passedParameterCount: pastedImages.length,
+            currentStateCount: currentImages.length,
+            passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+            currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
+          });
+
+          const systemPrompt = buildSystemPromptWithContext(context, currentImages);
 
           // Build complete conversation history
           const messages = [{ role: "system", content: systemPrompt }];
@@ -3037,45 +3053,32 @@ Fliplet.Widget.generateInterface({
           });
 
           // Add current user message with image data
-          if (pastedImages && pastedImages.length > 0) {
+          if (currentImages && currentImages.length > 0) {
             // Use OpenAI's image input format
             const content = [
               { type: "text", text: userMessage }
             ];
             
-            // Double-check that images are valid and still exist
-            const validImages = pastedImages.filter(img => 
-              img && 
-              img.status === 'uploaded' && 
-              img.flipletUrl && 
-              img.flipletFileId &&
-              // Additional safety check: ensure the image still exists in AppState
-              AppState.pastedImages.some(stateImg => stateImg.id === img.id)
-            );
+            // Add all current valid images (they're already filtered above)
+            currentImages.forEach((img) => {
+              content.push({
+                type: "image_url",
+                image_url: { url: img.flipletUrl }
+              });
+            });
             
-            if (validImages.length > 0) {
-              validImages.forEach((img) => {
-                content.push({
-                  type: "image_url",
-                  image_url: { url: img.flipletUrl }
-                });
-              });
-              
-              messages.push({ role: "user", content: content });
-              
-              // Log what we're sending
-              console.log("📤 [AI] Sending message with images:", {
-                textLength: userMessage.length,
-                imageCount: validImages.length,
-                images: validImages.map(img => ({ name: img.name, url: img.flipletUrl, id: img.id }))
-              });
-            } else {
-              // No valid images, send text-only message
-              messages.push({ role: "user", content: userMessage });
-              console.log("⚠️ [AI] No valid images found, sending text-only message");
-            }
+            messages.push({ role: "user", content: content });
+            
+            // Log what we're sending
+            console.log("📤 [AI] Sending message with images:", {
+              textLength: userMessage.length,
+              imageCount: currentImages.length,
+              images: currentImages.map(img => ({ name: img.name, url: img.flipletUrl, id: img.id }))
+            });
           } else {
+            // No valid images, send text-only message
             messages.push({ role: "user", content: userMessage });
+            console.log("⚠️ [AI] No valid images found, sending text-only message");
           }
 
           console.log("📤 [AI] Request messages with history:", messages);
@@ -3098,6 +3101,24 @@ Fliplet.Widget.generateInterface({
           console.log(
             "🎯 [AI] Using structured outputs for reliable JSON responses"
           );
+
+          // Final validation of what we're about to send to the AI
+          console.log("🚀 [AI] Final request body validation:", {
+            messageCount: messages.length,
+            userMessageIndex: messages.findIndex(msg => msg.role === 'user'),
+            userMessageContent: messages.find(msg => msg.role === 'user')?.content,
+            hasImages: messages.some(msg => 
+              msg.role === 'user' && 
+              Array.isArray(msg.content) && 
+              msg.content.some(c => c.type === 'image_url')
+            ),
+            imageCount: messages.reduce((count, msg) => {
+              if (msg.role === 'user' && Array.isArray(msg.content)) {
+                return count + msg.content.filter(c => c.type === 'image_url').length;
+              }
+              return count;
+            }, 0)
+          });
 
           const requestBody = {
             model: AIConfig.model,

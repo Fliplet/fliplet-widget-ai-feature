@@ -2652,7 +2652,7 @@ Fliplet.Widget.generateInterface({
           console.log('🔍 AppState instance ID:', AppState.instanceId);
           
           // Find the image data first
-          let imageData = AppState.pastedImages.find(img => img.id === imageId);
+          let imageData = AppState.pastedImages.find(img => img.id == imageId);
           
           if (!imageData) {
             console.error('❌ Image data not found for ID:', imageId);

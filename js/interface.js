@@ -2729,7 +2729,175 @@ Fliplet.Widget.generateInterface({
             console.log('🗑️ Uploaded images section hidden (no images remaining)');
           }
           
+          // Clean up chat history messages that reference this removed image
+          console.log('🧹 About to clean up chat history for image ID:', imageId);
+          cleanupChatHistoryImages(imageId);
+          
           console.log('✅ Image removal process completed for ID:', imageId);
+        }
+
+        /**
+         * Clean up chat history messages that reference removed images
+         * @param {string} imageId - The ID of the removed image
+         */
+        function cleanupChatHistoryImages(imageId) {
+          console.log('🧹 Cleaning up chat history for removed image ID:', imageId);
+          console.log('🧹 Current chat history length:', AppState.chatHistory.length);
+          
+          let messagesUpdated = 0;
+          let totalImagesRemoved = 0;
+          
+          // Update chat history to remove references to the deleted image
+          AppState.chatHistory = AppState.chatHistory.map(historyItem => {
+            if (historyItem.images && Array.isArray(historyItem.images)) {
+              console.log('🧹 Checking message for images:', {
+                messageId: historyItem.timestamp,
+                imageCount: historyItem.images.length,
+                imageIds: historyItem.images.map(img => ({ id: img.id, type: typeof img.id }))
+              });
+              
+              // Filter out the removed image (use string comparison for robustness)
+              const filteredImages = historyItem.images.filter(img => {
+                const match = String(img.id) !== String(imageId);
+                if (!match) {
+                  console.log('🧹 Found matching image to remove:', {
+                    storedId: img.id,
+                    type: typeof img.id,
+                    searchId: imageId,
+                    searchType: typeof imageId,
+                    stringComparison: String(img.id) === String(imageId)
+                  });
+                }
+                return match;
+              });
+              
+              if (filteredImages.length !== historyItem.images.length) {
+                const removedCount = historyItem.images.length - filteredImages.length;
+                messagesUpdated++;
+                totalImagesRemoved += removedCount;
+                
+                console.log('🧹 Removed image reference from chat history message:', {
+                  messageId: historyItem.timestamp,
+                  originalImageCount: historyItem.images.length,
+                  newImageCount: filteredImages.length,
+                  removedImageId: imageId,
+                  removedCount: removedCount
+                });
+                
+                // Return updated history item with filtered images
+                return {
+                  ...historyItem,
+                  images: filteredImages
+                };
+              }
+            }
+            return historyItem;
+          });
+          
+          console.log('🧹 Cleanup summary:', {
+            messagesUpdated: messagesUpdated,
+            totalImagesRemoved: totalImagesRemoved
+          });
+          
+          if (totalImagesRemoved > 0) {
+            // Save updated chat history to storage
+            saveChatHistoryToStorage();
+            
+            // Update the chat interface to reflect the changes
+            updateChatInterface();
+          }
+          
+          console.log('🧹 Chat history cleanup completed for image ID:', imageId);
+        }
+        
+        /**
+         * Clean up all image references from chat history
+         * Used when clearing all pasted images at once
+         */
+        function cleanupAllChatHistoryImages() {
+          console.log('🧹 Cleaning up all image references from chat history');
+          
+          let totalRemoved = 0;
+          
+          // Update chat history to remove all image references
+          AppState.chatHistory = AppState.chatHistory.map(historyItem => {
+            if (historyItem.images && Array.isArray(historyItem.images) && historyItem.images.length > 0) {
+              const originalCount = historyItem.images.length;
+              const updatedItem = {
+                ...historyItem,
+                images: [] // Remove all images
+              };
+              
+              totalRemoved += originalCount;
+              console.log('🧹 Removed all images from chat history message:', {
+                messageId: historyItem.timestamp,
+                originalImageCount: originalCount
+              });
+              
+              return updatedItem;
+            }
+            return historyItem;
+          });
+          
+          if (totalRemoved > 0) {
+            // Save updated chat history to storage
+            saveChatHistoryToStorage();
+            
+            // Update the chat interface to reflect the changes
+            updateChatInterface();
+            
+            console.log(`🧹 Total image references removed from chat history: ${totalRemoved}`);
+          } else {
+            console.log('🧹 No image references found in chat history');
+          }
+        }
+        
+        /**
+         * Update chat interface to reflect current chat history state
+         */
+        function updateChatInterface() {
+          console.log('🔄 Updating chat interface with current history:', {
+            historyLength: AppState.chatHistory.length,
+            messagesWithImages: AppState.chatHistory.filter(item => item.images && item.images.length > 0).length
+          });
+          
+          // Clear current chat interface
+          DOM.chatMessages.innerHTML = "";
+          
+          // Repopulate with updated chat history (without adding to history again)
+          AppState.chatHistory.forEach((item) => {
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${item.type}-message`;
+
+            const prefix =
+              item.type === "user" ? "You" : item.type === "ai" ? "AI" : "System";
+            
+            // Build message content
+            let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(item.message)}`;
+            
+            // Add images if present
+            if (item.images && item.images.length > 0) {
+              const imagesHTML = item.images.map(img => 
+                `<div class="chat-image-container">
+                  <img src="${img.dataUrl}" alt="${img.name}" class="chat-image" />
+                  <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
+                 </div>`
+              ).join('');
+              
+              messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+            }
+            
+            messageDiv.innerHTML = messageContent;
+            DOM.chatMessages.appendChild(messageDiv);
+          });
+          
+          // Ensure resize handle is present
+          ensureResizeHandlePresent();
+          
+          // Scroll to bottom
+          scrollToBottom();
+          
+          console.log('🔄 Chat interface update completed');
         }
 
         /**
@@ -2811,6 +2979,9 @@ Fliplet.Widget.generateInterface({
             DOM.uploadedImages.innerHTML = '<div class="no-images-placeholder">No images attached</div>';
             DOM.uploadedImages.style.display = 'none';
           }
+          
+          // Clean up all image references from chat history
+          cleanupAllChatHistoryImages();
           
           console.log('🧹 All pasted images cleared');
         }
@@ -5371,12 +5542,23 @@ Make sure each code block is complete and functional.`;
           scrollToBottom();
 
           // Add to history
-          AppState.chatHistory.push({
+          const historyItem = {
             message,
             type,
             timestamp: new Date().toISOString(),
             images: images || [] // Store images in history
-          });
+          };
+          
+          AppState.chatHistory.push(historyItem);
+          
+          // Log what we're storing in history
+          if (images && images.length > 0) {
+            console.log('💾 Storing message in chat history with images:', {
+              messageType: type,
+              imageCount: images.length,
+              imageIds: images.map(img => ({ id: img.id, name: img.name, type: typeof img.id }))
+            });
+          }
 
           // Save to local storage
           saveChatHistoryToStorage();

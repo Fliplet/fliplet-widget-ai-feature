@@ -3391,14 +3391,23 @@ Fliplet.Widget.generateInterface({
             
             // Add images if present
             if (item.images && item.images.length > 0) {
-              const imagesHTML = item.images.map(img => 
-                `<div class="chat-image-container">
-                  <img src="${img.dataUrl}" alt="${img.name}" class="chat-image" />
+              const imagesHTML = item.images.map(img => {
+                // Use flipletUrl if available (permanent), otherwise fall back to dataUrl
+                const imageSrc = img.flipletUrl || img.dataUrl;
+                if (!imageSrc) {
+                  console.warn('⚠️ Image missing both flipletUrl and dataUrl:', img);
+                  return '';
+                }
+                
+                return `<div class="chat-image-container">
+                  <img src="${imageSrc}" alt="${img.name}" class="chat-image" />
                   <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
-                 </div>`
-              ).join('');
+                 </div>`;
+              }).join('');
               
-              messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+              if (imagesHTML) {
+                messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+              }
             }
             
             messageDiv.innerHTML = messageContent;
@@ -3471,7 +3480,7 @@ Fliplet.Widget.generateInterface({
          * Clear all pasted images from local state and chat history
          * Note: Images are kept in Fliplet Media for future reference
          */
-        function clearPastedImages() {
+        function clearPastedImages(skipChatHistoryCleanup = false) {
           // Note: We're keeping all images in Fliplet Media for future reference
           // Only clearing them from local state and chat history
           console.log('ℹ️ Keeping all images in Fliplet Media - only clearing from local state');
@@ -3480,6 +3489,9 @@ Fliplet.Widget.generateInterface({
           if (imageCount > 0) {
             console.log(`ℹ️ ${imageCount} images will remain in Fliplet Media (not deleted from service)`);
           }
+          
+          // Store image IDs before clearing for potential chat history cleanup
+          const imageIdsToCleanup = skipChatHistoryCleanup ? [] : AppState.pastedImages.map(img => img.id);
           
           // Clear local state
           AppState.pastedImages = [];
@@ -3494,10 +3506,15 @@ Fliplet.Widget.generateInterface({
             console.log('🗑️ Uploaded images section hidden (local state cleared, Fliplet Media images preserved)');
           }
           
-          // Note: We're NOT cleaning up chat history images anymore
-          // This preserves the visual connection between user requests and AI responses
-          // Only the current pastedImages state is cleared
-          console.log('ℹ️ Preserving chat history images to maintain visual context');
+          // Only clean up chat history if this is NOT an automatic clearing after AI processing
+          if (!skipChatHistoryCleanup && imageIdsToCleanup.length > 0) {
+            console.log('🧹 Cleaning up chat history for automatically cleared images');
+            imageIdsToCleanup.forEach(imageId => {
+              cleanupChatHistoryImages(imageId);
+            });
+          } else {
+            console.log('ℹ️ Skipping chat history cleanup - preserving visual context for AI responses');
+          }
           
           console.log('🧹 All pasted images cleared from local state (kept in Fliplet Media)');
         }
@@ -3814,8 +3831,8 @@ Fliplet.Widget.generateInterface({
               console.log("✅ [Main] First generation completed");
             }
 
-            // Clear pasted images after successful processing
-            clearPastedImages();
+            // Clear pasted images after successful processing (preserve chat history)
+            clearPastedImages(true);
 
             console.log(
               `✅ [Main] Request #${AppState.requestCount} completed successfully`
@@ -3838,8 +3855,8 @@ Fliplet.Widget.generateInterface({
 
             addMessageToChat(errorMessage, "ai");
 
-            // Clear pasted images even on error to prevent stale state
-            clearPastedImages();
+            // Clear pasted images even on error to prevent stale state (preserve chat history)
+            clearPastedImages(true);
           }
         }
 
@@ -6148,10 +6165,33 @@ Make sure each code block is complete and functional.`;
         function saveChatHistoryToStorage() {
           try {
             const storageKey = `ai_chat_history_${widgetId}`;
+            
+            // Log what we're saving to help debug image preservation issues
+            const messagesWithImages = AppState.chatHistory.filter(item => item.images && item.images.length > 0);
+            if (messagesWithImages.length > 0) {
+              console.log('💾 Saving chat history to localStorage with images:', {
+                totalMessages: AppState.chatHistory.length,
+                messagesWithImages: messagesWithImages.length,
+                imageDetails: messagesWithImages.map(item => ({
+                  messageType: item.type,
+                  messagePreview: item.message.substring(0, 50) + '...',
+                  imageCount: item.images.length,
+                  imageUrls: item.images.map(img => ({ 
+                    id: img.id, 
+                    name: img.name, 
+                    flipletUrl: !!img.flipletUrl, 
+                    dataUrl: !!img.dataUrl 
+                  }))
+                }))
+              });
+            }
+            
             localStorage.setItem(
               storageKey,
               JSON.stringify(AppState.chatHistory)
             );
+            
+            console.log('✅ Chat history saved to localStorage successfully');
           } catch (error) {
             console.error(
               "Failed to save chat history to local storage:",
@@ -6183,6 +6223,26 @@ Make sure each code block is complete and functional.`;
                     timestamp: item.timestamp || new Date().toISOString(),
                     images: item.images || [] // Include images if they exist
                   }));
+                
+                // Log what we loaded to help debug image preservation issues
+                const messagesWithImages = filteredHistory.filter(item => item.images && item.images.length > 0);
+                if (messagesWithImages.length > 0) {
+                  console.log('📂 Loaded chat history from localStorage with images:', {
+                    totalMessages: filteredHistory.length,
+                    messagesWithImages: messagesWithImages.length,
+                    imageDetails: messagesWithImages.map(item => ({
+                      messageType: item.type,
+                      messagePreview: item.message.substring(0, 50) + '...',
+                      imageCount: item.images.length,
+                      imageUrls: item.images.map(img => ({ 
+                        id: img.id, 
+                        name: img.name, 
+                        flipletUrl: !!img.flipletUrl, 
+                        dataUrl: !!img.dataUrl 
+                      }))
+                    }))
+                  });
+                }
 
                 // Update AppState with filtered history
                 AppState.chatHistory = filteredHistory;
@@ -6190,7 +6250,7 @@ Make sure each code block is complete and functional.`;
                 // Repopulate chat interface
                 DOM.chatMessages.innerHTML = "";
                 filteredHistory.forEach((item) => {
-                  addMessageToChat(item.message, item.type, item.images);
+                  addMessageToChat(item.message, item.type, item.images, true); // Skip storage to avoid overwriting
                 });
                 
                 // Ensure resize handle is added back after repopulating
@@ -6232,7 +6292,7 @@ Make sure each code block is complete and functional.`;
          * @param {string} message - The message content
          * @param {string} type - Message type ('user', 'ai', 'system')
          */
-        function addMessageToChat(message, type, images = []) {
+        function addMessageToChat(message, type, images = [], skipStorage = false) {
           console.assert(
             typeof message === "string",
             "message must be a string"
@@ -6253,14 +6313,23 @@ Make sure each code block is complete and functional.`;
           
           // Add images if present
           if (images && images.length > 0) {
-            const imagesHTML = images.map(img => 
-              `<div class="chat-image-container">
-                <img src="${img.dataUrl}" alt="${img.name}" class="chat-image" />
+            const imagesHTML = images.map(img => {
+              // Use flipletUrl if available (permanent), otherwise fall back to dataUrl
+              const imageSrc = img.flipletUrl || img.dataUrl;
+              if (!imageSrc) {
+                console.warn('⚠️ Image missing both flipletUrl and dataUrl:', img);
+                return '';
+              }
+              
+              return `<div class="chat-image-container">
+                <img src="${imageSrc}" alt="${img.name}" class="chat-image" />
                 <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
-               </div>`
-            ).join('');
+               </div>`;
+            }).join('');
             
-            messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+            if (imagesHTML) {
+              messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+            }
           }
           
           messageDiv.innerHTML = messageContent;
@@ -6274,15 +6343,27 @@ Make sure each code block is complete and functional.`;
 
           // Add to history
           // Create a deep copy of images to avoid reference issues when AppState.pastedImages is cleared
-          const imagesCopy = images ? images.map(img => ({
-            id: img.id,
-            name: img.name,
-            size: img.size,
-            dataUrl: img.dataUrl,
-            status: img.status,
-            flipletFileId: img.flipletFileId,
-            flipletUrl: img.flipletUrl
-          })) : [];
+          const imagesCopy = images ? images.map(img => {
+            const copy = {
+              id: img.id,
+              name: img.name,
+              size: img.size,
+              dataUrl: img.dataUrl,
+              status: img.status,
+              flipletFileId: img.flipletFileId,
+              flipletUrl: img.flipletUrl
+            };
+            
+            // Log the copy to verify it's complete
+            if (images && images.length > 0) {
+              console.log('💾 Creating deep copy for chat history:', {
+                original: { id: img.id, name: img.name, flipletUrl: img.flipletUrl, dataUrl: img.dataUrl },
+                copy: { id: copy.id, name: copy.name, flipletUrl: copy.flipletUrl, dataUrl: copy.dataUrl }
+              });
+            }
+            
+            return copy;
+          }) : [];
           
           const historyItem = {
             message,
@@ -6302,8 +6383,10 @@ Make sure each code block is complete and functional.`;
             });
           }
 
-          // Save to local storage
-          saveChatHistoryToStorage();
+          // Save to local storage (unless skipStorage is true)
+          if (!skipStorage) {
+            saveChatHistoryToStorage();
+          }
         }
 
         /**

@@ -3326,6 +3326,7 @@ Fliplet.Widget.generateInterface({
               css: AppState.currentCSS,
               javascript: AppState.currentJS,
               layoutHTML: AppState.currentHTML,
+              images: AppState.pastedImages.map(el => el.flipletUrl),
             });
 
             // Step 6: Update change history

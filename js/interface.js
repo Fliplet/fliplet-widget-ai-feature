@@ -2766,17 +2766,7 @@ Fliplet.Widget.generateInterface({
             return;
           }
 
-          // Simply append image information to the user's message if images are present
-          let enhancedMessage = userMessage;
-          if (pastedImages.length > 0) {
-            const imageInfo = pastedImages.map(img => 
-              `[Image: ${img.name} (${img.type}, ${formatFileSize(img.size)})]`
-            ).join('\n');
-            
-            enhancedMessage = userMessage ? `${userMessage}\n\nImages: ${imageInfo}` : `Images: ${imageInfo}`;
-          }
-
-          console.log("📤 User message:", enhancedMessage);
+          console.log("📤 User message:", userMessage);
           console.log("🖼️ Images attached:", pastedImages.length);
 
           // Add user message to chat (show original message + image count if applicable)
@@ -2789,8 +2779,8 @@ Fliplet.Widget.generateInterface({
           DOM.userInput.value = "";
           clearPastedImages();
 
-          // Process the message with images
-          processUserMessage(enhancedMessage, pastedImages);
+          // Process the message with images - pass the CLEAN user message
+          processUserMessage(userMessage, pastedImages);
         }
 
         /**
@@ -2860,22 +2850,23 @@ Fliplet.Widget.generateInterface({
             });
 
             // Step 2: Call AI with optimized context
-            // Filter to only include images that still exist in the current state
+            // IMPORTANT: Always use AppState.pastedImages as the source of truth
+            // The passed pastedImages parameter might be stale if images were cleared
             const currentImages = AppState.pastedImages.filter(img => 
               img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
             );
             
             console.log("📸 [Main] Current images for AI processing:", {
-              originalCount: pastedImages.length,
-              currentCount: currentImages.length,
-              originalImages: pastedImages.map(img => ({ name: img.name, id: img.id, status: img.status })),
+              passedParameterCount: pastedImages.length,
+              currentStateCount: currentImages.length,
+              passedImages: pastedImages.map(img => ({ name: img.name, id: img.id, status: img.status })),
               currentImages: currentImages.map(img => ({ name: img.name, id: img.id, status: img.status, flipletUrl: !!img.flipletUrl, flipletFileId: !!img.flipletFileId }))
             });
             
             // Additional safety check: log any discrepancies
             if (pastedImages.length !== currentImages.length) {
               console.warn("⚠️ [Main] Image count mismatch detected:", {
-                pastedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+                passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
                 currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
               });
             }
@@ -3005,6 +2996,12 @@ Fliplet.Widget.generateInterface({
           // Add conversation history (keep last 6 messages to stay within token limits)
           // Filter out the current user message to avoid duplication
           const recentHistory = AppState.chatHistory.slice(-6); // Last 6 messages
+          console.log("📚 [AI] Processing conversation history:", {
+            totalHistory: AppState.chatHistory.length,
+            recentHistoryCount: recentHistory.length,
+            currentUserMessage: userMessage
+          });
+          
           recentHistory.forEach((historyItem) => {
             if (historyItem.message && historyItem.type) {
               // Skip the current user message to avoid duplication
@@ -3012,6 +3009,7 @@ Fliplet.Widget.generateInterface({
                 historyItem.message === userMessage &&
                 historyItem.type === "user"
               ) {
+                console.log("⏭️ [AI] Skipping duplicate current user message in history");
                 return;
               }
               // Convert our internal format to OpenAI format
@@ -3020,6 +3018,7 @@ Fliplet.Widget.generateInterface({
                 role: role,
                 content: historyItem.message,
               });
+              console.log(`📝 [AI] Added history message: ${role} - ${historyItem.message.substring(0, 50)}...`);
             }
           });
 
@@ -3066,6 +3065,22 @@ Fliplet.Widget.generateInterface({
           }
 
           console.log("📤 [AI] Request messages with history:", messages);
+          console.log("📤 [AI] Final message count:", messages.length);
+          
+          // Log each message for debugging
+          messages.forEach((msg, index) => {
+            if (msg.role === 'user' && Array.isArray(msg.content)) {
+              console.log(`📤 [AI] Message ${index} (user with images):`, {
+                textContent: msg.content.find(c => c.type === 'text')?.text,
+                imageCount: msg.content.filter(c => c.type === 'image_url').length
+              });
+            } else {
+              console.log(`📤 [AI] Message ${index} (${msg.role}):`, {
+                content: typeof msg.content === 'string' ? msg.content.substring(0, 100) : msg.content
+              });
+            }
+          });
+          
           console.log(
             "🎯 [AI] Using structured outputs for reliable JSON responses"
           );

@@ -2483,9 +2483,9 @@ Fliplet.Widget.generateInterface({
                 if (imageIndex !== -1) {
                   // Update the existing object with the real Fliplet Media ID and URL
                   const imageData = AppState.pastedImages[imageIndex];
-                  imageData.id = uploadedFile.id; // Use the uploaded image response ID
+                  imageData.id = String(uploadedFile.id); // Use the uploaded image response ID, ensure it's a string
                   imageData.flipletUrl = Fliplet.Media.authenticate(uploadedFile.url);
-                  imageData.flipletFileId = uploadedFile.id; // Store the file ID for deletion
+                  imageData.flipletFileId = String(uploadedFile.id); // Store the file ID for deletion, ensure it's a string
                   imageData.status = 'uploaded';
                   
                   // Create a data URL for local display
@@ -2541,7 +2541,7 @@ Fliplet.Widget.generateInterface({
           
           const imageContainer = document.createElement('div');
           imageContainer.className = 'pasted-image-container';
-          imageContainer.dataset.imageId = imageData.id;
+          imageContainer.dataset.imageId = String(imageData.id || '');
           
           // Create initial display based on status
           updateImageDisplay(imageData, imageContainer);
@@ -2563,7 +2563,7 @@ Fliplet.Widget.generateInterface({
             container = document.querySelector(`[data-image-id="${imageData.id}"]`);
             
             // If not found, try to find by temporary ID pattern (for when ID changes from temp to real)
-            if (!container && imageData.id && !imageData.id.startsWith('temp-')) {
+            if (!container && imageData.id && typeof imageData.id === 'string' && !imageData.id.startsWith('temp-')) {
               // Look for any container that might have a temporary ID
               const tempContainers = document.querySelectorAll('[data-image-id^="temp-"]');
               for (const tempContainer of tempContainers) {
@@ -2573,7 +2573,7 @@ Fliplet.Widget.generateInterface({
                 if (tempImage && tempImage.name === imageData.name && tempImage.size === imageData.size) {
                   container = tempContainer;
                   // Update the container's data-image-id to the new real ID
-                  container.setAttribute('data-image-id', imageData.id);
+                  container.setAttribute('data-image-id', String(imageData.id || ''));
                   break;
                 }
               }
@@ -2609,7 +2609,7 @@ Fliplet.Widget.generateInterface({
           
           container.innerHTML = `
             ${imageHtml}
-            <button class="remove-image-btn" onclick="handleImageRemove('${imageData.id}')" title="Remove image">×</button>
+            <button class="remove-image-btn" onclick="handleImageRemove('${String(imageData.id || '')}')" title="Remove image">×</button>
             <div class="image-info">
               <span class="image-name">${imageData.name}</span>
               <span class="image-size">${formatFileSize(imageData.size)}</span>

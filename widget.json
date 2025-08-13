@@ -13,7 +13,7 @@
   },
   "html_tag": "div",
   "interface": {
-    "dependencies": ["fliplet-core", "fliplet-studio-ui", "fliplet-datasources"],
+    "dependencies": ["fliplet-core", "fliplet-studio-ui", "fliplet-datasources", "fliplet-media"],
     "assets": ["js/interface.js", "css/interface.css"]
   },
   "build": {

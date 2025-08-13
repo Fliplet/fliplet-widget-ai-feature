@@ -2478,7 +2478,7 @@ Fliplet.Widget.generateInterface({
                 const uploadedFile = uploadResult[0];
                 
                 // Update image data with Fliplet Media URL
-                imageData.flipletUrl = uploadedFile.url;
+                imageData.flipletUrl = Fliplet.Media.authenticate(uploadedFile.url);
                 imageData.status = 'uploaded';
                 
                 // Create a data URL for local display

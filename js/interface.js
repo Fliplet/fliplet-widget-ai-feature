@@ -2377,6 +2377,9 @@ Fliplet.Widget.generateInterface({
         /**
          * Setup image paste handling functionality
          */
+        // Flag to prevent duplicate processing when dropping files
+        let isDropOperationInProgress = false;
+
         function setupImagePasteHandling() {
           // Add paste event listener to the input field only
           // This prevents duplicate processing when pasting into the input
@@ -2479,6 +2482,9 @@ Fliplet.Widget.generateInterface({
         function handleImageDrop(event) {
           event.preventDefault();
           
+          // Set flag to prevent paste handler from processing the same files
+          isDropOperationInProgress = true;
+          
           const files = Array.from(event.dataTransfer.files);
           const validImageFiles = files.filter(file => isValidImageFile(file));
           const invalidImageFiles = files.filter(file => file.type.startsWith('image/') && !isValidImageFile(file));
@@ -2525,6 +2531,12 @@ Fliplet.Widget.generateInterface({
           
           // Clear any drag over states
           clearDragOverStates();
+          
+          // Reset the drop operation flag after a short delay
+          // This prevents the paste handler from processing the same files
+          setTimeout(() => {
+            isDropOperationInProgress = false;
+          }, 100);
         }
 
         /**
@@ -2646,6 +2658,13 @@ Fliplet.Widget.generateInterface({
          * @param {ClipboardEvent} event - The paste event
          */
         function handleImagePaste(event) {
+          // Skip processing if a drop operation just happened
+          // This prevents duplicate processing when dropping files on the input
+          if (isDropOperationInProgress) {
+            console.log('⏭️ Skipping paste processing - drop operation in progress');
+            return;
+          }
+          
           const items = (event.clipboardData || event.originalEvent?.clipboardData)?.items;
           
           if (!items) return;

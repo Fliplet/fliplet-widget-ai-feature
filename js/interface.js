@@ -2597,15 +2597,34 @@ Fliplet.Widget.generateInterface({
               imageHtml = '<div class="image-placeholder">⏳</div>';
           }
           
-          container.innerHTML = `
-            ${imageHtml}
-            <button class="remove-image-btn" onclick="handleImageRemove('${imageData.id}')" title="Remove image">×</button>
-            <div class="image-info">
-              <span class="image-name">${imageData.name}</span>
-              <span class="image-size">${formatFileSize(imageData.size)}</span>
-            </div>
-            ${statusHtml}
+          // Clear existing content first
+          container.innerHTML = '';
+          
+          // Create elements properly to avoid onclick issues
+          const imageElement = document.createElement('div');
+          imageElement.innerHTML = imageHtml;
+          
+          const removeButton = document.createElement('button');
+          removeButton.className = 'remove-image-btn';
+          removeButton.setAttribute('title', 'Remove image');
+          removeButton.innerHTML = '×';
+          removeButton.dataset.imageId = imageData.id; // Store the ID in data attribute
+          
+          const imageInfo = document.createElement('div');
+          imageInfo.className = 'image-info';
+          imageInfo.innerHTML = `
+            <span class="image-name">${imageData.name}</span>
+            <span class="image-size">${formatFileSize(imageData.size)}</span>
           `;
+          
+          const statusElement = document.createElement('div');
+          statusElement.innerHTML = statusHtml;
+          
+          // Append all elements
+          container.appendChild(imageElement.firstElementChild || imageElement);
+          container.appendChild(removeButton);
+          container.appendChild(imageInfo);
+          container.appendChild(statusElement.firstElementChild || statusElement);
         }
 
         /**
@@ -2686,9 +2705,6 @@ Fliplet.Widget.generateInterface({
           console.log('✅ Image removal process completed for ID:', imageId);
         }
 
-        // Make removePastedImage globally accessible for onclick handlers
-        window.removePastedImage = removePastedImage;
-        
         /**
          * Handle image removal from onclick handlers
          * This function handles the async operation and provides user feedback
@@ -2697,7 +2713,7 @@ Fliplet.Widget.generateInterface({
         async function handleImageRemove(imageId) {
           try {
             // Show loading state on the button
-            const button = document.querySelector(`[onclick="handleImageRemove('${imageId}')"]`);
+            const button = document.querySelector(`[data-image-id="${imageId}"] .remove-image-btn`);
             if (button) {
               const originalText = button.innerHTML;
               button.innerHTML = '⏳';
@@ -2713,16 +2729,13 @@ Fliplet.Widget.generateInterface({
             Fliplet.UI.Toast.error('Failed to remove image. Please try again.');
             
             // Restore button state if there was an error
-            const button = document.querySelector(`[onclick="handleImageRemove('${imageId}')"]`);
+            const button = document.querySelector(`[data-image-id="${imageId}"] .remove-image-btn`);
             if (button) {
               button.innerHTML = '×';
               button.disabled = false;
             }
           }
         }
-        
-        // Make handleImageRemove globally accessible
-        window.handleImageRemove = handleImageRemove;
 
         /**
          * Format file size for display
@@ -2797,6 +2810,18 @@ Fliplet.Widget.generateInterface({
 
           // Handle image pasting
           setupImagePasteHandling();
+
+          // Setup event delegation for remove image buttons
+          $(document).on('click', '.remove-image-btn', function(event) {
+            event.preventDefault();
+            const imageId = this.dataset.imageId;
+            if (imageId) {
+              console.log('🗑️ Remove button clicked for image ID:', imageId);
+              handleImageRemove(imageId);
+            } else {
+              console.error('❌ No image ID found in remove button dataset');
+            }
+          });
 
           // Reset session
           $(DOM.resetBtn).on("click", handleReset);

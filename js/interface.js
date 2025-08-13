@@ -2394,7 +2394,6 @@ Fliplet.Widget.generateInterface({
             zone.addEventListener('dragover', handleDragOver);
             zone.addEventListener('dragenter', handleDragEnter);
             zone.addEventListener('dragleave', handleDragLeave);
-            zone.addEventListener('drop', handleImageDrop);
             
             // Add visual feedback for drag operations
             zone.addEventListener('dragenter', function(e) {
@@ -2413,10 +2412,12 @@ Fliplet.Widget.generateInterface({
             zone.addEventListener('drop', function(e) {
               e.preventDefault();
               zone.classList.remove('drag-over');
+              // Don't call handleImageDrop here to avoid duplication
             });
           });
           
-          // Also add drag and drop to the entire chat section for better UX
+          // Add drag and drop to the entire chat section for better UX
+          // This will be the main drop handler to avoid duplicate processing
           const chatSection = document.querySelector('.chat-section');
           if (chatSection) {
             chatSection.addEventListener('dragover', handleDragOver);
@@ -2472,12 +2473,39 @@ Fliplet.Widget.generateInterface({
           event.preventDefault();
         }
 
+        // Flag to prevent duplicate processing of drop events
+        let isProcessingDrop = false;
+        
+        // Set to track processed files to prevent duplicates
+        const processedFiles = new Set();
+        
+        // Clean up old processed file entries periodically
+        setInterval(() => {
+          if (processedFiles.size > 100) {
+            console.log('🧹 Cleaning up processed files set, current size:', processedFiles.size);
+            processedFiles.clear();
+          }
+        }, 60000); // Clean up every minute if needed
+
         /**
          * Handle image drop events for drag and drop
          * @param {DragEvent} event - The drop event
          */
         function handleImageDrop(event) {
           event.preventDefault();
+          
+          console.log('🔄 handleImageDrop called at:', new Date().toISOString());
+          console.log('🔄 Event target:', event.target);
+          console.log('🔄 Event currentTarget:', event.currentTarget);
+          
+          // Prevent duplicate processing by checking if this event has already been handled
+          if (event.defaultPrevented || isProcessingDrop) {
+            console.log('⚠️ Drop event already processed or processing in progress, skipping');
+            return;
+          }
+          
+          // Set processing flag to prevent duplicates
+          isProcessingDrop = true;
           
           const files = Array.from(event.dataTransfer.files);
           const validImageFiles = files.filter(file => isValidImageFile(file));
@@ -2486,6 +2514,7 @@ Fliplet.Widget.generateInterface({
           
           if (validImageFiles.length > 0) {
             console.log('📥 Dropped valid image files:', validImageFiles.map(f => ({ name: f.name, type: f.type, size: f.size })));
+            console.log('🔄 Processing drop event - isProcessingDrop:', isProcessingDrop);
             
             // Show a brief success message
             showDropSuccessMessage(validImageFiles.length);
@@ -2525,6 +2554,19 @@ Fliplet.Widget.generateInterface({
           
           // Clear any drag over states
           clearDragOverStates();
+          
+          // Mark this event as handled to prevent duplicate processing
+          event.stopPropagation();
+          
+          // Reset processing flag
+          isProcessingDrop = false;
+          
+          // Safety timeout to reset flag in case of errors
+          setTimeout(() => {
+            isProcessingDrop = false;
+          }, 1000);
+          
+          console.log('✅ handleImageDrop completed at:', new Date().toISOString());
         }
 
         /**
@@ -2680,6 +2722,20 @@ Fliplet.Widget.generateInterface({
          * @param {File} file - The image file to process
          */
         async function processPastedImage(file) {
+          console.log('🔄 processPastedImage called for file:', file.name, 'at:', new Date().toISOString());
+          
+          // Create a unique identifier for this file to prevent duplicates
+          const fileId = `${file.name}-${file.size}-${file.lastModified}`;
+          
+          // Check if this file has already been processed
+          if (processedFiles.has(fileId)) {
+            console.log('⚠️ File already processed, skipping:', file.name);
+            return;
+          }
+          
+          // Mark this file as being processed
+          processedFiles.add(fileId);
+          
           // Validate file type
           if (!file.type.startsWith('image/')) {
             console.log('⚠️ Non-image file ignored:', file.type);
@@ -2707,6 +2763,13 @@ Fliplet.Widget.generateInterface({
           };
           
           try {
+            // Check if image with same ID already exists in state
+            const existingImage = AppState.pastedImages.find(img => img.id === imageData.id);
+            if (existingImage) {
+              console.log('⚠️ Image already exists in state, skipping duplicate:', imageData.name);
+              return;
+            }
+            
             // Add to state immediately
             AppState.pastedImages.push(imageData);
             console.log('📥 Image added to AppState.pastedImages:', {
@@ -2809,7 +2872,16 @@ Fliplet.Widget.generateInterface({
          * @param {Object} imageData - The image data object
          */
         function displayPastedImage(imageData) {
+          console.log('🔄 displayPastedImage called for:', imageData.name, 'ID:', imageData.id, 'at:', new Date().toISOString());
+          
           if (!DOM.uploadedImages) return;
+          
+          // Check if image container with this ID already exists
+          const existingContainer = DOM.uploadedImages.querySelector(`[data-image-id="${imageData.id}"]`);
+          if (existingContainer) {
+            console.log('⚠️ Image container already exists, skipping duplicate display:', imageData.name);
+            return;
+          }
           
           // Hide placeholder if it exists
           const placeholder = DOM.uploadedImages.querySelector('.no-images-placeholder');
@@ -2828,6 +2900,8 @@ Fliplet.Widget.generateInterface({
           
           // Show the uploaded-images section if it was hidden
           DOM.uploadedImages.style.display = 'block';
+          
+          console.log('✅ Image displayed successfully:', imageData.name);
         }
 
         /**

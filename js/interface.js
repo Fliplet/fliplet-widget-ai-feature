@@ -2373,11 +2373,14 @@ Fliplet.Widget.generateInterface({
           // Set up periodic check to ensure resize handle is always present
           setInterval(ensureResizeHandlePresent, 2000);
           
-          // Set up periodic cleanup of old file signatures (every 10 minutes)
+          // Set up periodic cleanup of old file signatures and orphaned signatures (every 10 minutes)
           setInterval(() => {
             if (AppState.processedFileSignatures.size > 100) {
               console.log('🧹 Cleaning up old file signatures to prevent memory bloat');
               AppState.processedFileSignatures.clear();
+            } else {
+              // Clean up orphaned signatures even if we're under the limit
+              cleanupOrphanedFileSignatures();
             }
           }, 10 * 60 * 1000); // 10 minutes
 
@@ -2737,6 +2740,7 @@ Fliplet.Widget.generateInterface({
           }
           
           // Check if this file is already being processed to prevent duplicates
+          // Use a more reliable signature that includes the file's lastModified time
           const fileSignature = `${file.name}-${file.size}-${file.lastModified}`;
           
           if (AppState.processedFileSignatures.has(fileSignature)) {
@@ -2746,11 +2750,36 @@ Fliplet.Widget.generateInterface({
               lastModified: file.lastModified,
               signature: fileSignature
             });
-            return;
+            
+            // Check if the image is actually still in the pastedImages array
+            const stillExists = AppState.pastedImages.some(img => 
+              img.name === file.name && 
+              img.size === file.size
+            );
+            
+            if (!stillExists) {
+              console.log('ℹ️ Image was removed, allowing re-addition by removing old signature');
+              AppState.processedFileSignatures.delete(fileSignature);
+            } else {
+              return; // Image still exists, don't allow duplicate
+            }
           }
           
           // Add to processed signatures set
           AppState.processedFileSignatures.add(fileSignature);
+          
+          // Log the signature for debugging
+          console.log('📝 Added file signature to prevent duplicates:', {
+            signature: fileSignature,
+            totalSignatures: AppState.processedFileSignatures.size
+          });
+          
+          // Make the reset function available globally for debugging
+          if (typeof window !== 'undefined') {
+            window.resetFileSignatures = resetFileSignatures;
+            window.cleanupOrphanedFileSignatures = cleanupOrphanedFileSignatures;
+            console.log('🔧 Debug functions available: window.resetFileSignatures(), window.cleanupOrphanedFileSignatures()');
+          }
           
           // Clean up old signatures periodically to prevent memory bloat
           // This will be handled by the clearPastedImages function and periodic cleanup
@@ -3015,6 +3044,34 @@ Fliplet.Widget.generateInterface({
           const finalCount = AppState.pastedImages.length;
           const afterFilter = AppState.pastedImages.map(img => ({ id: img.id, name: img.name }));
           
+          // Remove the file signature from processedFileSignatures so the same file can be added again
+          if (imageData.name && imageData.size) {
+            // Try multiple signature formats to ensure we find and remove the correct one
+            const possibleSignatures = [
+              `${imageData.name}-${imageData.size}-${imageData.lastModified || 0}`,
+              `${imageData.name}-${imageData.size}`,
+              `${imageData.name}-${imageData.size}-${new Date(imageData.timestamp).getTime()}`
+            ];
+            
+            let signatureRemoved = false;
+            possibleSignatures.forEach(signature => {
+              if (AppState.processedFileSignatures.has(signature)) {
+                AppState.processedFileSignatures.delete(signature);
+                console.log('🗑️ File signature removed from processedFileSignatures:', signature);
+                signatureRemoved = true;
+              }
+            });
+            
+            if (!signatureRemoved) {
+              console.log('ℹ️ No matching file signature found to remove for:', {
+                name: imageData.name,
+                size: imageData.size,
+                lastModified: imageData.lastModified,
+                timestamp: imageData.timestamp
+              });
+            }
+          }
+          
           console.log('🗑️ Local state updated (image kept in Fliplet Media):', {
             removedId: imageId,
             initialCount: initialCount,
@@ -3043,6 +3100,9 @@ Fliplet.Widget.generateInterface({
           // Clean up chat history messages that reference this removed image
           console.log('🧹 About to clean up chat history for image ID:', imageId);
           cleanupChatHistoryImages(imageId);
+          
+          // Clean up orphaned file signatures to prevent "File already processed" issues
+          cleanupOrphanedFileSignatures();
           
           console.log('✅ Image removal process completed for ID:', imageId, '- image kept in Fliplet Media');
         }
@@ -3245,6 +3305,68 @@ Fliplet.Widget.generateInterface({
         }
         
         /**
+         * Clean up orphaned file signatures that don't correspond to existing images
+         * This prevents the "File already processed" issue when images are removed
+         */
+        function cleanupOrphanedFileSignatures() {
+          console.log('🧹 Cleaning up orphaned file signatures...');
+          
+          const initialSignatureCount = AppState.processedFileSignatures.size;
+          const signaturesToRemove = [];
+          
+          // Check each signature to see if it corresponds to an existing image
+          AppState.processedFileSignatures.forEach(signature => {
+            // Skip event signatures (they start with 'event-')
+            if (signature.startsWith('event-')) {
+              return;
+            }
+            
+            // Extract file info from signature (format: name-size-lastModified)
+            const parts = signature.split('-');
+            if (parts.length >= 2) {
+              const fileName = parts[0];
+              const fileSize = parseInt(parts[1]);
+              
+              // Check if an image with this name and size still exists
+              const imageExists = AppState.pastedImages.some(img => 
+                img.name === fileName && img.size === fileSize
+              );
+              
+              if (!imageExists) {
+                signaturesToRemove.push(signature);
+              }
+            }
+          });
+          
+          // Remove orphaned signatures
+          signaturesToRemove.forEach(signature => {
+            AppState.processedFileSignatures.delete(signature);
+            console.log('🗑️ Removed orphaned file signature:', signature);
+          });
+          
+          const finalSignatureCount = AppState.processedFileSignatures.size;
+          console.log('🧹 Orphaned signature cleanup complete:', {
+            initialCount: initialSignatureCount,
+            removedCount: signaturesToRemove.length,
+            finalCount: finalSignatureCount
+          });
+        }
+        
+        /**
+         * Manually reset file signatures (useful for debugging or when issues occur)
+         * This will allow all files to be processed again
+         */
+        function resetFileSignatures() {
+          console.log('🔄 Manually resetting file signatures...');
+          const initialCount = AppState.processedFileSignatures.size;
+          AppState.processedFileSignatures.clear();
+          console.log('🔄 File signatures reset:', {
+            initialCount: initialCount,
+            finalCount: AppState.processedFileSignatures.size
+          });
+        }
+        
+        /**
          * Update chat interface to reflect current chat history state
          */
         function updateChatInterface() {
@@ -3362,9 +3484,9 @@ Fliplet.Widget.generateInterface({
           // Clear local state
           AppState.pastedImages = [];
           
-          // Clear processed file signatures to prevent memory bloat
+          // Clear processed file signatures to allow re-adding the same images
           AppState.processedFileSignatures.clear();
-          console.log('🧹 Processed file signatures cleared');
+          console.log('🧹 Processed file signatures cleared - same images can now be added again');
           
           if (DOM.uploadedImages) {
             DOM.uploadedImages.innerHTML = '<div class="no-images-placeholder">No images attached</div>';

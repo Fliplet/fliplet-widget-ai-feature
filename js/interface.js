@@ -2648,6 +2648,9 @@ Fliplet.Widget.generateInterface({
           console.log('🔍 All image IDs in state:', AppState.pastedImages.map(img => img.id));
           console.log('🔍 AppState instance ID:', AppState.instanceId);
           
+          // CRITICAL: Mark this image as being removed to prevent race conditions
+          console.log('🚨 [CRITICAL] Marking image for removal to prevent race conditions:', imageId);
+          
           // Find the image data first
           let imageData = AppState.pastedImages.find(img => img.id === imageId);
           
@@ -2701,6 +2704,17 @@ Fliplet.Widget.generateInterface({
             console.warn('⚠️ No flipletFileId found, skipping Fliplet Media deletion');
           }
           
+          // CRITICAL: Mark image as being removed to prevent race conditions
+          const imageToRemove = AppState.pastedImages.find(img => img.id === imageId);
+          if (imageToRemove) {
+            imageToRemove._removing = true;
+            console.log('🚨 [CRITICAL] Image marked as removing:', {
+              imageId: imageId,
+              imageName: imageToRemove.name,
+              _removing: imageToRemove._removing
+            });
+          }
+          
           // Remove from local state
           const initialCount = AppState.pastedImages.length;
           const beforeFilter = AppState.pastedImages.map(img => ({ id: img.id, name: img.name }));
@@ -2737,6 +2751,9 @@ Fliplet.Widget.generateInterface({
           // Clean up chat history messages that reference this removed image
           console.log('🧹 About to clean up chat history for image ID:', imageId);
           cleanupChatHistoryImages(imageId);
+          
+          // CRITICAL: Ensure cleanup is complete before returning
+          console.log('🧹 Chat history cleanup completed for image ID:', imageId);
           
           console.log('✅ Image removal process completed for ID:', imageId);
         }
@@ -3036,7 +3053,18 @@ Fliplet.Widget.generateInterface({
          * @returns {Array} Array of image data objects with Fliplet Media URLs
          */
         function getPastedImages() {
-          return AppState.pastedImages;
+          // CRITICAL: Filter out images that are being removed to prevent race conditions
+          const validImages = AppState.pastedImages.filter(img => !img._removing);
+          
+          if (validImages.length !== AppState.pastedImages.length) {
+            console.log('🚨 [CRITICAL] getPastedImages filtered out removing images:', {
+              totalImages: AppState.pastedImages.length,
+              validImages: validImages.length,
+              removingImages: AppState.pastedImages.filter(img => img._removing).map(img => ({ id: img.id, name: img.name }))
+            });
+          }
+          
+          return validImages;
         }
 
         /**
@@ -3127,29 +3155,30 @@ Fliplet.Widget.generateInterface({
          */
         function handleSendMessage() {
           const userMessage = DOM.userInput.value.trim();
-          const pastedImages = getPastedImages();
+          const currentImages = getPastedImages(); // Get current images at send time
 
           // Input validation
-          if (!userMessage && pastedImages.length === 0) {
+          if (!userMessage && currentImages.length === 0) {
             console.log("⚠️ Empty message and no images ignored");
             return;
           }
 
           console.log("📤 User message:", userMessage);
-          console.log("🖼️ Images attached:", pastedImages.length);
+          console.log("🖼️ Current images at send time:", currentImages.length);
+          console.log("🖼️ Current image details:", currentImages.map(img => ({ id: img.id, name: img.name, status: img.status })));
 
           // Add user message to chat (show original message + image count if applicable)
-          const displayMessage = userMessage || (pastedImages.length > 0 ? `Analyzing ${pastedImages.length} image(s)` : '');
+          const displayMessage = userMessage || (currentImages.length > 0 ? `Analyzing ${currentImages.length} image(s)` : '');
           if (displayMessage) {
-            addMessageToChat(displayMessage, "user", pastedImages);
+            addMessageToChat(displayMessage, "user", currentImages);
           }
 
           // Clear input only - don't clear images yet
           // Images will be cleared after processing in processUserMessage()
           DOM.userInput.value = "";
 
-          // Process the message with images - pass the current images
-          processUserMessage(userMessage, pastedImages);
+          // Process the message with current images - don't pass stale data
+          processUserMessage(userMessage, currentImages);
         }
 
         /**
@@ -3219,24 +3248,40 @@ Fliplet.Widget.generateInterface({
             });
 
             // Step 2: Call AI with optimized context
-            // IMPORTANT: Always use AppState.pastedImages as the source of truth
-            // The passed pastedImages parameter might be stale if images were cleared
+            // CRITICAL: Always use AppState.pastedImages as the source of truth
+            // The passed pastedImages parameter might be stale if images were removed before sending
             const currentImages = AppState.pastedImages.filter(img => 
-              img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+              img.status === 'uploaded' && 
+              img.flipletUrl && 
+              img.flipletFileId &&
+              !img._removing // CRITICAL: Exclude images marked as being removed
             );
             
-            console.log("📸 [Main] Current images for AI processing:", {
+            console.log("📸 [Main] Image validation for AI processing:", {
               passedParameterCount: pastedImages.length,
               currentStateCount: currentImages.length,
               passedImages: pastedImages.map(img => ({ name: img.name, id: img.id, status: img.status })),
               currentImages: currentImages.map(img => ({ name: img.name, id: img.id, status: img.status, flipletUrl: !!img.flipletUrl, flipletFileId: !!img.flipletFileId }))
             });
             
-            // Additional safety check: log any discrepancies
+            // CRITICAL SAFETY CHECK: Detect and warn about stale image data
             if (pastedImages.length !== currentImages.length) {
-              console.warn("⚠️ [Main] Image count mismatch detected:", {
+              console.warn("⚠️ [Main] STALE IMAGE DATA DETECTED - Images were removed before sending:", {
                 passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
-                currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
+                currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+                discrepancy: `Passed ${pastedImages.length} images but only ${currentImages.length} remain in state`
+              });
+            }
+            
+            // Additional validation: check if any passed images no longer exist in state
+            const staleImages = pastedImages.filter(passedImg => 
+              !AppState.pastedImages.some(stateImg => String(stateImg.id) === String(passedImg.id))
+            );
+            
+            if (staleImages.length > 0) {
+              console.warn("⚠️ [Main] STALE IMAGES DETECTED - These images were removed before sending:", {
+                staleImages: staleImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+                message: "Using current state images instead of stale passed images"
               });
             }
             
@@ -3248,6 +3293,34 @@ Fliplet.Widget.generateInterface({
               appStateImages: AppState.pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
             });
 
+            // FINAL CRITICAL CHECK: Verify image state before AI call
+            console.log("🚨 [Main] FINAL CRITICAL CHECK - Image state before AI call:", {
+              currentImagesCount: currentImages.length,
+              currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+              appStateImagesCount: AppState.pastedImages.length,
+              appStateImages: AppState.pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+              message: "If these don't match, there's a critical race condition"
+            });
+            
+            // Verify that currentImages still match AppState.pastedImages
+            const finalCurrentImages = AppState.pastedImages.filter(img => 
+              img.status === 'uploaded' && 
+              img.flipletUrl && 
+              img.flipletFileId &&
+              !img._removing // CRITICAL: Exclude images marked as being removed
+            );
+            
+            if (finalCurrentImages.length !== currentImages.length) {
+              console.error("🚨 [Main] CRITICAL RACE CONDITION - Images changed during processing:", {
+                originalCount: currentImages.length,
+                finalCount: finalCurrentImages.length,
+                removedCount: currentImages.length - finalCurrentImages.length,
+                error: "Using final state images instead of stale ones"
+              });
+              // Use the final state images
+              currentImages.splice(0, currentImages.length, ...finalCurrentImages);
+            }
+            
             const aiResponse = await callOpenAIWithNewArchitecture(
               userMessage,
               context,
@@ -3371,14 +3444,24 @@ Fliplet.Widget.generateInterface({
         async function callOpenAIWithNewArchitecture(userMessage, context, pastedImages = []) {
           console.log("🌐 [AI] Making API call with optimized context...");
 
-          // ALWAYS use AppState.pastedImages as the source of truth for current images
-          // The passed pastedImages parameter might be stale if images were removed
+          // CRITICAL: ALWAYS use AppState.pastedImages as the source of truth for current images
+          // The passed pastedImages parameter might be stale if images were removed before sending
           const currentImages = AppState.pastedImages.filter(img => 
             img && 
             img.status === 'uploaded' && 
             img.flipletUrl && 
-            img.flipletFileId
+            img.flipletFileId &&
+            !img._removing // CRITICAL: Exclude images marked as being removed
           );
+          
+          // CRITICAL SAFETY CHECK: Verify that passed images match current state
+          if (pastedImages.length !== currentImages.length) {
+            console.error("🚨 [AI] CRITICAL ERROR - Stale images passed to AI function:", {
+              passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+              currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+              error: "This should never happen - images were removed before AI call"
+            });
+          }
 
           console.log("🔍 [AI] Image validation in callOpenAIWithNewArchitecture:", {
             passedParameterCount: pastedImages.length,
@@ -3459,7 +3542,8 @@ Fliplet.Widget.generateInterface({
                 String(stateImg.id) === String(img.id) && 
                 stateImg.status === 'uploaded' && 
                 stateImg.flipletUrl && 
-                stateImg.flipletFileId
+                stateImg.flipletFileId &&
+                !stateImg._removing // CRITICAL: Exclude images marked as being removed
               );
               
               console.log('🔍 [AI] Image validation result:', {
@@ -3494,31 +3578,66 @@ Fliplet.Widget.generateInterface({
             });
             
             if (finalValidImages.length > 0) {
-              // Use OpenAI's image input format
-              const content = [
-                { type: "text", text: userMessage }
-              ];
+              // FINAL SAFETY CHECK: Verify these images still exist in AppState
+              const absolutelyValidImages = finalValidImages.filter(img => {
+                const stillExists = AppState.pastedImages.some(stateImg => 
+                  String(stateImg.id) === String(img.id) && 
+                  stateImg.status === 'uploaded' && 
+                  stateImg.flipletUrl && 
+                  stateImg.flipletFileId &&
+                  !stateImg._removing // CRITICAL: Exclude images marked as being removed
+                );
+                
+                if (!stillExists) {
+                  console.error("🚨 [AI] CRITICAL ERROR - Image validation failed at final step:", {
+                    imageId: img.id,
+                    imageName: img.name,
+                    error: "Image was removed during AI call construction"
+                  });
+                }
+                
+                return stillExists;
+              });
               
-              // Add all final valid images
-              finalValidImages.forEach((img) => {
-                content.push({
-                  type: "image_url",
-                  image_url: { url: img.flipletUrl }
+              if (absolutelyValidImages.length !== finalValidImages.length) {
+                console.error("🚨 [AI] CRITICAL ERROR - Some images were removed during AI call construction:", {
+                  originalCount: finalValidImages.length,
+                  finalCount: absolutelyValidImages.length,
+                  removedCount: finalValidImages.length - absolutelyValidImages.length
                 });
-              });
+              }
               
-              messages.push({ role: "user", content: content });
-              
-              // Log what we're sending
-              console.log("📤 [AI] Sending message with images:", {
-                textLength: userMessage.length,
-                imageCount: finalValidImages.length,
-                images: finalValidImages.map(img => ({ name: img.name, url: img.flipletUrl, id: img.id }))
-              });
+              if (absolutelyValidImages.length > 0) {
+                // Use OpenAI's image input format
+                const content = [
+                  { type: "text", text: userMessage }
+                ];
+                
+                // Add all absolutely valid images
+                absolutelyValidImages.forEach((img) => {
+                  content.push({
+                    type: "image_url",
+                    image_url: { url: img.flipletUrl }
+                  });
+                });
+                
+                messages.push({ role: "user", content: content });
+                
+                // Log what we're sending
+                console.log("📤 [AI] Sending message with images:", {
+                  textLength: userMessage.length,
+                  imageCount: absolutelyValidImages.length,
+                  images: absolutelyValidImages.map(img => ({ name: img.name, url: img.flipletUrl, id: img.id }))
+                });
+              } else {
+                // All images were removed during construction, send text-only message
+                messages.push({ role: "user", content: userMessage });
+                console.log("🚨 [AI] All images were removed during AI call construction, sending text-only message");
+              }
             } else {
-              // All images were removed, send text-only message
+              // No valid images, send text-only message
               messages.push({ role: "user", content: userMessage });
-              console.log("⚠️ [AI] All images were removed after filtering, sending text-only message");
+              console.log("⚠️ [AI] No valid images found, sending text-only message");
             }
           } else {
             // No valid images, send text-only message
@@ -5686,16 +5805,29 @@ Make sure each code block is complete and functional.`;
           // Build message content
           let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(message)}`;
           
-          // Add images if present
+          // Add images if present (CRITICAL: Filter out images being removed)
           if (images && images.length > 0) {
-            const imagesHTML = images.map(img => 
-              `<div class="chat-image-container">
-                <img src="${img.dataUrl}" alt="${img.name}" class="chat-image" />
-                <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
-               </div>`
-            ).join('');
+            const validImages = images.filter(img => !img._removing);
             
-            messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+            if (validImages.length !== images.length) {
+              console.log('🚨 [CRITICAL] addMessageToChat filtered out removing images:', {
+                originalCount: images.length,
+                validCount: validImages.length,
+                removedCount: images.length - validImages.length,
+                removingImages: images.filter(img => img._removing).map(img => ({ id: img.id, name: img.name }))
+              });
+            }
+            
+            if (validImages.length > 0) {
+              const imagesHTML = validImages.map(img => 
+                `<div class="chat-image-container">
+                  <img src="${img.dataUrl}" alt="${img.name}" class="chat-image" />
+                  <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
+                 </div>`
+              ).join('');
+              
+              messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+            }
           }
           
           messageDiv.innerHTML = messageContent;
@@ -5707,22 +5839,32 @@ Make sure each code block is complete and functional.`;
           
           scrollToBottom();
 
-          // Add to history
+          // Add to history (CRITICAL: Only store valid images)
+          const validImages = images ? images.filter(img => !img._removing) : [];
+          
+          if (images && validImages.length !== images.length) {
+            console.log('🚨 [CRITICAL] History storage filtered out removing images:', {
+              originalCount: images.length,
+              validCount: validImages.length,
+              removedCount: images.length - validImages.length
+            });
+          }
+          
           const historyItem = {
             message,
             type,
             timestamp: new Date().toISOString(),
-            images: images || [] // Store images in history
+            images: validImages // Store only valid images in history
           };
           
           AppState.chatHistory.push(historyItem);
           
           // Log what we're storing in history
-          if (images && images.length > 0) {
-            console.log('💾 Storing message in chat history with images:', {
+          if (validImages && validImages.length > 0) {
+            console.log('💾 Storing message in chat history with valid images:', {
               messageType: type,
-              imageCount: images.length,
-              imageIds: images.map(img => ({ id: img.id, name: img.name, type: typeof img.id }))
+              imageCount: validImages.length,
+              imageIds: validImages.map(img => ({ id: img.id, name: img.name, type: typeof img.id }))
             });
           }
 

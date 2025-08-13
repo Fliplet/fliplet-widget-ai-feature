@@ -3410,6 +3410,14 @@ Fliplet.Widget.generateInterface({
             img.flipletUrl && 
             img.flipletFileId
           );
+          
+          // IMMEDIATE SAFETY CHECK: If passed images don't match current state, log warning
+          if (pastedImages.length !== currentImages.length) {
+            console.warn('⚠️ [AI] WARNING: Passed images count (', pastedImages.length, 
+              ') does not match current state count (', currentImages.length, ')');
+            console.warn('⚠️ [AI] This indicates images were removed after the initial filtering');
+            console.warn('⚠️ [AI] Using current state images instead of passed parameter');
+          }
 
           console.log("🔍 [AI] Image validation in callOpenAIWithNewArchitecture:", {
             passedParameterCount: pastedImages.length,
@@ -3418,6 +3426,14 @@ Fliplet.Widget.generateInterface({
             currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
           });
 
+          // CRITICAL: Get the most current images right before building the system prompt
+          const finalCurrentImages = AppState.pastedImages.filter(img => 
+            img && 
+            img.status === 'uploaded' && 
+            img.flipletUrl && 
+            img.flipletFileId
+          );
+          
           // Log current image state before building system prompt
           console.log('🔍 [AI] Current image state before AI call:', {
             appStateImagesCount: AppState.pastedImages.length,
@@ -3428,8 +3444,8 @@ Fliplet.Widget.generateInterface({
               flipletUrl: !!img.flipletUrl,
               flipletFileId: !!img.flipletFileId
             })),
-            filteredImagesCount: currentImages.length,
-            filteredImages: currentImages.map(img => ({ 
+            filteredImagesCount: finalCurrentImages.length,
+            filteredImages: finalCurrentImages.map(img => ({ 
               id: img.id, 
               name: img.name, 
               status: img.status,
@@ -3438,7 +3454,8 @@ Fliplet.Widget.generateInterface({
             }))
           });
           
-          const systemPrompt = buildSystemPromptWithContext(context, currentImages);
+          // CRITICAL: Use the most current images for the system prompt
+          const systemPrompt = buildSystemPromptWithContext(context, finalCurrentImages);
 
           // Build complete conversation history
           const messages = [{ role: "system", content: systemPrompt }];
@@ -3473,7 +3490,7 @@ Fliplet.Widget.generateInterface({
           });
 
           // Add current user message with image data
-          if (currentImages && currentImages.length > 0) {
+          if (finalCurrentImages && finalCurrentImages.length > 0) {
             // Final validation: ensure all images are still valid and haven't been removed
             console.log('🔍 [AI] Starting final image validation...');
             console.log('🔍 [AI] AppState.pastedImages before final validation:', AppState.pastedImages.map(img => ({ 
@@ -3484,7 +3501,7 @@ Fliplet.Widget.generateInterface({
               flipletFileId: !!img.flipletFileId
             })));
             
-            const finalValidImages = currentImages.filter(img => {
+            const finalValidImages = finalCurrentImages.filter(img => {
               // Check if the image still exists in AppState.pastedImages
               const stillExists = AppState.pastedImages.some(stateImg => 
                 String(stateImg.id) === String(img.id) && 
@@ -3510,18 +3527,18 @@ Fliplet.Widget.generateInterface({
               return stillExists;
             });
             
-            if (finalValidImages.length !== currentImages.length) {
+            if (finalValidImages.length !== finalCurrentImages.length) {
               console.warn('⚠️ [AI] Some images were removed after initial filtering:', {
-                originalCount: currentImages.length,
+                originalCount: finalCurrentImages.length,
                 finalCount: finalValidImages.length,
-                removedCount: currentImages.length - finalValidImages.length
+                removedCount: finalCurrentImages.length - finalValidImages.length
               });
             }
             
             console.log('🔍 [AI] Final validation completed:', {
-              originalImages: currentImages.map(img => ({ id: img.id, name: img.name })),
+              originalImages: finalCurrentImages.map(img => ({ id: img.id, name: img.name })),
               finalValidImages: finalValidImages.map(img => ({ id: img.id, name: img.name })),
-              removedImages: currentImages.filter(img => !finalValidImages.some(finalImg => String(finalImg.id) === String(img.id))).map(img => ({ id: img.id, name: img.name }))
+              removedImages: finalCurrentImages.filter(img => !finalValidImages.some(finalImg => String(finalImg.id) === String(img.id))).map(img => ({ id: img.id, name: img.name }))
             });
             
             if (finalValidImages.length > 0) {
@@ -3600,6 +3617,44 @@ Fliplet.Widget.generateInterface({
             }, 0)
           });
 
+          // FINAL VALIDATION: Double-check that no removed images are in the request
+          const finalImageValidation = messages.reduce((count, msg) => {
+            if (msg.role === 'user' && Array.isArray(msg.content)) {
+              return count + msg.content.filter(c => c.type === 'image_url').length;
+            }
+            return count;
+          }, 0);
+          
+          console.log('🔍 [AI] FINAL VALIDATION - Images in request:', {
+            totalImagesInRequest: finalImageValidation,
+            messagesWithImages: messages.filter(msg => 
+              msg.role === 'user' && 
+              Array.isArray(msg.content) && 
+              msg.content.some(c => c.type === 'image_url')
+            ).length,
+            currentAppStateImages: AppState.pastedImages.length,
+            currentValidImages: AppState.pastedImages.filter(img => 
+              img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+            ).length
+          });
+          
+          // If we have images in the request but no valid images in state, this is an error
+          if (finalImageValidation > 0 && AppState.pastedImages.filter(img => 
+            img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+          ).length === 0) {
+            console.error('❌ [AI] CRITICAL ERROR: Request contains images but AppState has no valid images!');
+            console.error('❌ [AI] This should never happen - images were removed after filtering');
+            
+            // Force remove all images from the request
+            messages.forEach(msg => {
+              if (msg.role === 'user' && Array.isArray(msg.content)) {
+                msg.content = msg.content.filter(c => c.type !== 'image_url');
+              }
+            });
+            
+            console.log('🔧 [AI] Forced removal of all images from request due to state mismatch');
+          }
+
           const requestBody = {
             model: AIConfig.model,
             messages: messages,
@@ -3665,6 +3720,24 @@ Fliplet.Widget.generateInterface({
             },
           };
 
+          // Log the final request body to verify what's being sent
+          console.log('🚀 [AI] Final request body being sent to API:', {
+            model: requestBody.model,
+            messageCount: requestBody.messages.length,
+            hasImages: requestBody.messages.some(msg => 
+              msg.role === 'user' && 
+              Array.isArray(msg.content) && 
+              msg.content.some(c => c.type === 'image_url')
+            ),
+            imageCount: requestBody.messages.reduce((count, msg) => {
+              if (msg.role === 'user' && Array.isArray(msg.content)) {
+                return count + msg.content.filter(c => c.type === 'image_url').length;
+              }
+              return count;
+            }, 0),
+            userMessageContent: requestBody.messages.find(msg => msg.role === 'user')?.content
+          });
+
           const response = await Fliplet.AI.createCompletion(requestBody);
 
           if (!response || !response.choices || !response.choices[0]) {
@@ -3695,6 +3768,14 @@ Fliplet.Widget.generateInterface({
          */
         function buildSystemPromptWithContext(context, pastedImages = []) {
           console.log("📝 [AI] Building system prompt with context...");
+          console.log("📝 [AI] Images passed to system prompt:", {
+            passedImagesCount: pastedImages.length,
+            passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+            currentAppStateImages: AppState.pastedImages.length,
+            currentAppStateValidImages: AppState.pastedImages.filter(img => 
+              img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+            ).length
+          });
 
           let prompt = `You are an expert web developer chat assistant for a Fliplet app. Your job is to help users create and modify HTML, CSS, and JavaScript code reliably.
 
@@ -3734,7 +3815,9 @@ Charts and utilities: highcharts, jssocials, jwt-decode, lodash-joins, mixitup, 
 
 Ask the user if you need clarification on the requirements, do not start creating code if you are not clear on the requirements.    
 
-${pastedImages.length > 0 ? `IMPORTANT: The user has attached ${pastedImages.length} image(s) to analyze. These images are being sent directly to you in OpenAI's image input format, so you can see and analyze them directly. Please examine these images carefully and incorporate their content into your response. The images may contain:
+          ${pastedImages.length > 0 && AppState.pastedImages.filter(img => 
+            img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+          ).length > 0 ? `IMPORTANT: The user has attached ${pastedImages.length} image(s) to analyze. These images are being sent directly to you in OpenAI's image input format, so you can see and analyze them directly. Please examine these images carefully and incorporate their content into your response. The images may contain:
 - Design mockups or wireframes
 - UI/UX requirements or specifications
 - Visual examples to replicate

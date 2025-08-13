@@ -2383,6 +2383,264 @@ Fliplet.Widget.generateInterface({
           DOM.userInput.addEventListener('paste', handleImagePaste);
         }
 
+        function setupImageDragAndDropHandling() {
+          // Add drag and drop event listeners to the input field and uploaded-images area
+          const dropZones = [DOM.userInput, DOM.uploadedImages];
+          
+          dropZones.forEach(zone => {
+            if (!zone) return;
+            
+            // Prevent default drag behaviors
+            zone.addEventListener('dragover', handleDragOver);
+            zone.addEventListener('dragenter', handleDragEnter);
+            zone.addEventListener('dragleave', handleDragLeave);
+            zone.addEventListener('drop', handleImageDrop);
+            
+            // Add visual feedback for drag operations
+            zone.addEventListener('dragenter', function(e) {
+              e.preventDefault();
+              zone.classList.add('drag-over');
+            });
+            
+            zone.addEventListener('dragleave', function(e) {
+              e.preventDefault();
+              // Only remove class if we're leaving the zone entirely
+              if (!zone.contains(e.relatedTarget)) {
+                zone.classList.remove('drag-over');
+              }
+            });
+            
+            zone.addEventListener('drop', function(e) {
+              e.preventDefault();
+              zone.classList.remove('drag-over');
+            });
+          });
+          
+          // Also add drag and drop to the entire chat section for better UX
+          const chatSection = document.querySelector('.chat-section');
+          if (chatSection) {
+            chatSection.addEventListener('dragover', handleDragOver);
+            chatSection.addEventListener('dragenter', function(e) {
+              e.preventDefault();
+              chatSection.classList.add('drag-over');
+            });
+            chatSection.addEventListener('dragleave', function(e) {
+              e.preventDefault();
+              if (!chatSection.contains(e.relatedTarget)) {
+                chatSection.classList.remove('drag-over');
+              }
+            });
+            chatSection.addEventListener('drop', function(e) {
+              e.preventDefault();
+              chatSection.classList.remove('drag-over');
+              handleImageDrop(e);
+            });
+          }
+          
+          // Prevent default drag behaviors on the entire document to avoid browser default handling
+          document.addEventListener('dragover', function(e) {
+            e.preventDefault();
+          });
+          
+          document.addEventListener('drop', function(e) {
+            e.preventDefault();
+          });
+        }
+
+        /**
+         * Handle drag over events for drag and drop
+         * @param {DragEvent} event - The drag over event
+         */
+        function handleDragOver(event) {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = 'copy';
+        }
+
+        /**
+         * Handle drag enter events for drag and drop
+         * @param {DragEvent} event - The drag enter event
+         */
+        function handleDragEnter(event) {
+          event.preventDefault();
+        }
+
+        /**
+         * Handle drag leave events for drag and drop
+         * @param {DragEvent} event - The drag leave event
+         */
+        function handleDragLeave(event) {
+          event.preventDefault();
+        }
+
+        /**
+         * Handle image drop events for drag and drop
+         * @param {DragEvent} event - The drop event
+         */
+        function handleImageDrop(event) {
+          event.preventDefault();
+          
+          const files = Array.from(event.dataTransfer.files);
+          const validImageFiles = files.filter(file => isValidImageFile(file));
+          const invalidImageFiles = files.filter(file => file.type.startsWith('image/') && !isValidImageFile(file));
+          const nonImageFiles = files.filter(file => !file.type.startsWith('image/'));
+          
+          if (validImageFiles.length > 0) {
+            console.log('📥 Dropped valid image files:', validImageFiles.map(f => ({ name: f.name, type: f.type, size: f.size })));
+            
+            // Show a brief success message
+            showDropSuccessMessage(validImageFiles.length);
+            
+            // Process each dropped image file
+            validImageFiles.forEach(file => {
+              processPastedImage(file); // Reuse existing paste processing logic
+            });
+          }
+          
+          if (invalidImageFiles.length > 0) {
+            console.log('⚠️ Dropped invalid image files:', invalidImageFiles.map(f => ({ name: f.name, type: f.type, size: f.size })));
+            
+            // Provide more specific error messages
+            const errorDetails = invalidImageFiles.map(file => {
+              if (file.size > 5 * 1024 * 1024) {
+                return `${file.name} (too large)`;
+              } else if (!file.name || file.name.trim() === '') {
+                return `${file.name || 'unnamed'} (invalid name)`;
+              } else {
+                return `${file.name} (unsupported format)`;
+              }
+            });
+            
+            showDropErrorMessage(`Invalid images: ${errorDetails.join(', ')}`);
+          }
+          
+          if (nonImageFiles.length > 0) {
+            console.log('⚠️ Dropped non-image files ignored:', nonImageFiles.map(f => f.type));
+            showDropErrorMessage(`Ignored ${nonImageFiles.length} non-image file${nonImageFiles.length > 1 ? 's' : ''}`);
+            
+            // Show help message for first-time users
+            if (nonImageFiles.length > 0) {
+              showImageFormatHelp();
+            }
+          }
+          
+          // Clear any drag over states
+          clearDragOverStates();
+        }
+
+        /**
+         * Validate if a file is a valid image
+         * @param {File} file - The file to validate
+         * @returns {boolean} - True if valid image, false otherwise
+         */
+        function isValidImageFile(file) {
+          // Check if it's an image file
+          if (!file.type.startsWith('image/')) {
+            return false;
+          }
+          
+          // Check file size (max 5MB)
+          if (file.size > 5 * 1024 * 1024) {
+            return false;
+          }
+          
+          // Check if file has a valid name
+          if (!file.name || file.name.trim() === '') {
+            return false;
+          }
+          
+          // Check for common image formats
+          const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/bmp'];
+          if (!allowedTypes.includes(file.type.toLowerCase())) {
+            return false;
+          }
+          
+          return true;
+        }
+
+        /**
+         * Clear all drag over visual states
+         */
+        function clearDragOverStates() {
+          const elements = document.querySelectorAll('.drag-over');
+          elements.forEach(element => {
+            element.classList.remove('drag-over');
+          });
+        }
+
+        /**
+         * Show a success message when images are dropped
+         * @param {number} count - Number of images dropped
+         */
+        function showDropSuccessMessage(count) {
+          const message = document.createElement('div');
+          message.className = 'drop-success-message';
+          message.textContent = `✅ ${count} image${count > 1 ? 's' : ''} dropped successfully!`;
+          
+          // Add to the chat section temporarily
+          const chatSection = document.querySelector('.chat-section');
+          if (chatSection) {
+            chatSection.appendChild(message);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+              if (message.parentNode) {
+                message.parentNode.removeChild(message);
+              }
+            }, 3000);
+          }
+        }
+
+        /**
+         * Show an error message when non-image files are dropped
+         * @param {string} message - Error message to display
+         */
+        function showDropErrorMessage(message) {
+          const errorMessage = document.createElement('div');
+          errorMessage.className = 'drop-error-message';
+          errorMessage.textContent = `❌ ${message}`;
+          
+          // Add to the chat section temporarily
+          const chatSection = document.querySelector('.chat-section');
+          if (chatSection) {
+            chatSection.appendChild(errorMessage);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+              if (errorMessage.parentNode) {
+                errorMessage.parentNode.removeChild(errorMessage);
+              }
+            }, 3000);
+          }
+        }
+
+        /**
+         * Show a help message about supported image formats
+         */
+        function showImageFormatHelp() {
+          const helpMessage = document.createElement('div');
+          helpMessage.className = 'drop-help-message';
+          helpMessage.innerHTML = `
+            <div style="text-align: center; padding: 10px;">
+              <strong>📁 Supported Image Formats:</strong><br>
+              JPEG, PNG, GIF, WebP, BMP<br>
+              <small>Maximum file size: 5MB</small>
+            </div>
+          `;
+          
+          // Add to the chat section temporarily
+          const chatSection = document.querySelector('.chat-section');
+          if (chatSection) {
+            chatSection.appendChild(helpMessage);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+              if (helpMessage.parentNode) {
+                helpMessage.parentNode.removeChild(helpMessage);
+              }
+            }, 5000);
+          }
+        }
+
         /**
          * Handle image paste events
          * @param {ClipboardEvent} event - The paste event
@@ -2431,6 +2689,7 @@ Fliplet.Widget.generateInterface({
           // Validate file size (max 5MB)
           if (file.size > 5 * 1024 * 1024) {
             console.log('⚠️ Image too large, max 5MB allowed');
+            showDropErrorMessage('Image too large, max 5MB allowed');
             return;
           }
           
@@ -3077,6 +3336,9 @@ Fliplet.Widget.generateInterface({
 
           // Handle image pasting
           setupImagePasteHandling();
+          
+          // Handle image drag and drop
+          setupImageDragAndDropHandling();
 
           // Setup event delegation for remove image buttons
           $(document).on('click', '.remove-image-btn', function(event) {

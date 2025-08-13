@@ -271,6 +271,8 @@ Fliplet.Widget.generateInterface({
           lastAppliedChanges: null,
           /** @type {Array} Array of pasted images */
           pastedImages: [],
+          /** @type {Set} Set of processed file signatures to prevent duplicates */
+          processedFileSignatures: new Set(),
         };
 
         /**
@@ -2370,6 +2372,14 @@ Fliplet.Widget.generateInterface({
           
           // Set up periodic check to ensure resize handle is always present
           setInterval(ensureResizeHandlePresent, 2000);
+          
+          // Set up periodic cleanup of old file signatures (every 10 minutes)
+          setInterval(() => {
+            if (AppState.processedFileSignatures.size > 100) {
+              console.log('🧹 Cleaning up old file signatures to prevent memory bloat');
+              AppState.processedFileSignatures.clear();
+            }
+          }, 10 * 60 * 1000); // 10 minutes
 
           console.log("✅ App initialization complete");
         }
@@ -2416,13 +2426,16 @@ Fliplet.Widget.generateInterface({
             });
           });
           
-          // Also add drag and drop to the entire chat section for better UX
+          // Add drag and drop to the chat section EXCLUDING the input field to prevent duplicate processing
           const chatSection = document.querySelector('.chat-section');
           if (chatSection) {
             chatSection.addEventListener('dragover', handleDragOver);
             chatSection.addEventListener('dragenter', function(e) {
               e.preventDefault();
-              chatSection.classList.add('drag-over');
+              // Don't add drag-over class if we're over the input field
+              if (e.target !== DOM.userInput && !DOM.userInput.contains(e.target)) {
+                chatSection.classList.add('drag-over');
+              }
             });
             chatSection.addEventListener('dragleave', function(e) {
               e.preventDefault();
@@ -2433,7 +2446,12 @@ Fliplet.Widget.generateInterface({
             chatSection.addEventListener('drop', function(e) {
               e.preventDefault();
               chatSection.classList.remove('drag-over');
-              handleImageDrop(e);
+              
+              // Only process drop if we're NOT dropping on the input field
+              // This prevents duplicate processing when dropping on input
+              if (e.target !== DOM.userInput && !DOM.userInput.contains(e.target)) {
+                handleImageDrop(e);
+              }
             });
           }
           
@@ -2478,6 +2496,31 @@ Fliplet.Widget.generateInterface({
          */
         function handleImageDrop(event) {
           event.preventDefault();
+          
+          // Generate a unique event ID to prevent duplicate processing
+          const eventId = `${event.timeStamp}-${event.target.id || 'unknown'}-${Date.now()}`;
+          
+          // Check if we've already processed this event to prevent duplicates
+          if (AppState.processedFileSignatures.has(`event-${eventId}`)) {
+            console.log('⚠️ Event already processed, skipping duplicate:', eventId);
+            return;
+          }
+          
+          // Mark this event as processed
+          AppState.processedFileSignatures.add(`event-${eventId}`);
+          
+          // Log the drop target to help debug duplicate processing
+          console.log('📥 Image drop event triggered:', {
+            eventId: eventId,
+            target: event.target,
+            targetId: event.target.id,
+            targetClass: event.target.className,
+            isInputField: event.target === DOM.userInput,
+            isInputChild: DOM.userInput && DOM.userInput.contains(event.target),
+            eventType: 'drop',
+            timestamp: new Date().toISOString(),
+            timeStamp: event.timeStamp
+          });
           
           const files = Array.from(event.dataTransfer.files);
           const validImageFiles = files.filter(file => isValidImageFile(file));
@@ -2692,6 +2735,25 @@ Fliplet.Widget.generateInterface({
             showDropErrorMessage('Image too large, max 5MB allowed');
             return;
           }
+          
+          // Check if this file is already being processed to prevent duplicates
+          const fileSignature = `${file.name}-${file.size}-${file.lastModified}`;
+          
+          if (AppState.processedFileSignatures.has(fileSignature)) {
+            console.log('⚠️ File already processed, skipping duplicate:', {
+              name: file.name,
+              size: file.size,
+              lastModified: file.lastModified,
+              signature: fileSignature
+            });
+            return;
+          }
+          
+          // Add to processed signatures set
+          AppState.processedFileSignatures.add(fileSignature);
+          
+          // Clean up old signatures periodically to prevent memory bloat
+          // This will be handled by the clearPastedImages function and periodic cleanup
           
           // Create image data object first
           const imageData = {
@@ -3299,6 +3361,10 @@ Fliplet.Widget.generateInterface({
           
           // Clear local state
           AppState.pastedImages = [];
+          
+          // Clear processed file signatures to prevent memory bloat
+          AppState.processedFileSignatures.clear();
+          console.log('🧹 Processed file signatures cleared');
           
           if (DOM.uploadedImages) {
             DOM.uploadedImages.innerHTML = '<div class="no-images-placeholder">No images attached</div>';

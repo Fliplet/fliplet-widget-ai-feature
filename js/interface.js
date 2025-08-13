@@ -2413,9 +2413,13 @@ Fliplet.Widget.generateInterface({
 
         /**
          * Process a pasted image file
+         * 
+         * Uses Fliplet.Media.Files.upload() to upload images to Fliplet Media
+         * and then sends them to OpenAI in the proper image_url format.
+         * 
          * @param {File} file - The image file to process
          */
-        function processPastedImage(file) {
+        async function processPastedImage(file) {
           // Validate file type
           if (!file.type.startsWith('image/')) {
             console.log('⚠️ Non-image file ignored:', file.type);
@@ -2428,27 +2432,88 @@ Fliplet.Widget.generateInterface({
             return;
           }
           
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            const imageData = {
-              id: Date.now() + Math.random(),
-              name: file.name || 'pasted-image',
-              type: file.type,
-              size: file.size,
-              dataUrl: e.target.result,
-              timestamp: new Date().toISOString()
-            };
-            
-            // Add to state
-            AppState.pastedImages.push(imageData);
-            
-            // Display in UI
-            displayPastedImage(imageData);
-            
-            console.log('✅ Image pasted successfully:', imageData.name);
+          // Create image data object first
+          const imageData = {
+            id: Date.now() + Math.random(),
+            name: file.name || 'pasted-image',
+            type: file.type,
+            size: file.size,
+            dataUrl: null, // Will be set after upload
+            flipletUrl: null, // Will store the Fliplet Media URL
+            timestamp: new Date().toISOString(),
+            status: 'uploading'
           };
           
-          reader.readAsDataURL(file);
+          try {
+            // Add to state immediately
+            AppState.pastedImages.push(imageData);
+            
+            // Display in UI with upload status
+            displayPastedImage(imageData);
+            
+            // Upload to Fliplet Media using the proper API
+            // FormData structure follows Fliplet Media API requirements:
+            // - files[0]: The actual file object
+            // - name[0]: The filename for the uploaded file
+            const formData = new FormData();
+            formData.append('files[0]', file);
+            formData.append('name[0]', file.name || 'pasted-image');
+            
+            // Get the current app ID for context
+            const appId = Fliplet.Env.get('appId') || Fliplet.Env.get('masterAppId');
+            if (appId) {
+              formData.append('appId', appId);
+            }
+            
+            try {
+              // Use Fliplet.Media.Files.upload() as specified in the documentation
+              // You can specify a folderId to organize images in specific folders
+              // Example: folderId: 123 for a specific media folder
+              const uploadResult = await Fliplet.Media.Files.upload({
+                data: formData,
+                folderId: null // Optional: specify folderId if you want to organize images
+              });
+              
+              if (uploadResult && uploadResult.files && uploadResult.files.length > 0) {
+                const uploadedFile = uploadResult.files[0];
+                
+                // Update image data with Fliplet Media URL
+                imageData.flipletUrl = uploadedFile.url;
+                imageData.status = 'uploaded';
+                
+                // Create a data URL for local display
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                  imageData.dataUrl = e.target.result;
+                  updateImageDisplay(imageData);
+                };
+                reader.readAsDataURL(file);
+                
+                console.log('✅ Image uploaded to Fliplet Media successfully:', {
+                  name: imageData.name,
+                  flipletUrl: imageData.flipletUrl
+                });
+              } else {
+                throw new Error('No files returned from Fliplet Media upload');
+              }
+            } catch (uploadError) {
+              console.error('❌ Failed to upload to Fliplet Media:', uploadError);
+              throw uploadError; // Re-throw to be caught by outer catch block
+            }
+            
+          } catch (error) {
+            console.error('❌ Failed to upload image to Fliplet Media:', error);
+            
+            // Update status to failed
+            const failedImage = AppState.pastedImages.find(img => img.id === imageData.id);
+            if (failedImage) {
+              failedImage.status = 'failed';
+              updateImageDisplay(failedImage);
+            }
+            
+            // Show error to user
+            Fliplet.UI.Toast.error('Failed to upload image to Fliplet Media. Please try again.');
+          }
         }
 
         /**
@@ -2468,19 +2533,60 @@ Fliplet.Widget.generateInterface({
           imageContainer.className = 'pasted-image-container';
           imageContainer.dataset.imageId = imageData.id;
           
-          imageContainer.innerHTML = `
-            <img src="${imageData.dataUrl}" alt="${imageData.name}" class="pasted-image" />
-            <button class="remove-image-btn" onclick="removePastedImage('${imageData.id}')" title="Remove image">×</button>
-            <div class="image-info">
-              <span class="image-name">${imageData.name}</span>
-              <span class="image-size">${formatFileSize(imageData.size)}</span>
-            </div>
-          `;
+          // Create initial display based on status
+          updateImageDisplay(imageData, imageContainer);
           
           DOM.uploadedImages.appendChild(imageContainer);
           
           // Show the uploaded-images section if it was hidden
           DOM.uploadedImages.style.display = 'block';
+        }
+
+        /**
+         * Update the display of an image based on its current status
+         * @param {Object} imageData - The image data object
+         * @param {HTMLElement} container - Optional container element to update
+         */
+        function updateImageDisplay(imageData, container = null) {
+          if (!container) {
+            container = document.querySelector(`[data-image-id="${imageData.id}"]`);
+            if (!container) return;
+          }
+          
+          let statusHtml = '';
+          let imageHtml = '';
+          
+          switch (imageData.status) {
+            case 'uploading':
+              statusHtml = '<div class="upload-status uploading">📤 Uploading...</div>';
+              imageHtml = '<div class="image-placeholder">⏳</div>';
+              break;
+            case 'uploaded':
+              statusHtml = '<div class="upload-status uploaded">✅ Uploaded</div>';
+              if (imageData.dataUrl) {
+                imageHtml = `<img src="${imageData.dataUrl}" alt="${imageData.name}" class="pasted-image" />`;
+              } else {
+                imageHtml = '<div class="image-placeholder">🖼️</div>';
+              }
+              break;
+            case 'failed':
+              statusHtml = '<div class="upload-status failed">❌ Upload Failed</div>';
+              imageHtml = '<div class="image-placeholder">⚠️</div>';
+              break;
+            default:
+              statusHtml = '<div class="upload-status">⏳ Processing...</div>';
+              imageHtml = '<div class="image-placeholder">⏳</div>';
+          }
+          
+          container.innerHTML = `
+            ${imageHtml}
+            <button class="remove-image-btn" onclick="removePastedImage('${imageData.id}')" title="Remove image">×</button>
+            <div class="image-info">
+              <span class="image-name">${imageData.name}</span>
+              <span class="image-size">${formatFileSize(imageData.size)}</span>
+            </div>
+            ${statusHtml}
+          `;
         }
 
         /**
@@ -2523,8 +2629,8 @@ Fliplet.Widget.generateInterface({
         }
 
         /**
-         * Get all pasted images as base64 data URLs
-         * @returns {Array} Array of image data objects
+         * Get all pasted images
+         * @returns {Array} Array of image data objects with Fliplet Media URLs
          */
         function getPastedImages() {
           return AppState.pastedImages;
@@ -2825,16 +2931,32 @@ Fliplet.Widget.generateInterface({
           });
 
           // Add current user message with image data
-          let enhancedUserMessage = userMessage;
           if (pastedImages.length > 0) {
-            const imageDescriptions = pastedImages.map((img, index) => 
-              `[Image ${index + 1}: ${img.name} (${img.type}, ${formatFileSize(img.size)}) - Base64 data: ${img.dataUrl.substring(0, 100)}...]`
-            ).join('\n');
+            // Use OpenAI's image input format
+            const content = [
+              { type: "text", text: userMessage }
+            ];
             
-            enhancedUserMessage = `${userMessage}\n\nAttached Images:\n${imageDescriptions}`;
+            // Add images that have been successfully uploaded
+            const uploadedImages = pastedImages.filter(img => img.status === 'uploaded' && img.flipletUrl);
+            uploadedImages.forEach((img) => {
+              content.push({
+                type: "image_url",
+                image_url: { url: img.flipletUrl }
+              });
+            });
+            
+            messages.push({ role: "user", content: content });
+            
+            // Log what we're sending
+            console.log("📤 [AI] Sending message with images:", {
+              textLength: userMessage.length,
+              imageCount: uploadedImages.length,
+              images: uploadedImages.map(img => ({ name: img.name, url: img.flipletUrl }))
+            });
+          } else {
+            messages.push({ role: "user", content: userMessage });
           }
-          
-          messages.push({ role: "user", content: enhancedUserMessage });
 
           console.log("📤 [AI] Request messages with history:", messages);
           console.log(
@@ -2975,7 +3097,7 @@ Charts and utilities: highcharts, jssocials, jwt-decode, lodash-joins, mixitup, 
 
 Ask the user if you need clarification on the requirements, do not start creating code if you are not clear on the requirements.    
 
-${pastedImages.length > 0 ? `IMPORTANT: The user has attached ${pastedImages.length} image(s) to analyze. Please examine these images carefully and incorporate their content into your response. The images may contain:
+${pastedImages.length > 0 ? `IMPORTANT: The user has attached ${pastedImages.length} image(s) to analyze. These images are being sent directly to you in OpenAI's image input format, so you can see and analyze them directly. Please examine these images carefully and incorporate their content into your response. The images may contain:
 - Design mockups or wireframes
 - UI/UX requirements or specifications
 - Visual examples to replicate

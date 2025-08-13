@@ -3045,8 +3045,10 @@ Fliplet.Widget.generateInterface({
             console.log('🗑️ Uploaded images section hidden (local state cleared, Fliplet Media images preserved)');
           }
           
-          // Clean up all image references from chat history
-          cleanupAllChatHistoryImages();
+          // Note: We're NOT cleaning up chat history images anymore
+          // This preserves the visual connection between user requests and AI responses
+          // Only the current pastedImages state is cleared
+          console.log('ℹ️ Preserving chat history images to maintain visual context');
           
           console.log('🧹 All pasted images cleared from local state (kept in Fliplet Media)');
         }
@@ -5687,11 +5689,22 @@ Make sure each code block is complete and functional.`;
           scrollToBottom();
 
           // Add to history
+          // Create a deep copy of images to avoid reference issues when AppState.pastedImages is cleared
+          const imagesCopy = images ? images.map(img => ({
+            id: img.id,
+            name: img.name,
+            size: img.size,
+            dataUrl: img.dataUrl,
+            status: img.status,
+            flipletFileId: img.flipletFileId,
+            flipletUrl: img.flipletUrl
+          })) : [];
+          
           const historyItem = {
             message,
             type,
             timestamp: new Date().toISOString(),
-            images: images || [] // Store images in history
+            images: imagesCopy // Store copy of images in history
           };
           
           AppState.chatHistory.push(historyItem);

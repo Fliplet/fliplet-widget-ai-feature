@@ -2690,7 +2690,7 @@ Fliplet.Widget.generateInterface({
           const initialCount = AppState.pastedImages.length;
           const beforeFilter = AppState.pastedImages.map(img => ({ id: img.id, name: img.name }));
           
-          AppState.pastedImages = AppState.pastedImages.filter(img => img.id !== imageId);
+          AppState.pastedImages = AppState.pastedImages.filter(img => img.id != imageId);
           const finalCount = AppState.pastedImages.length;
           const afterFilter = AppState.pastedImages.map(img => ({ id: img.id, name: img.name }));
           

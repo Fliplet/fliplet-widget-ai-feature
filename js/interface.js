@@ -2640,6 +2640,8 @@ Fliplet.Widget.generateInterface({
         /**
          * Remove a pasted image from local state and chat history
          * Note: Images are kept in Fliplet Media for future reference
+         * IMPORTANT: This function should be called BEFORE sending messages to ensure
+         * the AI doesn't receive stale image data
          * @param {string} imageId - The ID of the image to remove
          */
         async function removePastedImage(imageId) {
@@ -3108,29 +3110,39 @@ Fliplet.Widget.generateInterface({
          */
         function handleSendMessage() {
           const userMessage = DOM.userInput.value.trim();
-          const pastedImages = getPastedImages();
+          
+          // IMPORTANT: Always get the current state of images at the moment of sending
+          // This ensures we don't send stale image data if images were removed
+          const currentImages = AppState.pastedImages.filter(img => 
+            img && 
+            img.status === 'uploaded' && 
+            img.flipletUrl && 
+            img.flipletFileId
+          );
 
           // Input validation
-          if (!userMessage && pastedImages.length === 0) {
+          if (!userMessage && currentImages.length === 0) {
             console.log("⚠️ Empty message and no images ignored");
             return;
           }
 
           console.log("📤 User message:", userMessage);
-          console.log("🖼️ Images attached:", pastedImages.length);
+          console.log("🖼️ Current valid images:", currentImages.length);
 
           // Add user message to chat (show original message + image count if applicable)
-          const displayMessage = userMessage || (pastedImages.length > 0 ? `Analyzing ${pastedImages.length} image(s)` : '');
+          const displayMessage = userMessage || (currentImages.length > 0 ? `Analyzing ${currentImages.length} image(s)` : '');
           if (displayMessage) {
-            addMessageToChat(displayMessage, "user", pastedImages);
+            addMessageToChat(displayMessage, "user", currentImages);
           }
 
           // Clear input only - don't clear images yet
           // Images will be cleared after processing in processUserMessage()
           DOM.userInput.value = "";
 
-          // Process the message with images - pass the current images
-          processUserMessage(userMessage, pastedImages);
+          // Process the message with current valid images
+          // Note: We're not passing the potentially stale pastedImages parameter
+          // processUserMessage will get the current state directly
+          processUserMessage(userMessage, currentImages);
         }
 
         /**
@@ -3203,7 +3215,7 @@ Fliplet.Widget.generateInterface({
             // IMPORTANT: Always use AppState.pastedImages as the source of truth
             // The passed pastedImages parameter might be stale if images were cleared
             const currentImages = AppState.pastedImages.filter(img => 
-              img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+              img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
             );
             
             console.log("📸 [Main] Current images for AI processing:", {
@@ -3228,11 +3240,48 @@ Fliplet.Widget.generateInterface({
               appStateImagesCount: AppState.pastedImages.length,
               appStateImages: AppState.pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
             });
+            
+            // CRITICAL: If no valid images remain, log this clearly
+            if (currentImages.length === 0) {
+              console.log("ℹ️ [Main] No valid images remain - sending text-only request to AI");
+            }
+
+            // FINAL SAFETY CHECK: Verify images are still valid right before AI call
+            const finalValidImages = currentImages.filter(img => {
+              const stillExists = AppState.pastedImages.some(stateImg => 
+                String(stateImg.id) === String(img.id) && 
+                stateImg.status === 'uploaded' && 
+                stateImg.flipletUrl && 
+                stateImg.flipletFileId
+              );
+              
+              if (!stillExists) {
+                console.warn('⚠️ [Main] Image was removed before AI call, excluding:', {
+                  imageId: img.id,
+                  imageName: img.name
+                });
+              }
+              
+              return stillExists;
+            });
+            
+            if (finalValidImages.length !== currentImages.length) {
+              console.warn('⚠️ [Main] Some images were removed before AI call:', {
+                originalCount: currentImages.length,
+                finalCount: finalValidImages.length,
+                removedCount: currentImages.length - finalValidImages.length
+              });
+            }
+            
+            console.log('🔍 [Main] Final image state before AI call:', {
+              originalImages: currentImages.map(img => ({ id: img.id, name: img.name })),
+              finalValidImages: finalValidImages.map(img => ({ id: img.id, name: img.name }))
+            });
 
             const aiResponse = await callOpenAIWithNewArchitecture(
               userMessage,
               context,
-              currentImages
+              finalValidImages
             );
 
             // Step 3: Parse response using protocol parser
@@ -3352,8 +3401,9 @@ Fliplet.Widget.generateInterface({
         async function callOpenAIWithNewArchitecture(userMessage, context, pastedImages = []) {
           console.log("🌐 [AI] Making API call with optimized context...");
 
-          // ALWAYS use AppState.pastedImages as the source of truth for current images
+          // CRITICAL: ALWAYS use AppState.pastedImages as the source of truth for current images
           // The passed pastedImages parameter might be stale if images were removed
+          // This ensures we never send removed images to the AI
           const currentImages = AppState.pastedImages.filter(img => 
             img && 
             img.status === 'uploaded' && 
@@ -3504,7 +3554,7 @@ Fliplet.Widget.generateInterface({
           } else {
             // No valid images, send text-only message
             messages.push({ role: "user", content: userMessage });
-            console.log("⚠️ [AI] No valid images found, sending text-only message");
+            console.log("ℹ️ [AI] No valid images found - sending text-only message to AI");
           }
 
           console.log("📤 [AI] Request messages with history:", messages);

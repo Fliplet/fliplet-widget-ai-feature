@@ -3937,6 +3937,22 @@ Fliplet.Widget.generateInterface({
             currentUserMessage: userMessage
           });
           
+          // Log detailed information about each history item
+          recentHistory.forEach((item, index) => {
+            console.log(`📚 [AI] History item ${index}:`, {
+              type: item.type,
+              message: item.message ? item.message.substring(0, 50) + '...' : 'No message',
+              hasImages: item.images && item.images.length > 0,
+              imageCount: item.images ? item.images.length : 0,
+              images: item.images ? item.images.map(img => ({
+                id: img.id,
+                name: img.name,
+                hasFlipletUrl: !!img.flipletUrl,
+                status: img.status
+              })) : []
+            });
+          });
+          
           recentHistory.forEach((historyItem) => {
             if (historyItem.message && historyItem.type) {
               // Skip the current user message to avoid duplication
@@ -3953,7 +3969,7 @@ Fliplet.Widget.generateInterface({
               
               // Check if this history item has images
               if (historyItem.images && historyItem.images.length > 0) {
-                // Build content array with text and images (OpenAI format)
+                // Build content array with text and images
                 const content = [
                   { type: "text", text: historyItem.message }
                 ];
@@ -3973,7 +3989,7 @@ Fliplet.Widget.generateInterface({
                   content: content
                 });
                 
-                console.log(`🖼️ [AI] Added history message with images: ${role} - ${historyItem.message.substring(0, 50)}... (${historyItem.images.length} images)`);
+                console.log(`📝 [AI] Added history message with images: ${role} - ${historyItem.message.substring(0, 50)}... (${historyItem.images.length} images)`);
               } else {
                 // Text-only message
                 messages.push({

@@ -2703,14 +2703,19 @@ Fliplet.Widget.generateInterface({
           
           // Remove from local state
           const initialCount = AppState.pastedImages.length;
+          const beforeFilter = AppState.pastedImages.map(img => ({ id: img.id, name: img.name }));
+          
           AppState.pastedImages = AppState.pastedImages.filter(img => img.id !== imageId);
           const finalCount = AppState.pastedImages.length;
+          const afterFilter = AppState.pastedImages.map(img => ({ id: img.id, name: img.name }));
           
           console.log('🗑️ Local state updated:', {
             removedId: imageId,
             initialCount: initialCount,
             finalCount: finalCount,
-            removed: initialCount - finalCount
+            removed: initialCount - finalCount,
+            beforeFilter: beforeFilter,
+            afterFilter: afterFilter
           });
           
           // Remove from UI
@@ -2808,6 +2813,48 @@ Fliplet.Widget.generateInterface({
           }
           
           console.log('🧹 Chat history cleanup completed for image ID:', imageId);
+          
+          // Verify cleanup was successful
+          verifyChatHistoryCleanup(imageId);
+        }
+        
+        /**
+         * Verify that chat history cleanup was successful
+         * @param {string} imageId - The ID of the image that should have been removed
+         */
+        function verifyChatHistoryCleanup(imageId) {
+          console.log('🔍 Verifying chat history cleanup for image ID:', imageId);
+          
+          let referencesFound = 0;
+          let totalMessagesChecked = 0;
+          
+          AppState.chatHistory.forEach((historyItem, index) => {
+            if (historyItem.images && Array.isArray(historyItem.images)) {
+              totalMessagesChecked++;
+              const hasReference = historyItem.images.some(img => String(img.id) === String(imageId));
+              if (hasReference) {
+                referencesFound++;
+                console.error('❌ [VERIFICATION] Image reference still found in chat history:', {
+                  messageIndex: index,
+                  messageId: historyItem.timestamp,
+                  messageType: historyItem.type,
+                  imageIds: historyItem.images.map(img => img.id)
+                });
+              }
+            }
+          });
+          
+          if (referencesFound === 0) {
+            console.log('✅ [VERIFICATION] Chat history cleanup verified - no remaining references to image ID:', imageId);
+          } else {
+            console.error('❌ [VERIFICATION] Chat history cleanup failed - found', referencesFound, 'remaining references to image ID:', imageId);
+          }
+          
+          console.log('🔍 Verification summary:', {
+            totalMessagesChecked: totalMessagesChecked,
+            referencesFound: referencesFound,
+            imageId: imageId
+          });
         }
         
         /**
@@ -2850,6 +2897,45 @@ Fliplet.Widget.generateInterface({
           } else {
             console.log('🧹 No image references found in chat history');
           }
+          
+          // Verify cleanup was successful
+          verifyAllChatHistoryCleanup();
+        }
+        
+        /**
+         * Verify that all chat history cleanup was successful
+         */
+        function verifyAllChatHistoryCleanup() {
+          console.log('🔍 Verifying complete chat history cleanup');
+          
+          let totalReferences = 0;
+          let messagesWithImages = 0;
+          
+          AppState.chatHistory.forEach((historyItem, index) => {
+            if (historyItem.images && Array.isArray(historyItem.images) && historyItem.images.length > 0) {
+              messagesWithImages++;
+              totalReferences += historyItem.images.length;
+              console.error('❌ [VERIFICATION] Image references still found in chat history:', {
+                messageIndex: index,
+                messageId: historyItem.timestamp,
+                messageType: historyItem.type,
+                imageCount: historyItem.images.length,
+                imageIds: historyItem.images.map(img => img.id)
+              });
+            }
+          });
+          
+          if (totalReferences === 0) {
+            console.log('✅ [VERIFICATION] Complete chat history cleanup verified - no remaining image references');
+          } else {
+            console.error('❌ [VERIFICATION] Complete chat history cleanup failed - found', totalReferences, 'remaining image references in', messagesWithImages, 'messages');
+          }
+          
+          console.log('🔍 Complete verification summary:', {
+            totalMessages: AppState.chatHistory.length,
+            messagesWithImages: messagesWithImages,
+            totalImageReferences: totalReferences
+          });
         }
         
         /**
@@ -3301,6 +3387,26 @@ Fliplet.Widget.generateInterface({
             currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
           });
 
+          // Log current image state before building system prompt
+          console.log('🔍 [AI] Current image state before AI call:', {
+            appStateImagesCount: AppState.pastedImages.length,
+            appStateImages: AppState.pastedImages.map(img => ({ 
+              id: img.id, 
+              name: img.name, 
+              status: img.status,
+              flipletUrl: !!img.flipletUrl,
+              flipletFileId: !!img.flipletFileId
+            })),
+            filteredImagesCount: currentImages.length,
+            filteredImages: currentImages.map(img => ({ 
+              id: img.id, 
+              name: img.name, 
+              status: img.status,
+              flipletUrl: !!img.flipletUrl,
+              flipletFileId: !!img.flipletFileId
+            }))
+          });
+          
           const systemPrompt = buildSystemPromptWithContext(context, currentImages);
 
           // Build complete conversation history
@@ -3337,27 +3443,83 @@ Fliplet.Widget.generateInterface({
 
           // Add current user message with image data
           if (currentImages && currentImages.length > 0) {
-            // Use OpenAI's image input format
-            const content = [
-              { type: "text", text: userMessage }
-            ];
+            // Final validation: ensure all images are still valid and haven't been removed
+            console.log('🔍 [AI] Starting final image validation...');
+            console.log('🔍 [AI] AppState.pastedImages before final validation:', AppState.pastedImages.map(img => ({ 
+              id: img.id, 
+              name: img.name, 
+              status: img.status,
+              flipletUrl: !!img.flipletUrl,
+              flipletFileId: !!img.flipletFileId
+            })));
             
-            // Add all current valid images (they're already filtered above)
-            currentImages.forEach((img) => {
-              content.push({
-                type: "image_url",
-                image_url: { url: img.flipletUrl }
+            const finalValidImages = currentImages.filter(img => {
+              // Check if the image still exists in AppState.pastedImages
+              const stillExists = AppState.pastedImages.some(stateImg => 
+                String(stateImg.id) === String(img.id) && 
+                stateImg.status === 'uploaded' && 
+                stateImg.flipletUrl && 
+                stateImg.flipletFileId
+              );
+              
+              console.log('🔍 [AI] Image validation result:', {
+                imageId: img.id,
+                imageName: img.name,
+                stillExists: stillExists,
+                matchingStateImg: AppState.pastedImages.find(stateImg => String(stateImg.id) === String(img.id))
               });
+              
+              if (!stillExists) {
+                console.warn('⚠️ [AI] Image was removed after filtering, excluding from AI call:', {
+                  imageId: img.id,
+                  imageName: img.name
+                });
+              }
+              
+              return stillExists;
             });
             
-            messages.push({ role: "user", content: content });
+            if (finalValidImages.length !== currentImages.length) {
+              console.warn('⚠️ [AI] Some images were removed after initial filtering:', {
+                originalCount: currentImages.length,
+                finalCount: finalValidImages.length,
+                removedCount: currentImages.length - finalValidImages.length
+              });
+            }
             
-            // Log what we're sending
-            console.log("📤 [AI] Sending message with images:", {
-              textLength: userMessage.length,
-              imageCount: currentImages.length,
-              images: currentImages.map(img => ({ name: img.name, url: img.flipletUrl, id: img.id }))
+            console.log('🔍 [AI] Final validation completed:', {
+              originalImages: currentImages.map(img => ({ id: img.id, name: img.name })),
+              finalValidImages: finalValidImages.map(img => ({ id: img.id, name: img.name })),
+              removedImages: currentImages.filter(img => !finalValidImages.some(finalImg => String(finalImg.id) === String(img.id))).map(img => ({ id: img.id, name: img.name }))
             });
+            
+            if (finalValidImages.length > 0) {
+              // Use OpenAI's image input format
+              const content = [
+                { type: "text", text: userMessage }
+              ];
+              
+              // Add all final valid images
+              finalValidImages.forEach((img) => {
+                content.push({
+                  type: "image_url",
+                  image_url: { url: img.flipletUrl }
+                });
+              });
+              
+              messages.push({ role: "user", content: content });
+              
+              // Log what we're sending
+              console.log("📤 [AI] Sending message with images:", {
+                textLength: userMessage.length,
+                imageCount: finalValidImages.length,
+                images: finalValidImages.map(img => ({ name: img.name, url: img.flipletUrl, id: img.id }))
+              });
+            } else {
+              // All images were removed, send text-only message
+              messages.push({ role: "user", content: userMessage });
+              console.log("⚠️ [AI] All images were removed after filtering, sending text-only message");
+            }
           } else {
             // No valid images, send text-only message
             messages.push({ role: "user", content: userMessage });
@@ -3372,7 +3534,11 @@ Fliplet.Widget.generateInterface({
             if (msg.role === 'user' && Array.isArray(msg.content)) {
               console.log(`📤 [AI] Message ${index} (user with images):`, {
                 textContent: msg.content.find(c => c.type === 'text')?.text,
-                imageCount: msg.content.filter(c => c.type === 'image_url').length
+                imageCount: msg.content.filter(c => c.type === 'image_url').length,
+                images: msg.content.filter(c => c.type === 'image_url').map(img => ({
+                  url: img.image_url.url,
+                  type: img.type
+                }))
               });
             } else {
               console.log(`📤 [AI] Message ${index} (${msg.role}):`, {

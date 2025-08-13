@@ -2482,8 +2482,26 @@ Fliplet.Widget.generateInterface({
         function handleImageDrop(event) {
           event.preventDefault();
           
+          // Debug: log which element triggered this drop
+          const targetElement = event.currentTarget;
+          console.log('🎯 Drop event triggered by:', {
+            element: targetElement,
+            elementId: targetElement.id,
+            elementClass: targetElement.className,
+            elementTag: targetElement.tagName
+          });
+          
           // Set flag to prevent paste handler from processing the same files
           isDropOperationInProgress = true;
+          
+          // Stop event propagation to prevent multiple handlers from firing
+          event.stopPropagation();
+          
+          // Additional safety: check if this event has already been processed
+          if (event.defaultPrevented) {
+            console.log('⏭️ Drop event already processed, skipping');
+            return;
+          }
           
           const files = Array.from(event.dataTransfer.files);
           const validImageFiles = files.filter(file => isValidImageFile(file));

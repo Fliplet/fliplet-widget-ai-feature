@@ -2470,18 +2470,34 @@ Fliplet.Widget.generateInterface({
               // Use Fliplet.Media.Files.upload() as specified in the documentation
               // You can specify a folderId to organize images in specific folders
               // Example: folderId: 123 for a specific media folder
+              console.log('📤 Starting Fliplet Media upload for file:', {
+                name: file.name,
+                size: file.size,
+                type: file.type
+              });
+              
               const uploadResult = await Fliplet.Media.Files.upload({
                 data: formData,
                 folderId: null // Optional: specify folderId if you want to organize images
               });
               
-                             if (uploadResult && uploadResult.length) {
-                 const uploadedFile = uploadResult[0];
-                  
-                 // Update image data with Fliplet Media URL and file ID
-                 imageData.flipletUrl = Fliplet.Media.authenticate(uploadedFile.url);
-                 imageData.flipletFileId = uploadedFile.id; // Store the file ID for deletion
-                 imageData.status = 'uploaded';
+              console.log('📤 Fliplet Media upload result:', uploadResult);
+              
+              if (uploadResult && uploadResult.length) {
+                const uploadedFile = uploadResult[0];
+                console.log('📤 Uploaded file details:', uploadedFile);
+                
+                // Update image data with Fliplet Media URL and file ID
+                imageData.flipletUrl = Fliplet.Media.authenticate(uploadedFile.url);
+                imageData.flipletFileId = uploadedFile.id; // Store the file ID for deletion
+                imageData.status = 'uploaded';
+                
+                console.log('✅ Image data updated after upload:', {
+                  id: imageData.id,
+                  flipletUrl: imageData.flipletUrl,
+                  flipletFileId: imageData.flipletFileId,
+                  status: imageData.status
+                });
                 
                 // Create a data URL for local display
                 const reader = new FileReader();
@@ -2491,11 +2507,11 @@ Fliplet.Widget.generateInterface({
                 };
                 reader.readAsDataURL(file);
                 
-                                 console.log('✅ Image uploaded to Fliplet Media successfully:', {
-                   name: imageData.name,
-                   flipletUrl: imageData.flipletUrl,
-                   flipletFileId: imageData.flipletFileId
-                 });
+                console.log('✅ Image uploaded to Fliplet Media successfully:', {
+                  name: imageData.name,
+                  flipletUrl: imageData.flipletUrl,
+                  flipletFileId: imageData.flipletFileId
+                });
               } else {
                 throw new Error('No files returned from Fliplet Media upload');
               }
@@ -2597,41 +2613,77 @@ Fliplet.Widget.generateInterface({
          * @param {string} imageId - The ID of the image to remove
          */
         async function removePastedImage(imageId) {
+          console.log('🔍 Starting image removal process for ID:', imageId);
+          
           // Find the image data first
           const imageData = AppState.pastedImages.find(img => img.id === imageId);
           
-          if (imageData && imageData.flipletFileId) {
-            try {
-              // Delete the file from Fliplet Media using the stored file ID
-              await Fliplet.Media.Files.delete(imageData.flipletFileId);
-              console.log('🗑️ File deleted from Fliplet Media:', imageData.flipletFileId);
-            } catch (deleteError) {
-              console.error('❌ Failed to delete file from Fliplet Media:', deleteError);
-              // Continue with local removal even if Fliplet deletion fails
-            }
+          if (!imageData) {
+            console.error('❌ Image data not found for ID:', imageId);
+            return;
           }
           
-          // Remove from state
-          AppState.pastedImages = AppState.pastedImages.filter(img => img.id !== imageId);
+          console.log('🔍 Found image data:', {
+            id: imageData.id,
+            name: imageData.name,
+            status: imageData.status,
+            flipletFileId: imageData.flipletFileId,
+            flipletUrl: imageData.flipletUrl
+          });
           
-          // Log the current state after removal
-          console.log('🗑️ Image removed:', {
+          // Attempt to delete from Fliplet Media if we have a file ID
+          if (imageData.flipletFileId) {
+            try {
+              console.log('🗑️ Attempting to delete from Fliplet Media with ID:', imageData.flipletFileId);
+              
+              // Delete the file from Fliplet Media using the stored file ID
+              const deleteResult = await Fliplet.Media.Files.delete(imageData.flipletFileId);
+              console.log('✅ File successfully deleted from Fliplet Media:', {
+                flipletFileId: imageData.flipletFileId,
+                deleteResult: deleteResult
+              });
+            } catch (deleteError) {
+              console.error('❌ Failed to delete file from Fliplet Media:', {
+                flipletFileId: imageData.flipletFileId,
+                error: deleteError,
+                errorMessage: deleteError.message,
+                errorStack: deleteError.stack
+              });
+              // Continue with local removal even if Fliplet deletion fails
+            }
+          } else {
+            console.warn('⚠️ No flipletFileId found, skipping Fliplet Media deletion');
+          }
+          
+          // Remove from local state
+          const initialCount = AppState.pastedImages.length;
+          AppState.pastedImages = AppState.pastedImages.filter(img => img.id !== imageId);
+          const finalCount = AppState.pastedImages.length;
+          
+          console.log('🗑️ Local state updated:', {
             removedId: imageId,
-            remainingImages: AppState.pastedImages.length,
-            remainingImageIds: AppState.pastedImages.map(img => img.id)
+            initialCount: initialCount,
+            finalCount: finalCount,
+            removed: initialCount - finalCount
           });
           
           // Remove from UI
           const imageContainer = document.querySelector(`[data-image-id="${imageId}"]`);
           if (imageContainer) {
             imageContainer.remove();
+            console.log('🗑️ Image container removed from DOM');
+          } else {
+            console.warn('⚠️ Image container not found in DOM for ID:', imageId);
           }
           
           // Hide uploaded-images section if no images left
           if (AppState.pastedImages.length === 0 && DOM.uploadedImages) {
             DOM.uploadedImages.innerHTML = '<div class="no-images-placeholder">No images attached</div>';
             DOM.uploadedImages.style.display = 'none';
+            console.log('🗑️ Uploaded images section hidden (no images remaining)');
           }
+          
+          console.log('✅ Image removal process completed for ID:', imageId);
         }
 
         // Make removePastedImage globally accessible for onclick handlers
@@ -5422,6 +5474,39 @@ Make sure each code block is complete and functional.`;
         }
         // Initialize app when DOM is ready
         initializeApp();
+
+        /**
+         * Debug function to inspect current pasted images state
+         * Useful for troubleshooting upload/delete issues
+         */
+        function debugPastedImages() {
+          console.log('🔍 Current pasted images state:', {
+            totalImages: AppState.pastedImages.length,
+            images: AppState.pastedImages.map(img => ({
+              id: img.id,
+              name: img.name,
+              status: img.status,
+              flipletFileId: img.flipletFileId,
+              flipletUrl: img.flipletUrl,
+              size: img.size,
+              timestamp: img.timestamp
+            }))
+          });
+          
+          // Also check DOM elements
+          const containers = document.querySelectorAll('.pasted-image-container');
+          console.log('🔍 DOM containers found:', containers.length);
+          containers.forEach((container, index) => {
+            console.log(`Container ${index}:`, {
+              imageId: container.dataset.imageId,
+              hasRemoveButton: !!container.querySelector('.remove-image-btn'),
+              removeButtonOnclick: container.querySelector('.remove-image-btn')?.getAttribute('onclick')
+            });
+          });
+        }
+
+        // Make debug function globally accessible
+        window.debugPastedImages = debugPastedImages;
       },
     },
     {

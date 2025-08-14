@@ -2360,7 +2360,7 @@ Fliplet.Widget.generateInterface({
           // Setup event listeners
           setupEventListeners();
 
-          // Load chat history from local storage
+          // Load chat history from Fliplet field
           const historyLoaded = loadChatHistoryFromStorage();
           if (!historyLoaded) {
             // If no history loaded, the existing system message in HTML template is sufficient
@@ -6160,16 +6160,14 @@ Make sure each code block is complete and functional.`;
         }
 
         /**
-         * Save chat history to local storage
+         * Save chat history to Fliplet field
          */
         function saveChatHistoryToStorage() {
           try {
-            const storageKey = `ai_chat_history_${widgetId}`;
-            
             // Log what we're saving to help debug image preservation issues
             const messagesWithImages = AppState.chatHistory.filter(item => item.images && item.images.length > 0);
             if (messagesWithImages.length > 0) {
-              console.log('💾 Saving chat history to localStorage with images:', {
+              console.log('💾 Saving chat history to Fliplet field with images:', {
                 totalMessages: AppState.chatHistory.length,
                 messagesWithImages: messagesWithImages.length,
                 imageDetails: messagesWithImages.map(item => ({
@@ -6186,30 +6184,28 @@ Make sure each code block is complete and functional.`;
               });
             }
             
-            localStorage.setItem(
-              storageKey,
-              JSON.stringify(AppState.chatHistory)
-            );
+            // Save to Fliplet field
+            Fliplet.Helper.field('chatHistory').set(JSON.stringify(AppState.chatHistory));
             
-            console.log('✅ Chat history saved to localStorage successfully');
+            console.log('✅ Chat history saved to Fliplet field successfully');
           } catch (error) {
             console.error(
-              "Failed to save chat history to local storage:",
+              "Failed to save chat history to Fliplet field:",
               error
             );
           }
         }
 
         /**
-         * Load chat history from local storage
+         * Load chat history from Fliplet field
          */
         function loadChatHistoryFromStorage() {
           try {
-            const storageKey = `ai_chat_history_${widgetId}`;
-            const storedHistory = localStorage.getItem(storageKey);
-
-            if (storedHistory) {
-              const parsedHistory = JSON.parse(storedHistory);
+            const history = Fliplet.Helper.field('chatHistory').get();
+            console.log('💾 Loading chat history from Fliplet field:', history);
+            
+            if (history) {
+              const parsedHistory = JSON.parse(history);
               if (Array.isArray(parsedHistory)) {
                 // Filter out system messages and ensure all messages have the correct format
                 const filteredHistory = parsedHistory
@@ -6227,7 +6223,7 @@ Make sure each code block is complete and functional.`;
                 // Log what we loaded to help debug image preservation issues
                 const messagesWithImages = filteredHistory.filter(item => item.images && item.images.length > 0);
                 if (messagesWithImages.length > 0) {
-                  console.log('📂 Loaded chat history from localStorage with images:', {
+                  console.log('📂 Loaded chat history from Fliplet field with images:', {
                     totalMessages: filteredHistory.length,
                     messagesWithImages: messagesWithImages.length,
                     imageDetails: messagesWithImages.map(item => ({
@@ -6262,10 +6258,12 @@ Make sure each code block is complete and functional.`;
                 scrollToBottom();
                 return true;
               }
+            } else {
+              console.log('⚠️ No chat history found in Fliplet field');
             }
           } catch (error) {
             console.error(
-              "Failed to load chat history from local storage:",
+              "Failed to load chat history from Fliplet field:",
               error
             );
           }
@@ -6273,15 +6271,16 @@ Make sure each code block is complete and functional.`;
         }
 
         /**
-         * Clear chat history from local storage
+         * Clear chat history from Fliplet field
          */
         function clearChatHistoryFromStorage() {
           try {
-            const storageKey = `ai_chat_history_${widgetId}`;
-            localStorage.removeItem(storageKey);
+            // Clear the Fliplet field
+            Fliplet.Helper.field('chatHistory').set('');
+            console.log('✅ Chat history cleared from Fliplet field');
           } catch (error) {
             console.error(
-              "Failed to clear chat history from local storage:",
+              "Failed to clear chat history from Fliplet field:",
               error
             );
           }
@@ -6383,7 +6382,7 @@ Make sure each code block is complete and functional.`;
             });
           }
 
-          // Save to local storage (unless skipStorage is true)
+          // Save to Fliplet field (unless skipStorage is true)
           if (!skipStorage) {
             saveChatHistoryToStorage();
           }
@@ -6426,7 +6425,7 @@ Make sure each code block is complete and functional.`;
           AppState.isFirstGeneration = true;
           AppState.requestCount = 0;
 
-          // Clear local storage
+          // Clear Fliplet field
           clearChatHistoryFromStorage();
 
           // Clear pasted images
@@ -6584,6 +6583,14 @@ Make sure each code block is complete and functional.`;
         // Make debug function globally accessible
         window.debugPastedImages = debugPastedImages;
       },
+    },
+    {
+      // type: "hidden",
+      name: "chatHistory",
+      label: "Chat History",
+      default: "",
+      rows: 12,
+      type: "textarea",
     },
     {
       type: "hidden",

@@ -3963,14 +3963,13 @@ Fliplet.Widget.generateInterface({
             }
           });
 
-          // Add current user message with any new images
+          // Add current user message - always check for images (current or historical)
+          const content = [
+            { type: "text", text: userMessage }
+          ];
+          
+          // First, add any current images
           if (finalCurrentImages && finalCurrentImages.length > 0) {
-            // Use OpenAI's image input format for current user message
-            const content = [
-              { type: "text", text: userMessage }
-            ];
-            
-            // Add current images
             finalCurrentImages.forEach((img) => {
               if (img.flipletUrl) {
                 content.push({
@@ -3981,19 +3980,75 @@ Fliplet.Widget.generateInterface({
                 console.warn('⚠️ [AI] Current image missing flipletUrl, skipping:', { id: img.id, name: img.name });
               }
             });
-            
-            messages.push({ role: "user", content: content });
-            
-            console.log("📤 [AI] Sending current user message with images:", {
-              textLength: userMessage.length,
-              imageCount: finalCurrentImages.length,
-              images: finalCurrentImages.map(img => ({ name: img.name, url: img.flipletUrl, id: img.id }))
-            });
-          } else {
-            // No new images, send text-only current user message
-            messages.push({ role: "user", content: userMessage });
-            console.log("ℹ️ [AI] No new images - sending text-only current user message");
+            console.log("📤 [AI] Added current images to user message:", finalCurrentImages.length);
           }
+          
+          // Then, check if we need to add images from chat history for context
+          // This ensures that if the current message has no new images, we still include
+          // the images from previous user messages for complete context
+          const allHistoricalImages = [];
+          recentHistory.forEach((historyItem) => {
+            if (historyItem.type === "user" && historyItem.images && historyItem.images.length > 0) {
+              allHistoricalImages.push(...historyItem.images);
+              console.log(`🖼️ [AI] Found ${historyItem.images.length} images in historical user message: "${historyItem.message.substring(0, 30)}..."`);
+            }
+          });
+          
+          // Remove duplicates and add historical images that aren't already included
+          const uniqueHistoricalImages = allHistoricalImages.filter((img, index, self) => 
+            index === self.findIndex(t => String(t.id) === String(img.id))
+          );
+          
+          console.log('🔍 [AI] Historical image analysis:', {
+            totalHistoricalImages: allHistoricalImages.length,
+            uniqueHistoricalImages: uniqueHistoricalImages.length,
+            historicalImages: uniqueHistoricalImages.map(img => ({ id: img.id, name: img.name, flipletUrl: !!img.flipletUrl }))
+          });
+          
+          // Add historical images that aren't already in current images
+          let addedHistoricalImages = 0;
+          uniqueHistoricalImages.forEach((img) => {
+            const alreadyIncluded = finalCurrentImages && finalCurrentImages.some(currentImg => 
+              String(currentImg.id) === String(img.id)
+            );
+            
+            if (!alreadyIncluded && img.flipletUrl) {
+              content.push({
+                type: "image_url",
+                image_url: { url: img.flipletUrl }
+              });
+              addedHistoricalImages++;
+              console.log("📤 [AI] Added historical image for context:", { id: img.id, name: img.name });
+            } else if (alreadyIncluded) {
+              console.log("📤 [AI] Historical image already included via current images:", { id: img.id, name: img.name });
+            } else if (!img.flipletUrl) {
+              console.warn("⚠️ [AI] Historical image missing flipletUrl:", { id: img.id, name: img.name });
+            }
+          });
+          
+          console.log(`📤 [AI] Added ${addedHistoricalImages} historical images for context`);
+          
+          // Always send the user message with content array (even if no images)
+          messages.push({ role: "user", content: content });
+          
+          const totalImagesInMessage = content.filter(c => c.type === 'image_url').length;
+          console.log("📤 [AI] Sending current user message:", {
+            textLength: userMessage.length,
+            currentImageCount: finalCurrentImages ? finalCurrentImages.length : 0,
+            historicalImageCount: totalImagesInMessage - (finalCurrentImages ? finalCurrentImages.length : 0),
+            totalImageCount: totalImagesInMessage,
+            hasImages: totalImagesInMessage > 0
+          });
+          
+          // Log the final content structure
+          console.log("📤 [AI] Current user message content structure:", {
+            contentLength: content.length,
+            textContent: content.find(c => c.type === 'text')?.text,
+            imageContents: content.filter(c => c.type === 'image_url').map(img => ({
+              url: img.image_url.url,
+              name: img.image_url.url.split('/').pop() // Extract filename from URL
+            }))
+          });
 
           console.log("📤 [AI] Request messages with history:", messages);
           console.log("📤 [AI] Final message count:", messages.length);

@@ -3569,10 +3569,15 @@ Fliplet.Widget.generateInterface({
             autoResizeTextarea(this);
           });
           
-          // Also try keyup as another backup method
-          DOM.userInput.addEventListener("keyup", function() {
-            console.log('🔧 Keyup event triggered, current value length:', this.value.length);
-            autoResizeTextarea(this);
+          // Handle keydown for immediate response to deletions
+          DOM.userInput.addEventListener("keydown", function(event) {
+            // Handle backspace and delete keys immediately
+            if (event.key === 'Backspace' || event.key === 'Delete') {
+              // Use setTimeout to ensure the deletion happens first
+              setTimeout(() => {
+                autoResizeTextarea(this);
+              }, 0);
+            }
           });
 
           // Ensure proper sizing on focus
@@ -3594,6 +3599,18 @@ Fliplet.Widget.generateInterface({
             setTimeout(() => {
               autoResizeTextarea(this);
             }, 10);
+          });
+          
+          // Handle all text changes including programmatic changes
+          DOM.userInput.addEventListener("change", function() {
+            console.log('🔧 Change event triggered, current value length:', this.value.length);
+            autoResizeTextarea(this);
+          });
+          
+          // Handle composition events for IME input (useful for international keyboards)
+          DOM.userInput.addEventListener("compositionend", function() {
+            console.log('🔧 Composition end event triggered, current value length:', this.value.length);
+            autoResizeTextarea(this);
           });
           
           // Handle image drag and drop
@@ -6582,13 +6599,15 @@ Make sure each code block is complete and functional.`;
         function autoResizeTextarea(textarea) {
           if (!textarea) return;
           
-          // Force a reflow to ensure scrollHeight is accurate
+          // Store current scroll position
+          const scrollTop = textarea.scrollTop;
+          
+          // Reset height completely to get accurate scrollHeight
           textarea.style.height = 'auto';
-          textarea.style.height = '1px';
           
           // Calculate the new height based on content
           const scrollHeight = textarea.scrollHeight;
-          const minHeight = 40;
+          const minHeight = 45; // Match CSS min-height
           const maxHeight = 200;
           
           // Set the height to match the content, respecting min/max bounds
@@ -6602,10 +6621,15 @@ Make sure each code block is complete and functional.`;
             textarea.style.overflowY = 'hidden';
           }
           
+          // Restore scroll position if it was scrolled
+          if (scrollTop > 0) {
+            textarea.scrollTop = scrollTop;
+          }
+          
           console.log('🔧 Textarea resized:', {
             scrollHeight: scrollHeight,
             newHeight: newHeight,
-            content: textarea.value.substring(0, 50) + '...',
+            contentLength: textarea.value.length,
             currentHeight: textarea.style.height
           });
         }
@@ -6618,8 +6642,10 @@ Make sure each code block is complete and functional.`;
           if (!textarea) return;
           
           textarea.value = "";
-          textarea.style.height = '40px';
+          textarea.style.height = '45px'; // Match CSS min-height
           textarea.style.overflowY = 'hidden';
+          
+          console.log('🔧 Textarea reset to minimum height:', textarea.style.height);
         }
 
         /**

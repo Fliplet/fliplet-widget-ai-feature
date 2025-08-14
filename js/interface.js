@@ -110,7 +110,7 @@ Fliplet.Widget.generateInterface({
             </div>
             
             <div class="chat-input">
-                <textarea id="user-input" placeholder="How can I help?" autocomplete="off" rows="1" style="border: 1px solid #ddd; border-radius: 4px; padding: 8px 12px; font-family: inherit; font-size: 14px; line-height: 1.4; width: 100%; box-sizing: border-box;"></textarea>
+                <textarea id="user-input" placeholder="How can I help?" autocomplete="off" rows="1"></textarea>
                 <input type="button" id="send-btn" class="btn-primary" value="Send">
             </div>
             <div class="image-paste-hint">💡 Tip: You can paste images directly into the input field!</div>
@@ -2338,7 +2338,15 @@ Fliplet.Widget.generateInterface({
           DOM.uploadedImages = document.querySelector(".uploaded-images");
 
           // Initialize textarea styling and behavior
-          initializeTextarea();
+          setTimeout(() => {
+            if (DOM.userInput) {
+              console.log('🔧 Initializing textarea...');
+              initializeTextarea();
+              console.log('🔧 Textarea initialized with height:', DOM.userInput.style.height);
+            } else {
+              console.error('❌ Textarea element not found during initialization');
+            }
+          }, 100);
 
           AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get();
           AppState.css = Fliplet.Helper.field("css").get();
@@ -3549,8 +3557,21 @@ Fliplet.Widget.generateInterface({
             }
           });
 
-          // Auto-resize textarea as user types
+          // Auto-resize textarea as user types (jQuery)
           $(DOM.userInput).on("input", function() {
+            console.log('🔧 Input event triggered (jQuery), current value length:', this.value.length);
+            autoResizeTextarea(this);
+          });
+          
+          // Auto-resize textarea as user types (native event as backup)
+          DOM.userInput.addEventListener("input", function() {
+            console.log('🔧 Input event triggered (native), current value length:', this.value.length);
+            autoResizeTextarea(this);
+          });
+          
+          // Also try keyup as another backup method
+          DOM.userInput.addEventListener("keyup", function() {
+            console.log('🔧 Keyup event triggered, current value length:', this.value.length);
             autoResizeTextarea(this);
           });
 
@@ -6545,17 +6566,10 @@ Make sure each code block is complete and functional.`;
         }
 
         /**
-         * Initialize textarea with proper styling and behavior
+         * Initialize textarea with proper behavior
          */
         function initializeTextarea() {
           if (!DOM.userInput) return;
-          
-          // Set initial styling
-          DOM.userInput.style.resize = 'none';
-          DOM.userInput.style.overflowY = 'hidden';
-          DOM.userInput.style.minHeight = '40px';
-          DOM.userInput.style.maxHeight = '200px';
-          DOM.userInput.style.transition = 'height 0.2s ease';
           
           // Set initial height
           autoResizeTextarea(DOM.userInput);
@@ -6566,19 +6580,34 @@ Make sure each code block is complete and functional.`;
          * @param {HTMLTextAreaElement} textarea - The textarea element to resize
          */
         function autoResizeTextarea(textarea) {
-          // Reset height to auto to get the correct scrollHeight
-          textarea.style.height = 'auto';
+          if (!textarea) return;
           
-          // Set the height to match the content
-          const newHeight = Math.min(textarea.scrollHeight, 40); // Min height of 40px
+          // Force a reflow to ensure scrollHeight is accurate
+          textarea.style.height = 'auto';
+          textarea.style.height = '1px';
+          
+          // Calculate the new height based on content
+          const scrollHeight = textarea.scrollHeight;
+          const minHeight = 40;
+          const maxHeight = 200;
+          
+          // Set the height to match the content, respecting min/max bounds
+          const newHeight = Math.max(minHeight, Math.min(scrollHeight, maxHeight));
           textarea.style.height = newHeight + 'px';
           
           // If content exceeds max height, show scrollbar
-          if (textarea.scrollHeight > 200) {
+          if (scrollHeight > maxHeight) {
             textarea.style.overflowY = 'auto';
           } else {
             textarea.style.overflowY = 'hidden';
           }
+          
+          console.log('🔧 Textarea resized:', {
+            scrollHeight: scrollHeight,
+            newHeight: newHeight,
+            content: textarea.value.substring(0, 50) + '...',
+            currentHeight: textarea.style.height
+          });
         }
 
         /**

@@ -929,6 +929,33 @@
   }
 }
 
+/* Textarea Auto-resize Styles */
+.interface #user-input {
+  resize: none;
+  overflow-y: hidden;
+  min-height: 40px;
+  max-height: 200px;
+  transition: height 0.2s ease;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+  overflow-x: hidden;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.interface #user-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  outline: none;
+}
+
 /* Info Container Styles */
 .interface .btn-info {
   margin-top: 10px;

@@ -3392,10 +3392,10 @@ Fliplet.Widget.generateInterface({
             // Add images if present
             if (item.images && item.images.length > 0) {
               const imagesHTML = item.images.map(img => {
-                // Use flipletUrl if available (permanent), otherwise fall back to dataUrl
-                const imageSrc = img.flipletUrl || img.dataUrl;
+                // Use flipletUrl for permanent image storage
+                const imageSrc = img.flipletUrl;
                 if (!imageSrc) {
-                  console.warn('⚠️ Image missing both flipletUrl and dataUrl:', img);
+                  console.warn('⚠️ Image missing flipletUrl:', img);
                   return '';
                 }
                 
@@ -6177,8 +6177,7 @@ Make sure each code block is complete and functional.`;
                   imageUrls: item.images.map(img => ({ 
                     id: img.id, 
                     name: img.name, 
-                    flipletUrl: !!img.flipletUrl, 
-                    dataUrl: !!img.dataUrl 
+                    flipletUrl: !!img.flipletUrl
                   }))
                 }))
               });
@@ -6230,12 +6229,11 @@ Make sure each code block is complete and functional.`;
                       messageType: item.type,
                       messagePreview: item.message.substring(0, 50) + '...',
                       imageCount: item.images.length,
-                      imageUrls: item.images.map(img => ({ 
-                        id: img.id, 
-                        name: img.name, 
-                        flipletUrl: !!img.flipletUrl, 
-                        dataUrl: !!img.dataUrl 
-                      }))
+                                          imageUrls: item.images.map(img => ({ 
+                      id: img.id, 
+                      name: img.name, 
+                      flipletUrl: !!img.flipletUrl
+                    }))
                     }))
                   });
                 }
@@ -6310,26 +6308,26 @@ Make sure each code block is complete and functional.`;
           // Build message content
           let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(message)}`;
           
-          // Add images if present
-          if (images && images.length > 0) {
-            const imagesHTML = images.map(img => {
-              // Use flipletUrl if available (permanent), otherwise fall back to dataUrl
-              const imageSrc = img.flipletUrl || img.dataUrl;
-              if (!imageSrc) {
-                console.warn('⚠️ Image missing both flipletUrl and dataUrl:', img);
-                return '';
-              }
+                      // Add images if present
+            if (images && images.length > 0) {
+              const imagesHTML = images.map(img => {
+                // Use flipletUrl for permanent image storage
+                const imageSrc = img.flipletUrl;
+                if (!imageSrc) {
+                  console.warn('⚠️ Image missing flipletUrl:', img);
+                  return '';
+                }
+                
+                return `<div class="chat-image-container">
+                  <img src="${imageSrc}" alt="${img.name}" class="chat-image" />
+                  <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
+                 </div>`;
+              }).join('');
               
-              return `<div class="chat-image-container">
-                <img src="${imageSrc}" alt="${img.name}" class="chat-image" />
-                <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
-               </div>`;
-            }).join('');
-            
-            if (imagesHTML) {
-              messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+              if (imagesHTML) {
+                messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+              }
             }
-          }
           
           messageDiv.innerHTML = messageContent;
 
@@ -6347,7 +6345,6 @@ Make sure each code block is complete and functional.`;
               id: img.id,
               name: img.name,
               size: img.size,
-              dataUrl: img.dataUrl,
               status: img.status,
               flipletFileId: img.flipletFileId,
               flipletUrl: img.flipletUrl
@@ -6356,8 +6353,8 @@ Make sure each code block is complete and functional.`;
             // Log the copy to verify it's complete
             if (images && images.length > 0) {
               console.log('💾 Creating deep copy for chat history:', {
-                original: { id: img.id, name: img.name, flipletUrl: img.flipletUrl, dataUrl: img.dataUrl },
-                copy: { id: copy.id, name: copy.name, flipletUrl: copy.flipletUrl, dataUrl: copy.dataUrl }
+                original: { id: img.id, name: img.name, flipletUrl: img.flipletUrl },
+                copy: { id: copy.id, name: copy.name, flipletUrl: copy.flipletUrl }
               });
             }
             

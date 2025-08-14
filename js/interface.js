@@ -2400,6 +2400,8 @@ Fliplet.Widget.generateInterface({
             if (DOM.userInput) {
               autoResizeTextarea(DOM.userInput);
             }
+            // Also update resize handle position on window resize
+            updateResizeHandlePosition();
           });
 
           console.log("✅ App initialization complete");
@@ -6632,6 +6634,9 @@ Make sure each code block is complete and functional.`;
             contentLength: textarea.value.length,
             currentHeight: textarea.style.height
           });
+          
+          // Update resize handle position after textarea resize
+          updateResizeHandlePosition();
         }
 
         /**
@@ -6646,6 +6651,32 @@ Make sure each code block is complete and functional.`;
           textarea.style.overflowY = 'hidden';
           
           console.log('🔧 Textarea reset to minimum height:', textarea.style.height);
+          
+          // Update resize handle position after reset
+          updateResizeHandlePosition();
+        }
+
+        /**
+         * Update resize handle position to track chat-input height
+         */
+        function updateResizeHandlePosition() {
+          const resizeHandle = document.querySelector('.resize-handle');
+          if (!resizeHandle) return;
+          
+          const chatInput = document.querySelector('.chat-input');
+          if (!chatInput) return;
+          
+          // Calculate the bottom position based on chat-input height
+          const chatInputHeight = chatInput.offsetHeight;
+          
+          // Position the resize handle above the chat-input
+          const handleOffset = 10; // 10px gap above chat-input
+          resizeHandle.style.bottom = (chatInputHeight + handleOffset) + 'px';
+          
+          console.log('🔧 Resize handle repositioned:', {
+            chatInputHeight: chatInputHeight,
+            newBottom: resizeHandle.style.bottom
+          });
         }
 
         /**
@@ -6675,6 +6706,12 @@ Make sure each code block is complete and functional.`;
             chatMessages.style.position = 'relative';
             chatMessages.appendChild(resizeHandle);
           }
+          
+          // Store reference to resize handle globally for other functions
+          window.chatResizeHandle = resizeHandle;
+          
+          // Set initial position
+          updateResizeHandlePosition();
 
           let isResizing = false;
           let startY, startHeight;

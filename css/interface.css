@@ -1,7 +1,7 @@
 /* Resize handle styles */
 .resize-handle {
   position: absolute !important;
-  bottom: 82px !important; /* 60px for iltacon */
+  bottom: 0 !important; /* Will be dynamically positioned above chat-input */
   right: 5px !important;
   width: 20px !important;
   height: 20px !important;
@@ -955,8 +955,8 @@
 }
 
 .interface #user-input:focus {
-  border-color: #007bff;
-  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: #ddd;
+  box-shadow: none;
   outline: none;
 }
 

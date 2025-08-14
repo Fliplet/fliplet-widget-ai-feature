@@ -3632,9 +3632,9 @@ Fliplet.Widget.generateInterface({
             `🚀 [Main] Processing request #${AppState.requestCount}: "${userMessage}"`
           );
 
-          // Add loading indicator
+          // Add loading indicator (don't add to chat history - just show in UI)
           const loadingDiv = document.createElement("div");
-          loadingDiv.className = "message ai-message";
+          loadingDiv.className = "message ai-message loading-message";
           loadingDiv.innerHTML =
             '<div class="loading"></div> 🧠 AI is analyzing your request...';
           DOM.chatMessages.appendChild(loadingDiv);
@@ -4115,10 +4115,43 @@ Fliplet.Widget.generateInterface({
             }, 0)
           });
 
-          // Note: Image validation is now handled during message building
-          // Historical images are automatically included from chat history
-          // Current images are added if they exist
-          // No need for additional validation that could remove valid images
+          // FINAL VALIDATION: Double-check that no removed images are in the request
+          const finalImageValidation = messages.reduce((count, msg) => {
+            if (msg.role === 'user' && Array.isArray(msg.content)) {
+              return count + msg.content.filter(c => c.type === 'image_url').length;
+            }
+            return count;
+          }, 0);
+          
+          console.log('🔍 [AI] FINAL VALIDATION - Images in request:', {
+            totalImagesInRequest: finalImageValidation,
+            messagesWithImages: messages.filter(msg => 
+              msg.role === 'user' && 
+              Array.isArray(msg.content) && 
+              msg.content.some(c => c.type === 'image_url')
+            ).length,
+            currentAppStateImages: AppState.pastedImages.length,
+            currentValidImages: AppState.pastedImages.filter(img => 
+              img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+            ).length
+          });
+          
+          // If we have images in the request but no valid images in state, this is an error
+          if (finalImageValidation > 0 && AppState.pastedImages.filter(img => 
+            img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+          ).length === 0) {
+            console.error('❌ [AI] CRITICAL ERROR: Request contains images but AppState has no valid images!');
+            console.error('❌ [AI] This should never happen - images were removed after filtering');
+            
+            // Force remove all images from the request
+            messages.forEach(msg => {
+              if (msg.role === 'user' && Array.isArray(msg.content)) {
+                msg.content = msg.content.filter(c => c.type !== 'image_url');
+              }
+            });
+            
+            console.log('🔧 [AI] Forced removal of all images from request due to state mismatch');
+          }
 
           const requestBody = {
             model: AIConfig.model,
@@ -6238,10 +6271,41 @@ Make sure each code block is complete and functional.`;
                 // Update AppState with filtered history
                 AppState.chatHistory = filteredHistory;
 
-                // Repopulate chat interface
+                // Repopulate chat interface directly (don't use addMessageToChat to avoid duplicates)
                 DOM.chatMessages.innerHTML = "";
                 filteredHistory.forEach((item) => {
-                  addMessageToChat(item.message, item.type, item.images, true); // Skip storage to avoid overwriting
+                  const messageDiv = document.createElement("div");
+                  messageDiv.className = `message ${item.type}-message`;
+
+                  const prefix =
+                    item.type === "user" ? "You" : item.type === "ai" ? "AI" : "System";
+                  
+                  // Build message content
+                  let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(item.message)}`;
+                  
+                  // Add images if present
+                  if (item.images && item.images.length > 0) {
+                    const imagesHTML = item.images.map(img => {
+                      // Use flipletUrl for permanent image storage
+                      const imageSrc = img.flipletUrl;
+                      if (!imageSrc) {
+                        console.warn('⚠️ Image missing flipletUrl:', img);
+                        return '';
+                      }
+                      
+                      return `<div class="chat-image-container">
+                        <img src="${imageSrc}" alt="${img.name}" class="chat-image" />
+                        <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
+                       </div>`;
+                    }).join('');
+                    
+                    if (imagesHTML) {
+                      messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+                    }
+                  }
+                  
+                  messageDiv.innerHTML = messageContent;
+                  DOM.chatMessages.appendChild(messageDiv);
                 });
                 
                 // Ensure resize handle is added back after repopulating
@@ -6296,6 +6360,8 @@ Make sure each code block is complete and functional.`;
             "type must be user, ai, or system"
           );
 
+
+
           const messageDiv = document.createElement("div");
           messageDiv.className = `message ${type}-message`;
 
@@ -6305,26 +6371,26 @@ Make sure each code block is complete and functional.`;
           // Build message content
           let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(message)}`;
           
-                      // Add images if present
-            if (images && images.length > 0) {
-              const imagesHTML = images.map(img => {
-                // Use flipletUrl for permanent image storage
-                const imageSrc = img.flipletUrl;
-                if (!imageSrc) {
-                  console.warn('⚠️ Image missing flipletUrl:', img);
-                  return '';
-                }
-                
-                return `<div class="chat-image-container">
-                  <img src="${imageSrc}" alt="${img.name}" class="chat-image" />
-                  <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
-                 </div>`;
-              }).join('');
-              
-              if (imagesHTML) {
-                messageContent += `<div class="chat-images">${imagesHTML}</div>`;
+          // Add images if present
+          if (images && images.length > 0) {
+            const imagesHTML = images.map(img => {
+              // Use flipletUrl for permanent image storage
+              const imageSrc = img.flipletUrl;
+              if (!imageSrc) {
+                console.warn('⚠️ Image missing flipletUrl:', img);
+                return '';
               }
+              
+              return `<div class="chat-image-container">
+                <img src="${imageSrc}" alt="${img.name}" class="chat-image" />
+                <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
+               </div>`;
+            }).join('');
+            
+            if (imagesHTML) {
+              messageContent += `<div class="chat-images">${imagesHTML}</div>`;
             }
+          }
           
           messageDiv.innerHTML = messageContent;
 
@@ -6335,52 +6401,54 @@ Make sure each code block is complete and functional.`;
           
           scrollToBottom();
 
-          // Add to history
-          // Create a deep copy of images to avoid reference issues when AppState.pastedImages is cleared
-          const imagesCopy = images ? images.map(img => {
-            const copy = {
-              id: img.id,
-              name: img.name,
-              size: img.size,
-              status: img.status,
-              flipletFileId: img.flipletFileId,
-              flipletUrl: img.flipletUrl
+          // Add to history (unless skipStorage is true)
+          if (!skipStorage) {
+            // Create a deep copy of images to avoid reference issues when AppState.pastedImages is cleared
+            const imagesCopy = images ? images.map(img => {
+              const copy = {
+                id: img.id,
+                name: img.name,
+                size: img.size,
+                status: img.status,
+                flipletFileId: img.flipletFileId,
+                flipletUrl: img.flipletUrl
+              };
+              
+              // Log the copy to verify it's complete
+              if (images && images.length > 0) {
+                console.log('💾 Creating deep copy for chat history:', {
+                  original: { id: img.id, name: img.name, flipletUrl: img.flipletUrl },
+                  copy: { id: copy.id, name: copy.name, flipletUrl: copy.flipletUrl }
+                });
+              }
+              
+              return copy;
+            }) : [];
+            
+            const historyItem = {
+              message,
+              type,
+              timestamp: new Date().toISOString(),
+              images: imagesCopy // Store copy of images in history
             };
             
-            // Log the copy to verify it's complete
+            AppState.chatHistory.push(historyItem);
+            
+            // Log what we're storing in history
             if (images && images.length > 0) {
-              console.log('💾 Creating deep copy for chat history:', {
-                original: { id: img.id, name: img.name, flipletUrl: img.flipletUrl },
-                copy: { id: copy.id, name: copy.name, flipletUrl: copy.flipletUrl }
+              console.log('💾 Storing message in chat history with images:', {
+                messageType: type,
+                imageCount: images.length,
+                imageIds: images.map(img => ({ id: img.id, name: img.name, type: typeof img.id }))
               });
             }
-            
-            return copy;
-          }) : [];
-          
-          const historyItem = {
-            message,
-            type,
-            timestamp: new Date().toISOString(),
-            images: imagesCopy // Store copy of images in history
-          };
-          
-          AppState.chatHistory.push(historyItem);
-          
-          // Log what we're storing in history
-          if (images && images.length > 0) {
-            console.log('💾 Storing message in chat history with images:', {
-              messageType: type,
-              imageCount: images.length,
-              imageIds: images.map(img => ({ id: img.id, name: img.name, type: typeof img.id }))
-            });
-          }
 
-          // Save to Fliplet field (unless skipStorage is true)
-          if (!skipStorage) {
+            // Save to Fliplet field
             saveChatHistoryToStorage();
           }
         }
+
+
 
         /**
          * Scroll chat to bottom

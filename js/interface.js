@@ -3713,42 +3713,18 @@ Fliplet.Widget.generateInterface({
               console.log("ℹ️ [Main] No valid images remain - sending text-only request to AI");
             }
 
-            // FINAL SAFETY CHECK: Verify images are still valid right before AI call
-            const finalValidImages = currentImages.filter(img => {
-              const stillExists = AppState.pastedImages.some(stateImg => 
-                String(stateImg.id) === String(img.id) && 
-                stateImg.status === 'uploaded' && 
-                stateImg.flipletUrl && 
-                stateImg.flipletFileId
-              );
-              
-              if (!stillExists) {
-                console.warn('⚠️ [Main] Image was removed before AI call, excluding:', {
-                  imageId: img.id,
-                  imageName: img.name
-                });
-              }
-              
-              return stillExists;
-            });
-            
-            if (finalValidImages.length !== currentImages.length) {
-              console.warn('⚠️ [Main] Some images were removed before AI call:', {
-                originalCount: currentImages.length,
-                finalCount: finalValidImages.length,
-                removedCount: currentImages.length - finalValidImages.length
-              });
-            }
-            
-            console.log('🔍 [Main] Final image state before AI call:', {
-              originalImages: currentImages.map(img => ({ id: img.id, name: img.name })),
-              finalValidImages: finalValidImages.map(img => ({ id: img.id, name: img.name }))
+            // Note: Images are now handled within the AI call function using chat history
+            // This ensures all historical images are preserved for context
+            console.log('🔍 [Main] Sending request to AI with current images:', {
+              currentImagesCount: currentImages.length,
+              currentImages: currentImages.map(img => ({ id: img.id, name: img.name })),
+              note: 'Historical images will be automatically included from chat history'
             });
 
             const aiResponse = await callOpenAIWithNewArchitecture(
               userMessage,
               context,
-              finalValidImages
+              currentImages
             );
 
             // Step 3: Parse response using protocol parser
@@ -3937,6 +3913,8 @@ Fliplet.Widget.generateInterface({
             currentUserMessage: userMessage
           });
           
+          // Collect all images from history for context
+          const historicalImages = [];
           recentHistory.forEach((historyItem) => {
             if (historyItem.message && historyItem.type) {
               // Skip the current user message to avoid duplication
@@ -3947,6 +3925,15 @@ Fliplet.Widget.generateInterface({
                 console.log("⏭️ [AI] Skipping duplicate current user message in history");
                 return;
               }
+              
+              // Collect images from this history item
+              if (historyItem.images && historyItem.images.length > 0) {
+                historicalImages.push(...historyItem.images);
+                console.log(`🖼️ [AI] Found ${historyItem.images.length} images in history message:`, 
+                  historyItem.images.map(img => ({ id: img.id, name: img.name }))
+                );
+              }
+              
               // Convert our internal format to OpenAI format
               const role = historyItem.type === "user" ? "user" : "assistant";
               messages.push({
@@ -3956,90 +3943,68 @@ Fliplet.Widget.generateInterface({
               console.log(`📝 [AI] Added history message: ${role} - ${historyItem.message.substring(0, 50)}...`);
             }
           });
-
-          // Add current user message with image data
-          if (finalCurrentImages && finalCurrentImages.length > 0) {
-            // Final validation: ensure all images are still valid and haven't been removed
-            console.log('🔍 [AI] Starting final image validation...');
-            console.log('🔍 [AI] AppState.pastedImages before final validation:', AppState.pastedImages.map(img => ({ 
+          
+          // Log historical images found
+          if (historicalImages.length > 0) {
+            console.log("🖼️ [AI] Total historical images found:", historicalImages.length);
+            console.log("🖼️ [AI] Historical images:", historicalImages.map(img => ({ 
               id: img.id, 
               name: img.name, 
-              status: img.status,
-              flipletUrl: !!img.flipletUrl,
-              flipletFileId: !!img.flipletFileId
+              flipletUrl: !!img.flipletUrl 
             })));
+          }
+
+          // Combine current images with historical images for complete context
+          const allImages = [...historicalImages, ...finalCurrentImages];
+          const uniqueImages = allImages.filter((img, index, self) => 
+            index === self.findIndex(t => String(t.id) === String(img.id))
+          );
+          
+          console.log('🔍 [AI] Combined images for context:', {
+            historicalImagesCount: historicalImages.length,
+            currentImagesCount: finalCurrentImages.length,
+            totalUniqueImages: uniqueImages.length,
+            uniqueImages: uniqueImages.map(img => ({ id: img.id, name: img.name, source: historicalImages.includes(img) ? 'history' : 'current' }))
+          });
+          
+          // Always include images in user message if we have any (current or historical)
+          if (uniqueImages.length > 0) {
+            // Use OpenAI's image input format
+            const content = [
+              { type: "text", text: userMessage }
+            ];
             
-            const finalValidImages = finalCurrentImages.filter(img => {
-              // Check if the image still exists in AppState.pastedImages
-              const stillExists = AppState.pastedImages.some(stateImg => 
-                String(stateImg.id) === String(img.id) && 
-                stateImg.status === 'uploaded' && 
-                stateImg.flipletUrl && 
-                stateImg.flipletFileId
-              );
-              
-              console.log('🔍 [AI] Image validation result:', {
-                imageId: img.id,
-                imageName: img.name,
-                stillExists: stillExists,
-                matchingStateImg: AppState.pastedImages.find(stateImg => String(stateImg.id) === String(img.id))
-              });
-              
-              if (!stillExists) {
-                console.warn('⚠️ [AI] Image was removed after filtering, excluding from AI call:', {
-                  imageId: img.id,
-                  imageName: img.name
-                });
-              }
-              
-              return stillExists;
-            });
-            
-            if (finalValidImages.length !== finalCurrentImages.length) {
-              console.warn('⚠️ [AI] Some images were removed after initial filtering:', {
-                originalCount: finalCurrentImages.length,
-                finalCount: finalValidImages.length,
-                removedCount: finalCurrentImages.length - finalValidImages.length
-              });
-            }
-            
-            console.log('🔍 [AI] Final validation completed:', {
-              originalImages: finalCurrentImages.map(img => ({ id: img.id, name: img.name })),
-              finalValidImages: finalValidImages.map(img => ({ id: img.id, name: img.name })),
-              removedImages: finalCurrentImages.filter(img => !finalValidImages.some(finalImg => String(finalImg.id) === String(img.id))).map(img => ({ id: img.id, name: img.name }))
-            });
-            
-            if (finalValidImages.length > 0) {
-              // Use OpenAI's image input format
-              const content = [
-                { type: "text", text: userMessage }
-              ];
-              
-              // Add all final valid images
-              finalValidImages.forEach((img) => {
+            // Add all unique images (both historical and current)
+            uniqueImages.forEach((img) => {
+              if (img.flipletUrl) {
                 content.push({
                   type: "image_url",
                   image_url: { url: img.flipletUrl }
                 });
-              });
-              
-              messages.push({ role: "user", content: content });
-              
-              // Log what we're sending
-              console.log("📤 [AI] Sending message with images:", {
-                textLength: userMessage.length,
-                imageCount: finalValidImages.length,
-                images: finalValidImages.map(img => ({ name: img.name, url: img.flipletUrl, id: img.id }))
-              });
-            } else {
-              // All images were removed, send text-only message
-              messages.push({ role: "user", content: userMessage });
-              console.log("⚠️ [AI] All images were removed after filtering, sending text-only message");
-            }
+              } else {
+                console.warn('⚠️ [AI] Image missing flipletUrl, skipping:', { id: img.id, name: img.name });
+              }
+            });
+            
+            messages.push({ role: "user", content: content });
+            
+            // Log what we're sending
+            console.log("📤 [AI] Sending message with all context images:", {
+              textLength: userMessage.length,
+              totalImageCount: uniqueImages.length,
+              historicalImageCount: historicalImages.length,
+              currentImageCount: finalCurrentImages.length,
+              images: uniqueImages.map(img => ({ 
+                id: img.id, 
+                name: img.name, 
+                url: img.flipletUrl, 
+                source: historicalImages.includes(img) ? 'history' : 'current' 
+              }))
+            });
           } else {
-            // No valid images, send text-only message
+            // No images at all, send text-only message
             messages.push({ role: "user", content: userMessage });
-            console.log("ℹ️ [AI] No valid images found - sending text-only message to AI");
+            console.log("ℹ️ [AI] No images found (current or historical) - sending text-only message to AI");
           }
 
           console.log("📤 [AI] Request messages with history:", messages);

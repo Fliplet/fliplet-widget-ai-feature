@@ -4115,43 +4115,10 @@ Fliplet.Widget.generateInterface({
             }, 0)
           });
 
-          // FINAL VALIDATION: Double-check that no removed images are in the request
-          const finalImageValidation = messages.reduce((count, msg) => {
-            if (msg.role === 'user' && Array.isArray(msg.content)) {
-              return count + msg.content.filter(c => c.type === 'image_url').length;
-            }
-            return count;
-          }, 0);
-          
-          console.log('🔍 [AI] FINAL VALIDATION - Images in request:', {
-            totalImagesInRequest: finalImageValidation,
-            messagesWithImages: messages.filter(msg => 
-              msg.role === 'user' && 
-              Array.isArray(msg.content) && 
-              msg.content.some(c => c.type === 'image_url')
-            ).length,
-            currentAppStateImages: AppState.pastedImages.length,
-            currentValidImages: AppState.pastedImages.filter(img => 
-              img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
-            ).length
-          });
-          
-          // If we have images in the request but no valid images in state, this is an error
-          if (finalImageValidation > 0 && AppState.pastedImages.filter(img => 
-            img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
-          ).length === 0) {
-            console.error('❌ [AI] CRITICAL ERROR: Request contains images but AppState has no valid images!');
-            console.error('❌ [AI] This should never happen - images were removed after filtering');
-            
-            // Force remove all images from the request
-            messages.forEach(msg => {
-              if (msg.role === 'user' && Array.isArray(msg.content)) {
-                msg.content = msg.content.filter(c => c.type !== 'image_url');
-              }
-            });
-            
-            console.log('🔧 [AI] Forced removal of all images from request due to state mismatch');
-          }
+          // Note: Image validation is now handled during message building
+          // Historical images are automatically included from chat history
+          // Current images are added if they exist
+          // No need for additional validation that could remove valid images
 
           const requestBody = {
             model: AIConfig.model,

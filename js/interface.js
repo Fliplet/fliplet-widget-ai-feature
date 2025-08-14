@@ -113,7 +113,7 @@ Fliplet.Widget.generateInterface({
                 <textarea id="user-input" placeholder="How can I help?" autocomplete="off" rows="1"></textarea>
                 <input type="button" id="send-btn" class="btn-primary" value="Send">
             </div>
-            <div class="image-paste-hint">💡 Tip: You can paste images directly into the input field!</div>
+            <div class="image-paste-hint">💡 Tip: You can paste or drag and drop images!</div>
             </div>
             <div class="uploaded-images">
                 <div class="no-images-placeholder">No images attached</div>

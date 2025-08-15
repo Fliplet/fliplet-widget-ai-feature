@@ -798,7 +798,7 @@ async function removePastedImage(imageId, DOM, AppState) {
   cleanupChatHistoryImages(imageId, DOM);
 
   // Clean up orphaned file signatures to prevent "File already processed" issues
-  cleanupOrphanedFileSignatures();
+  cleanupOrphanedFileSignatures(AppState);
 
   console.log(
     "✅ Image removal process completed for ID:",
@@ -943,7 +943,7 @@ function verifyChatHistoryCleanup(imageId, DOM) {
  * Clean up orphaned file signatures that don't correspond to existing images
  * This prevents the "File already processed" issue when images are removed
  */
-function cleanupOrphanedFileSignatures() {
+function cleanupOrphanedFileSignatures(AppState) {
   console.log("🧹 Cleaning up orphaned file signatures...");
 
   const initialSignatureCount = AppState.processedFileSignatures.size;
@@ -991,7 +991,7 @@ function cleanupOrphanedFileSignatures() {
  * Manually reset file signatures (useful for debugging or when issues occur)
  * This will allow all files to be processed again
  */
-function resetFileSignatures() {
+function resetFileSignatures(AppState) {
   console.log("🔄 Manually resetting file signatures...");
   const initialCount = AppState.processedFileSignatures.size;
   AppState.processedFileSignatures.clear();

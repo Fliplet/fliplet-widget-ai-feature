@@ -3973,7 +3973,7 @@ Fliplet.Widget.generateInterface({
           });
           
           // CRITICAL: Use the most current images for the system prompt
-          const systemPrompt = buildSystemPromptWithContext(context, finalCurrentImages);
+          const systemPrompt = buildSystemPromptWithContext(context, finalCurrentImages, AppState);
 
           // Build complete conversation history
           const messages = [{ role: "system", content: systemPrompt }];

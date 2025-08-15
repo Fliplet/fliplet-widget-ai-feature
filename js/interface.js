@@ -2463,7 +2463,7 @@ Fliplet.Widget.generateInterface({
           });
 
           // Handle image pasting
-          setupImagePasteHandling();
+          setupImagePasteHandling(DOM);
 
           // Handle text pasting to auto-resize
           $(DOM.userInput).on("paste", function() {
@@ -2486,7 +2486,7 @@ Fliplet.Widget.generateInterface({
           });
           
           // Handle image drag and drop
-          setupImageDragAndDropHandling();
+          setupImageDragAndDropHandling(DOM);
 
           // Setup event delegation for remove image buttons
           $(document).on('click', '.remove-image-btn', function(event) {
@@ -2500,7 +2500,7 @@ Fliplet.Widget.generateInterface({
             
             if (imageId) {
               console.log('🗑️ Remove button clicked for image ID:', imageId);
-              handleImageRemove(imageId);
+              handleImageRemove(imageId, DOM);
             } else {
               console.error('❌ No image ID found in remove button dataset');
               console.error('❌ Button HTML:', this.outerHTML);
@@ -2750,7 +2750,7 @@ Fliplet.Widget.generateInterface({
             }
 
             // Clear pasted images after successful processing (preserve chat history)
-            clearPastedImages(true);
+            clearPastedImages(true, DOM);
 
             console.log(
               `✅ [Main] Request #${AppState.requestCount} completed successfully`
@@ -2774,7 +2774,7 @@ Fliplet.Widget.generateInterface({
             addMessageToChat(errorMessage, "ai");
 
             // Clear pasted images even on error to prevent stale state (preserve chat history)
-            clearPastedImages(true);
+            clearPastedImages(true, DOM);
           }
         }
 
@@ -4249,7 +4249,7 @@ Fliplet.Widget.generateInterface({
           clearChatHistoryFromStorage();
 
           // Clear pasted images
-          clearPastedImages();
+          clearPastedImages(false, DOM);
 
           // Clear displays
           DOM.chatMessages.innerHTML =

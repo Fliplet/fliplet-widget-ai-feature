@@ -1,13 +1,13 @@
 /**
  * Setup image paste handling functionality
  */
-function setupImagePasteHandling() {
+function setupImagePasteHandling(DOM) {
   // Add paste event listener to the input field only
   // This prevents duplicate processing when pasting into the input
   DOM.userInput.addEventListener("paste", handleImagePaste);
 }
 
-function setupImageDragAndDropHandling() {
+function setupImageDragAndDropHandling(DOM) {
   // Add drag and drop event listeners to the input field and uploaded-images area
   const dropZones = [DOM.userInput, DOM.uploadedImages];
 
@@ -64,7 +64,7 @@ function setupImageDragAndDropHandling() {
       // Only process drop if we're NOT dropping on the input field
       // This prevents duplicate processing when dropping on input
       if (e.target !== DOM.userInput && !DOM.userInput.contains(e.target)) {
-        handleImageDrop(e);
+        handleImageDrop(e, DOM);
       }
     });
   }
@@ -108,7 +108,7 @@ function handleDragLeave(event) {
  * Handle image drop events for drag and drop
  * @param {DragEvent} event - The drop event
  */
-function handleImageDrop(event) {
+function handleImageDrop(event, DOM) {
   event.preventDefault();
 
   // Generate a unique event ID to prevent duplicate processing
@@ -156,7 +156,7 @@ function handleImageDrop(event) {
 
     // Process each dropped image file
     validImageFiles.forEach((file) => {
-      processPastedImage(file); // Reuse existing paste processing logic
+      processPastedImage(file, DOM); // Reuse existing paste processing logic
     });
   }
 
@@ -352,7 +352,7 @@ function handleImagePaste(event) {
         !processedFiles.has(file.name + file.size + file.lastModified)
       ) {
         processedFiles.add(file.name + file.size + file.lastModified);
-        processPastedImage(file);
+        processPastedImage(file, DOM);
       }
     }
   }
@@ -370,7 +370,7 @@ function handleImagePaste(event) {
  *
  * @param {File} file - The image file to process
  */
-async function processPastedImage(file) {
+async function processPastedImage(file, DOM) {
   // Validate file type
   if (!file.type.startsWith("image/")) {
     console.log("⚠️ Non-image file ignored:", file.type);
@@ -464,7 +464,7 @@ async function processPastedImage(file) {
     );
 
     // Display in UI with upload status
-    displayPastedImage(imageData);
+    displayPastedImage(imageData, DOM);
 
     // Upload to Fliplet Media using the proper API
     // FormData structure follows Fliplet Media API requirements:
@@ -556,7 +556,7 @@ async function processPastedImage(file) {
  * Display a pasted image in the uploaded-images section
  * @param {Object} imageData - The image data object
  */
-function displayPastedImage(imageData) {
+function displayPastedImage(imageData, DOM) {
   if (!DOM.uploadedImages) return;
 
   // Hide placeholder if it exists
@@ -653,7 +653,7 @@ function updateImageDisplay(imageData, container = null) {
  * the AI doesn't receive stale image data
  * @param {string} imageId - The ID of the image to remove
  */
-async function removePastedImage(imageId) {
+async function removePastedImage(imageId, DOM) {
   console.log(
     "🔍 Starting image removal process for ID:",
     imageId,
@@ -795,7 +795,7 @@ async function removePastedImage(imageId) {
 
   // Clean up chat history messages that reference this removed image
   console.log("🧹 About to clean up chat history for image ID:", imageId);
-  cleanupChatHistoryImages(imageId);
+  cleanupChatHistoryImages(imageId, DOM);
 
   // Clean up orphaned file signatures to prevent "File already processed" issues
   cleanupOrphanedFileSignatures();
@@ -811,7 +811,7 @@ async function removePastedImage(imageId) {
  * Clean up chat history messages that reference removed images
  * @param {string} imageId - The ID of the removed image
  */
-function cleanupChatHistoryImages(imageId) {
+function cleanupChatHistoryImages(imageId, DOM) {
   console.log("🧹 Cleaning up chat history for removed image ID:", imageId);
   console.log("🧹 Current chat history length:", AppState.chatHistory.length);
 
@@ -878,20 +878,20 @@ function cleanupChatHistoryImages(imageId) {
     saveChatHistoryToStorage();
 
     // Update the chat interface to reflect the changes
-    updateChatInterface();
+    updateChatInterface(DOM);
   }
 
   console.log("🧹 Chat history cleanup completed for image ID:", imageId);
 
   // Verify cleanup was successful
-  verifyChatHistoryCleanup(imageId);
+  verifyChatHistoryCleanup(imageId, DOM);
 }
 
 /**
  * Verify that chat history cleanup was successful
  * @param {string} imageId - The ID of the image that should have been removed
  */
-function verifyChatHistoryCleanup(imageId) {
+function verifyChatHistoryCleanup(imageId, DOM) {
   console.log("🔍 Verifying chat history cleanup for image ID:", imageId);
 
   let referencesFound = 0;
@@ -1004,7 +1004,7 @@ function resetFileSignatures() {
 /**
  * Update chat interface to reflect current chat history state
  */
-function updateChatInterface() {
+function updateChatInterface(DOM) {
   console.log("🔄 Updating chat interface with current history:", {
     historyLength: AppState.chatHistory.length,
     messagesWithImages: AppState.chatHistory.filter(
@@ -1071,7 +1071,7 @@ function updateChatInterface() {
  * This function handles the async operation and provides user feedback
  * @param {string} imageId - The ID of the image to remove
  */
-async function handleImageRemove(imageId) {
+async function handleImageRemove(imageId, DOM) {
   try {
     // Show loading state on the button
     const button = document.querySelector(
@@ -1083,7 +1083,7 @@ async function handleImageRemove(imageId) {
       button.disabled = true;
 
       // Remove the image
-      await removePastedImage(imageId);
+      await removePastedImage(imageId, DOM);
 
       // Button will be removed with the container, so no need to restore
     }
@@ -1119,7 +1119,7 @@ function formatFileSize(bytes) {
  * Clear all pasted images from local state and chat history
  * Note: Images are kept in Fliplet Media for future reference
  */
-function clearPastedImages(skipChatHistoryCleanup = false) {
+function clearPastedImages(skipChatHistoryCleanup = false, DOM) {
   // Note: We're keeping all images in Fliplet Media for future reference
   // Only clearing them from local state and chat history
   console.log(
@@ -1162,7 +1162,7 @@ function clearPastedImages(skipChatHistoryCleanup = false) {
   if (!skipChatHistoryCleanup && imageIdsToCleanup.length > 0) {
     console.log("🧹 Cleaning up chat history for automatically cleared images");
     imageIdsToCleanup.forEach((imageId) => {
-      cleanupChatHistoryImages(imageId);
+      cleanupChatHistoryImages(imageId, DOM);
     });
   } else {
     console.log(

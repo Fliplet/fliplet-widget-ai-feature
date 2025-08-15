@@ -1,3 +1,6 @@
+// Import the system prompt function
+import { buildSystemPromptWithContext } from './system-prompt.js';
+
 var selectedDataSourceId = null;
 var selectedDataSourceName = null;
 var widgetId = Fliplet.Widget.getDefaultId();
@@ -128,7 +131,6 @@ Fliplet.Widget.generateInterface({
             </div>
         </div>
     </div>
-    <script src="js/system-prompt.js"></script>
       `,
       ready: function () {
         /**

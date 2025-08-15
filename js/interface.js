@@ -2463,7 +2463,7 @@ Fliplet.Widget.generateInterface({
           });
 
           // Handle image pasting
-          setupImagePasteHandling(DOM);
+          setupImagePasteHandling(DOM, AppState);
 
           // Handle text pasting to auto-resize
           $(DOM.userInput).on("paste", function() {

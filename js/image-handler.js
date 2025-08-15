@@ -1,13 +1,17 @@
 /**
  * Setup image paste handling functionality
+ * @param {Object} DOM - DOM elements object
+ * @param {Object} AppState - Application state object
  */
-function setupImagePasteHandling(DOM) {
+function setupImagePasteHandling(DOM, AppState) {
   // Add paste event listener to the input field only
   // This prevents duplicate processing when pasting into the input
-  DOM.userInput.addEventListener("paste", handleImagePaste);
+  DOM.userInput.addEventListener("paste", function(event) {
+    handleImagePaste(event, DOM, AppState);
+  });
 }
 
-function setupImageDragAndDropHandling(event, DOM, AppState) {
+function setupImageDragAndDropHandling(DOM, AppState) {
   // Add drag and drop event listeners to the input field and uploaded-images area
   const dropZones = [DOM.userInput, DOM.uploadedImages];
 
@@ -331,8 +335,10 @@ function showImageFormatHelp() {
 /**
  * Handle image paste events
  * @param {ClipboardEvent} event - The paste event
+ * @param {Object} DOM - DOM elements object
+ * @param {Object} AppState - Application state object
  */
-function handleImagePaste(event) {
+function handleImagePaste(event, DOM, AppState) {
   const items = (event.clipboardData || event.originalEvent?.clipboardData)
     ?.items;
 
@@ -810,8 +816,10 @@ async function removePastedImage(imageId, DOM, AppState) {
 /**
  * Clean up chat history messages that reference removed images
  * @param {string} imageId - The ID of the removed image
+ * @param {Object} DOM - DOM elements object
+ * @param {Object} AppState - Application state object
  */
-function cleanupChatHistoryImages(imageId, DOM) {
+function cleanupChatHistoryImages(imageId, DOM, AppState) {
   console.log("🧹 Cleaning up chat history for removed image ID:", imageId);
   console.log("🧹 Current chat history length:", AppState.chatHistory.length);
 
@@ -878,20 +886,22 @@ function cleanupChatHistoryImages(imageId, DOM) {
     saveChatHistoryToStorage();
 
     // Update the chat interface to reflect the changes
-    updateChatInterface(DOM);
+    updateChatInterface(DOM, AppState);
   }
 
   console.log("🧹 Chat history cleanup completed for image ID:", imageId);
 
   // Verify cleanup was successful
-  verifyChatHistoryCleanup(imageId, DOM);
+  verifyChatHistoryCleanup(imageId, DOM, AppState);
 }
 
 /**
  * Verify that chat history cleanup was successful
  * @param {string} imageId - The ID of the image that should have been removed
+ * @param {Object} DOM - DOM elements object
+ * @param {Object} AppState - Application state object
  */
-function verifyChatHistoryCleanup(imageId, DOM) {
+function verifyChatHistoryCleanup(imageId, DOM, AppState) {
   console.log("🔍 Verifying chat history cleanup for image ID:", imageId);
 
   let referencesFound = 0;
@@ -1003,8 +1013,10 @@ function resetFileSignatures(AppState) {
 
 /**
  * Update chat interface to reflect current chat history state
+ * @param {Object} DOM - DOM elements object
+ * @param {Object} AppState - Application state object
  */
-function updateChatInterface(DOM) {
+function updateChatInterface(DOM, AppState) {
   console.log("🔄 Updating chat interface with current history:", {
     historyLength: AppState.chatHistory.length,
     messagesWithImages: AppState.chatHistory.filter(
@@ -1162,7 +1174,7 @@ function clearPastedImages(skipChatHistoryCleanup = false, DOM, AppState) {
   if (!skipChatHistoryCleanup && imageIdsToCleanup.length > 0) {
     console.log("🧹 Cleaning up chat history for automatically cleared images");
     imageIdsToCleanup.forEach((imageId) => {
-      cleanupChatHistoryImages(imageId, DOM);
+      cleanupChatHistoryImages(imageId, DOM, AppState);
     });
   } else {
     console.log(

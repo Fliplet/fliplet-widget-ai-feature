@@ -7,7 +7,7 @@ function setupImagePasteHandling(DOM) {
   DOM.userInput.addEventListener("paste", handleImagePaste);
 }
 
-function setupImageDragAndDropHandling(DOM, AppState) {
+function setupImageDragAndDropHandling(event, DOM, AppState) {
   // Add drag and drop event listeners to the input field and uploaded-images area
   const dropZones = [DOM.userInput, DOM.uploadedImages];
 

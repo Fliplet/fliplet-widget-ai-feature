@@ -3,7 +3,7 @@
  * @param {Object} context - Context object
  * @returns {string} System prompt
  */
-export function buildSystemPromptWithContext(context, pastedImages = []) {
+function buildSystemPromptWithContext(context, pastedImages = []) {
     console.log("📝 [AI] Building system prompt with context...");
     console.log("📝 [AI] Images passed to system prompt:", {
       passedImagesCount: pastedImages.length,

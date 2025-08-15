@@ -22,7 +22,9 @@ function setupImageDragAndDropHandling(DOM, AppState) {
     zone.addEventListener("dragover", handleDragOver);
     zone.addEventListener("dragenter", handleDragEnter);
     zone.addEventListener("dragleave", handleDragLeave);
-    zone.addEventListener("drop", handleImageDrop);
+    zone.addEventListener("drop", function(e) {
+      handleImageDrop(e, DOM, AppState);
+    });
 
     // Add visual feedback for drag operations
     zone.addEventListener("dragenter", function (e) {

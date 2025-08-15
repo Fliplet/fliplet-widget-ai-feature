@@ -2486,7 +2486,7 @@ Fliplet.Widget.generateInterface({
           });
           
           // Handle image drag and drop
-          setupImageDragAndDropHandling(DOM);
+          setupImageDragAndDropHandling(DOM, AppState);
 
           // Setup event delegation for remove image buttons
           $(document).on('click', '.remove-image-btn', function(event) {

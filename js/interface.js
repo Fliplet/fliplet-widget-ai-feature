@@ -2500,7 +2500,7 @@ Fliplet.Widget.generateInterface({
             
             if (imageId) {
               console.log('🗑️ Remove button clicked for image ID:', imageId);
-              handleImageRemove(imageId, DOM);
+              handleImageRemove(imageId, DOM, AppState);
             } else {
               console.error('❌ No image ID found in remove button dataset');
               console.error('❌ Button HTML:', this.outerHTML);
@@ -2551,7 +2551,7 @@ Fliplet.Widget.generateInterface({
           // Process the message with current valid images
           // Note: We're not passing the potentially stale pastedImages parameter
           // processUserMessage will get the current state directly
-          processUserMessage(userMessage, currentImages);
+          processUserMessage(userMessage, currentImages, AppState);
         }
 
         /**
@@ -2563,7 +2563,7 @@ Fliplet.Widget.generateInterface({
          * @param {string} userMessage - User's message
          * @param {Array} pastedImages - Array of pasted images
          */
-        async function processUserMessage(userMessage, pastedImages = []) {
+        async function processUserMessage(userMessage, pastedImages = [], AppState) {
           console.assert(
             typeof userMessage === "string",
             "userMessage must be a string"
@@ -2750,7 +2750,7 @@ Fliplet.Widget.generateInterface({
             }
 
             // Clear pasted images after successful processing (preserve chat history)
-            clearPastedImages(true, DOM);
+            clearPastedImages(true, DOM, AppState);
 
             console.log(
               `✅ [Main] Request #${AppState.requestCount} completed successfully`
@@ -2774,7 +2774,7 @@ Fliplet.Widget.generateInterface({
             addMessageToChat(errorMessage, "ai");
 
             // Clear pasted images even on error to prevent stale state (preserve chat history)
-            clearPastedImages(true, DOM);
+            clearPastedImages(true, DOM, AppState);
           }
         }
 
@@ -4249,7 +4249,7 @@ Fliplet.Widget.generateInterface({
           clearChatHistoryFromStorage();
 
           // Clear pasted images
-          clearPastedImages(false, DOM);
+          clearPastedImages(false, DOM, AppState);
 
           // Clear displays
           DOM.chatMessages.innerHTML =

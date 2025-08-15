@@ -7,7 +7,7 @@ function setupImagePasteHandling(DOM) {
   DOM.userInput.addEventListener("paste", handleImagePaste);
 }
 
-function setupImageDragAndDropHandling(DOM) {
+function setupImageDragAndDropHandling(DOM, AppState) {
   // Add drag and drop event listeners to the input field and uploaded-images area
   const dropZones = [DOM.userInput, DOM.uploadedImages];
 
@@ -64,7 +64,7 @@ function setupImageDragAndDropHandling(DOM) {
       // Only process drop if we're NOT dropping on the input field
       // This prevents duplicate processing when dropping on input
       if (e.target !== DOM.userInput && !DOM.userInput.contains(e.target)) {
-        handleImageDrop(e, DOM);
+        handleImageDrop(e, DOM, AppState);
       }
     });
   }
@@ -108,7 +108,7 @@ function handleDragLeave(event) {
  * Handle image drop events for drag and drop
  * @param {DragEvent} event - The drop event
  */
-function handleImageDrop(event, DOM) {
+function handleImageDrop(event, DOM, AppState) {
   event.preventDefault();
 
   // Generate a unique event ID to prevent duplicate processing
@@ -156,7 +156,7 @@ function handleImageDrop(event, DOM) {
 
     // Process each dropped image file
     validImageFiles.forEach((file) => {
-      processPastedImage(file, DOM); // Reuse existing paste processing logic
+      processPastedImage(file, DOM, AppState); // Reuse existing paste processing logic
     });
   }
 
@@ -352,7 +352,7 @@ function handleImagePaste(event) {
         !processedFiles.has(file.name + file.size + file.lastModified)
       ) {
         processedFiles.add(file.name + file.size + file.lastModified);
-        processPastedImage(file, DOM);
+        processPastedImage(file, DOM, AppState);
       }
     }
   }
@@ -370,7 +370,7 @@ function handleImagePaste(event) {
  *
  * @param {File} file - The image file to process
  */
-async function processPastedImage(file, DOM) {
+async function processPastedImage(file, DOM, AppState) {
   // Validate file type
   if (!file.type.startsWith("image/")) {
     console.log("⚠️ Non-image file ignored:", file.type);
@@ -653,7 +653,7 @@ function updateImageDisplay(imageData, container = null) {
  * the AI doesn't receive stale image data
  * @param {string} imageId - The ID of the image to remove
  */
-async function removePastedImage(imageId, DOM) {
+async function removePastedImage(imageId, DOM, AppState) {
   console.log(
     "🔍 Starting image removal process for ID:",
     imageId,
@@ -1071,7 +1071,7 @@ function updateChatInterface(DOM) {
  * This function handles the async operation and provides user feedback
  * @param {string} imageId - The ID of the image to remove
  */
-async function handleImageRemove(imageId, DOM) {
+async function handleImageRemove(imageId, DOM, AppState) {
   try {
     // Show loading state on the button
     const button = document.querySelector(
@@ -1083,7 +1083,7 @@ async function handleImageRemove(imageId, DOM) {
       button.disabled = true;
 
       // Remove the image
-      await removePastedImage(imageId, DOM);
+      await removePastedImage(imageId, DOM, AppState);
 
       // Button will be removed with the container, so no need to restore
     }
@@ -1119,7 +1119,7 @@ function formatFileSize(bytes) {
  * Clear all pasted images from local state and chat history
  * Note: Images are kept in Fliplet Media for future reference
  */
-function clearPastedImages(skipChatHistoryCleanup = false, DOM) {
+function clearPastedImages(skipChatHistoryCleanup = false, DOM, AppState) {
   // Note: We're keeping all images in Fliplet Media for future reference
   // Only clearing them from local state and chat history
   console.log(

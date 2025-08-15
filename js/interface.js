@@ -4516,7 +4516,6 @@ Fliplet.Widget.generateInterface({
       label: "Chat History",
       default: "",
       rows: 12,
-      type: "textarea",
     },
     {
       type: "hidden",

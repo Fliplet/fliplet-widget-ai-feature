@@ -599,16 +599,16 @@ function updateImageDisplay(imageData, container = null) {
     if (!container) return;
   }
 
-  let statusHtml = "";
+//   let statusHtml = "";
   let imageHtml = "";
 
   switch (imageData.status) {
     case "uploading":
-      statusHtml = '<div class="upload-status uploading">📤 Uploading...</div>';
+    //   statusHtml = '<div class="upload-status uploading">📤 Uploading...</div>';
       imageHtml = '<div class="image-placeholder">⏳</div>';
       break;
     case "uploaded":
-      statusHtml = '<div class="upload-status uploaded">✅ Uploaded</div>';
+    //   statusHtml = '<div class="upload-status uploaded">✅ Uploaded</div>';
       if (imageData.dataUrl) {
         imageHtml = `<img src="${imageData.dataUrl}" alt="${imageData.name}" class="pasted-image" />`;
       } else {
@@ -616,11 +616,11 @@ function updateImageDisplay(imageData, container = null) {
       }
       break;
     case "failed":
-      statusHtml = '<div class="upload-status failed">❌ Upload Failed</div>';
+    //   statusHtml = '<div class="upload-status failed">❌ Upload Failed</div>';
       imageHtml = '<div class="image-placeholder">⚠️</div>';
       break;
     default:
-      statusHtml = '<div class="upload-status">⏳ Processing...</div>';
+    //   statusHtml = '<div class="upload-status">⏳ Processing...</div>';
       imageHtml = '<div class="image-placeholder">⏳</div>';
   }
 
@@ -644,14 +644,14 @@ function updateImageDisplay(imageData, container = null) {
       <span class="image-size">${formatFileSize(imageData.size)}</span>
     `;
 
-  const statusElement = document.createElement("div");
-  statusElement.innerHTML = statusHtml;
+//   const statusElement = document.createElement("div");
+//   statusElement.innerHTML = statusHtml;
 
   // Append all elements
   container.appendChild(imageElement.firstElementChild || imageElement);
   container.appendChild(removeButton);
   container.appendChild(imageInfo);
-  container.appendChild(statusElement.firstElementChild || statusElement);
+//   container.appendChild(statusElement.firstElementChild || statusElement);
 }
 
 /**

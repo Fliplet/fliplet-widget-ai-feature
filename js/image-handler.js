@@ -554,9 +554,9 @@ async function processPastedImage(file, DOM, AppState) {
     }
 
     // Show error to user
-    Fliplet.UI.Toast.error(
-      "Failed to upload image to Fliplet Media. Please try again."
-    );
+    // Fliplet.UI.Toast.error(
+    //   "Failed to upload image to Fliplet Media. Please try again."
+    // );
   }
 }
 
@@ -803,7 +803,7 @@ async function removePastedImage(imageId, DOM, AppState) {
 
   // Clean up chat history messages that reference this removed image
   console.log("🧹 About to clean up chat history for image ID:", imageId);
-  cleanupChatHistoryImages(imageId, DOM);
+  cleanupChatHistoryImages(imageId, DOM, AppState);
 
   // Clean up orphaned file signatures to prevent "File already processed" issues
   cleanupOrphanedFileSignatures(AppState);
@@ -1103,7 +1103,7 @@ async function handleImageRemove(imageId, DOM, AppState) {
     }
   } catch (error) {
     console.error("❌ Error removing image:", error);
-    Fliplet.UI.Toast.error("Failed to remove image. Please try again.");
+    // Fliplet.UI.Toast.error("Failed to remove image. Please try again.");
 
     // Restore button state if there was an error
     const button = document.querySelector(

@@ -4702,6 +4702,8 @@ Fliplet.Widget.generateInterface({
 
           // Check if resize handle is already present
           if (DOM.chatMessages.contains(window.chatResizeHandle)) {
+            // Handle is present, but make sure position is updated
+            updateResizeHandlePosition();
             return;
           }
 
@@ -4712,6 +4714,9 @@ Fliplet.Widget.generateInterface({
 
           // Add the resize handle
           DOM.chatMessages.appendChild(window.chatResizeHandle);
+
+          // Update position after adding
+          updateResizeHandlePosition();
 
           console.log("✅ Resize handle added to chat messages");
         }

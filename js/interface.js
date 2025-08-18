@@ -2613,7 +2613,7 @@ Fliplet.Widget.generateInterface({
           loadingDiv.innerHTML =
             '<div class="loading"></div> 🧠 AI is analyzing your request...';
           DOM.chatMessages.appendChild(loadingDiv);
-          scrollToBottom();
+          // scrollToBottom();
 
           AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
           AppState.css = Fliplet.Helper.field("css").get() || "";
@@ -4303,7 +4303,7 @@ Fliplet.Widget.generateInterface({
                   DOM.chatMessages.appendChild(window.chatResizeHandle);
                 }
 
-                scrollToBottom();
+                // scrollToBottom();
                 return true;
               }
             } else {
@@ -4397,7 +4397,7 @@ Fliplet.Widget.generateInterface({
           // Ensure resize handle is present after adding message
           ensureResizeHandlePresent();
 
-          scrollToBottom();
+          // scrollToBottom();
 
           // Add to history (unless skipStorage is true)
           if (!skipStorage) {
@@ -4463,9 +4463,9 @@ Fliplet.Widget.generateInterface({
         /**
          * Scroll chat to bottom
          */
-        function scrollToBottom() {
-          DOM.chatMessages.scrollTop = DOM.chatMessages.scrollHeight;
-        }
+        // function scrollToBottom() {
+        //   DOM.chatMessages.scrollTop = DOM.chatMessages.scrollHeight;
+        // }
 
         /**
          * Escape HTML to prevent XSS

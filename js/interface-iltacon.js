@@ -4695,6 +4695,8 @@ Make sure each code block is complete and functional.`;
                 // Ensure resize handle is present after loading chat history
                 makeChatMessagesResizable();
                 
+                // Reset resize handle position after chat is loaded
+                updateResizeHandlePosition();
 
                 
                 return true;
@@ -4816,6 +4818,29 @@ Make sure each code block is complete and functional.`;
 
           // Reset
           updateCode();
+        }
+
+        /**
+         * Update resize handle position to track chat-input height
+         */
+        function updateResizeHandlePosition() {
+          const resizeHandle = document.querySelector('.resize-handle');
+          if (!resizeHandle) return;
+
+          const chatInput = document.querySelector('.chat-input');
+          if (!chatInput) return;
+
+          // Calculate the bottom position based on chat-input height
+          const chatInputHeight = chatInput.offsetHeight;
+
+          // Position the resize handle above the chat-input
+          const handleOffset = 10; // 10px gap above chat-input
+          resizeHandle.style.bottom = chatInputHeight + handleOffset + 'px';
+
+          console.log('🔧 Resize handle repositioned:', {
+            chatInputHeight: chatInputHeight,
+            newBottom: resizeHandle.style.bottom,
+          });
         }
 
         /**

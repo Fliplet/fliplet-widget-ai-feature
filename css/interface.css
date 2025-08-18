@@ -1,7 +1,7 @@
 /* Resize handle styles */
 .resize-handle {
   position: absolute !important;
-  top: -25px !important;
+  top: -20px !important;
   right: 5px !important;
   width: 20px !important;
   height: 20px !important;

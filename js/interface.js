@@ -2355,7 +2355,6 @@ Fliplet.Widget.generateInterface({
             }
           }, 100);
 
-          debugger
           await populateCurrentPageContent();
 
           AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get();

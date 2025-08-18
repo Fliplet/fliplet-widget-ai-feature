@@ -226,7 +226,6 @@ Fliplet.Widget.generateInterface({
 
         ("use strict");
 
-
         const debugMode = false;
         /**
          * CONFIGURATION - Modify these settings as needed
@@ -248,7 +247,7 @@ Fliplet.Widget.generateInterface({
          */
         const AppState = {
           /** @type {string} Unique identifier for this AppState instance */
-          instanceId: Date.now() + '_' + Math.random(),
+          instanceId: Date.now() + "_" + Math.random(),
           /** @type {string} Current HTML code */
           currentHTML: "",
           /** @type {string} Current CSS code */
@@ -2329,7 +2328,7 @@ Fliplet.Widget.generateInterface({
         /**
          * Initialize the application
          */
-        function initializeApp() {
+        async function initializeApp() {
           console.log("🚀 Initializing AI Coding Tool Test App");
 
           // Get DOM element references
@@ -2342,13 +2341,21 @@ Fliplet.Widget.generateInterface({
           // Initialize textarea styling and behavior
           setTimeout(() => {
             if (DOM.userInput) {
-              console.log('🔧 Initializing textarea...');
+              console.log("🔧 Initializing textarea...");
               initializeTextarea();
-              console.log('🔧 Textarea initialized with height:', DOM.userInput.style.height);
+              console.log(
+                "🔧 Textarea initialized with height:",
+                DOM.userInput.style.height
+              );
             } else {
-              console.error('❌ Textarea element not found during initialization');
+              console.error(
+                "❌ Textarea element not found during initialization"
+              );
             }
           }, 100);
+
+          debugger
+          await populateCurrentPageContent();
 
           AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get();
           AppState.css = Fliplet.Helper.field("css").get();
@@ -2382,14 +2389,16 @@ Fliplet.Widget.generateInterface({
 
           // Ensure resize handle is present after initialization
           setTimeout(ensureResizeHandlePresent, 100);
-          
+
           // Set up periodic check to ensure resize handle is always present
           setInterval(ensureResizeHandlePresent, 2000);
-          
+
           // Set up periodic cleanup of old file signatures and orphaned signatures (every 10 minutes)
           setInterval(() => {
             if (AppState.processedFileSignatures.size > 100) {
-              console.log('🧹 Cleaning up old file signatures to prevent memory bloat');
+              console.log(
+                "🧹 Cleaning up old file signatures to prevent memory bloat"
+              );
               AppState.processedFileSignatures.clear();
             } else {
               // Clean up orphaned signatures even if we're under the limit
@@ -2398,7 +2407,7 @@ Fliplet.Widget.generateInterface({
           }, 10 * 60 * 1000); // 10 minutes
 
           // Handle window resize to maintain textarea sizing
-          window.addEventListener('resize', function() {
+          window.addEventListener("resize", function () {
             if (DOM.userInput) {
               autoResizeTextarea(DOM.userInput);
             }
@@ -2430,21 +2439,27 @@ Fliplet.Widget.generateInterface({
           });
 
           // Auto-resize textarea as user types (jQuery)
-          $(DOM.userInput).on("input", function() {
-            console.log('🔧 Input event triggered (jQuery), current value length:', this.value.length);
+          $(DOM.userInput).on("input", function () {
+            console.log(
+              "🔧 Input event triggered (jQuery), current value length:",
+              this.value.length
+            );
             autoResizeTextarea(this);
           });
-          
+
           // Auto-resize textarea as user types (native event as backup)
-          DOM.userInput.addEventListener("input", function() {
-            console.log('🔧 Input event triggered (native), current value length:', this.value.length);
+          DOM.userInput.addEventListener("input", function () {
+            console.log(
+              "🔧 Input event triggered (native), current value length:",
+              this.value.length
+            );
             autoResizeTextarea(this);
           });
-          
+
           // Handle keydown for immediate response to deletions
-          DOM.userInput.addEventListener("keydown", function(event) {
+          DOM.userInput.addEventListener("keydown", function (event) {
             // Handle backspace and delete keys immediately
-            if (event.key === 'Backspace' || event.key === 'Delete') {
+            if (event.key === "Backspace" || event.key === "Delete") {
               // Use setTimeout to ensure the deletion happens first
               setTimeout(() => {
                 autoResizeTextarea(this);
@@ -2453,12 +2468,12 @@ Fliplet.Widget.generateInterface({
           });
 
           // Ensure proper sizing on focus
-          $(DOM.userInput).on("focus", function() {
+          $(DOM.userInput).on("focus", function () {
             autoResizeTextarea(this);
           });
 
           // Handle select all and other text selection events
-          $(DOM.userInput).on("select", function() {
+          $(DOM.userInput).on("select", function () {
             autoResizeTextarea(this);
           });
 
@@ -2466,45 +2481,54 @@ Fliplet.Widget.generateInterface({
           setupImagePasteHandling(DOM, AppState);
 
           // Handle text pasting to auto-resize
-          $(DOM.userInput).on("paste", function() {
+          $(DOM.userInput).on("paste", function () {
             // Use setTimeout to ensure the paste content is processed first
             setTimeout(() => {
               autoResizeTextarea(this);
             }, 10);
           });
-          
+
           // Handle all text changes including programmatic changes
-          DOM.userInput.addEventListener("change", function() {
-            console.log('🔧 Change event triggered, current value length:', this.value.length);
+          DOM.userInput.addEventListener("change", function () {
+            console.log(
+              "🔧 Change event triggered, current value length:",
+              this.value.length
+            );
             autoResizeTextarea(this);
           });
-          
+
           // Handle composition events for IME input (useful for international keyboards)
-          DOM.userInput.addEventListener("compositionend", function() {
-            console.log('🔧 Composition end event triggered, current value length:', this.value.length);
+          DOM.userInput.addEventListener("compositionend", function () {
+            console.log(
+              "🔧 Composition end event triggered, current value length:",
+              this.value.length
+            );
             autoResizeTextarea(this);
           });
-          
+
           // Handle image drag and drop
           setupImageDragAndDropHandling(DOM, AppState);
 
           // Setup event delegation for remove image buttons
-          $(document).on('click', '.remove-image-btn', function(event) {
+          $(document).on("click", ".remove-image-btn", function (event) {
             event.preventDefault();
             const imageId = this.dataset.imageId;
-            console.log('🗑️ Remove button clicked!');
-            console.log('🗑️ Button element:', this);
-            console.log('🗑️ Button dataset:', this.dataset);
-            console.log('🗑️ Extracted imageId:', imageId);
-            console.log('🗑️ Type of imageId:', typeof imageId);
-            
+            console.log("🗑️ Remove button clicked!");
+            console.log("🗑️ Button element:", this);
+            console.log("🗑️ Button dataset:", this.dataset);
+            console.log("🗑️ Extracted imageId:", imageId);
+            console.log("🗑️ Type of imageId:", typeof imageId);
+
             if (imageId) {
-              console.log('🗑️ Remove button clicked for image ID:', imageId);
+              console.log("🗑️ Remove button clicked for image ID:", imageId);
               handleImageRemove(imageId, DOM, AppState);
             } else {
-              console.error('❌ No image ID found in remove button dataset');
-              console.error('❌ Button HTML:', this.outerHTML);
-              console.error('❌ Parent container:', this.closest('.pasted-image-container'));
+              console.error("❌ No image ID found in remove button dataset");
+              console.error("❌ Button HTML:", this.outerHTML);
+              console.error(
+                "❌ Parent container:",
+                this.closest(".pasted-image-container")
+              );
             }
           });
 
@@ -2520,14 +2544,15 @@ Fliplet.Widget.generateInterface({
          */
         function handleSendMessage() {
           const userMessage = DOM.userInput.value.trim();
-          
+
           // IMPORTANT: Always get the current state of images at the moment of sending
           // This ensures we don't send stale image data if images were removed
-          const currentImages = AppState.pastedImages.filter(img => 
-            img && 
-            img.status === 'uploaded' && 
-            img.flipletUrl && 
-            img.flipletFileId
+          const currentImages = AppState.pastedImages.filter(
+            (img) =>
+              img &&
+              img.status === "uploaded" &&
+              img.flipletUrl &&
+              img.flipletFileId
           );
 
           // Input validation
@@ -2540,7 +2565,11 @@ Fliplet.Widget.generateInterface({
           console.log("🖼️ Current valid images:", currentImages.length);
 
           // Add user message to chat (show original message + image count if applicable)
-          const displayMessage = userMessage || (currentImages.length > 0 ? `Analyzing ${currentImages.length} image(s)` : '');
+          const displayMessage =
+            userMessage ||
+            (currentImages.length > 0
+              ? `Analyzing ${currentImages.length} image(s)`
+              : "");
           if (displayMessage) {
             addMessageToChat(displayMessage, "user", currentImages);
           }
@@ -2563,7 +2592,11 @@ Fliplet.Widget.generateInterface({
          * @param {string} userMessage - User's message
          * @param {Array} pastedImages - Array of pasted images
          */
-        async function processUserMessage(userMessage, pastedImages = [], AppState) {
+        async function processUserMessage(
+          userMessage,
+          pastedImages = [],
+          AppState
+        ) {
           console.assert(
             typeof userMessage === "string",
             "userMessage must be a string"
@@ -2623,45 +2656,83 @@ Fliplet.Widget.generateInterface({
             // Step 2: Call AI with optimized context
             // IMPORTANT: Always use AppState.pastedImages as the source of truth
             // The passed pastedImages parameter might be stale if images were cleared
-            const currentImages = AppState.pastedImages.filter(img => 
-              img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+            const currentImages = AppState.pastedImages.filter(
+              (img) =>
+                img &&
+                img.status === "uploaded" &&
+                img.flipletUrl &&
+                img.flipletFileId
             );
-            
+
             console.log("📸 [Main] Current images for AI processing:", {
               passedParameterCount: pastedImages.length,
               currentStateCount: currentImages.length,
-              passedImages: pastedImages.map(img => ({ name: img.name, id: img.id, status: img.status })),
-              currentImages: currentImages.map(img => ({ name: img.name, id: img.id, status: img.status, flipletUrl: !!img.flipletUrl, flipletFileId: !!img.flipletFileId }))
+              passedImages: pastedImages.map((img) => ({
+                name: img.name,
+                id: img.id,
+                status: img.status,
+              })),
+              currentImages: currentImages.map((img) => ({
+                name: img.name,
+                id: img.id,
+                status: img.status,
+                flipletUrl: !!img.flipletUrl,
+                flipletFileId: !!img.flipletFileId,
+              })),
             });
-            
+
             // Additional safety check: log any discrepancies
             if (pastedImages.length !== currentImages.length) {
               console.warn("⚠️ [Main] Image count mismatch detected:", {
-                passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
-                currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
+                passedImages: pastedImages.map((img) => ({
+                  id: img.id,
+                  name: img.name,
+                  status: img.status,
+                })),
+                currentImages: currentImages.map((img) => ({
+                  id: img.id,
+                  name: img.name,
+                  status: img.status,
+                })),
               });
             }
-            
+
             // Final validation: ensure we're sending the correct images
             console.log("🔍 [Main] Final image validation before AI call:", {
               currentImagesCount: currentImages.length,
-              currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
+              currentImages: currentImages.map((img) => ({
+                id: img.id,
+                name: img.name,
+                status: img.status,
+              })),
               appStateImagesCount: AppState.pastedImages.length,
-              appStateImages: AppState.pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
+              appStateImages: AppState.pastedImages.map((img) => ({
+                id: img.id,
+                name: img.name,
+                status: img.status,
+              })),
             });
-            
+
             // CRITICAL: If no valid images remain, log this clearly
             if (currentImages.length === 0) {
-              console.log("ℹ️ [Main] No valid images remain - sending text-only request to AI");
+              console.log(
+                "ℹ️ [Main] No valid images remain - sending text-only request to AI"
+              );
             }
 
             // Note: Images are now handled within the AI call function using chat history
             // This ensures all historical images are preserved for context
-            console.log('🔍 [Main] Sending request to AI with current images:', {
-              currentImagesCount: currentImages.length,
-              currentImages: currentImages.map(img => ({ id: img.id, name: img.name })),
-              note: 'Historical images will be automatically included from chat history'
-            });
+            console.log(
+              "🔍 [Main] Sending request to AI with current images:",
+              {
+                currentImagesCount: currentImages.length,
+                currentImages: currentImages.map((img) => ({
+                  id: img.id,
+                  name: img.name,
+                })),
+                note: "Historical images will be automatically included from chat history",
+              }
+            );
 
             const aiResponse = await callOpenAIWithNewArchitecture(
               userMessage,
@@ -2711,7 +2782,7 @@ Fliplet.Widget.generateInterface({
               css: AppState.currentCSS,
               javascript: AppState.currentJS,
               layoutHTML: AppState.currentHTML,
-              images: AppState.pastedImages.map(el => el.flipletUrl),
+              images: AppState.pastedImages.map((el) => el.flipletUrl),
             });
 
             // Step 6: Update change history
@@ -2784,64 +2855,94 @@ Fliplet.Widget.generateInterface({
          * @param {Object} context - Built context
          * @returns {string} AI response
          */
-        async function callOpenAIWithNewArchitecture(userMessage, context, pastedImages = []) {
+        async function callOpenAIWithNewArchitecture(
+          userMessage,
+          context,
+          pastedImages = []
+        ) {
           console.log("🌐 [AI] Making API call with optimized context...");
 
           // CRITICAL: ALWAYS use AppState.pastedImages as the source of truth for current images
           // The passed pastedImages parameter might be stale if images were removed
           // This ensures we never send removed images to the AI
-          const currentImages = AppState.pastedImages.filter(img => 
-            img && 
-            img.status === 'uploaded' && 
-            img.flipletUrl && 
-            img.flipletFileId
+          const currentImages = AppState.pastedImages.filter(
+            (img) =>
+              img &&
+              img.status === "uploaded" &&
+              img.flipletUrl &&
+              img.flipletFileId
           );
-          
+
           // IMMEDIATE SAFETY CHECK: If passed images don't match current state, log warning
           if (pastedImages.length !== currentImages.length) {
-            console.warn('⚠️ [AI] WARNING: Passed images count (', pastedImages.length, 
-              ') does not match current state count (', currentImages.length, ')');
-            console.warn('⚠️ [AI] This indicates images were removed after the initial filtering');
-            console.warn('⚠️ [AI] Using current state images instead of passed parameter');
+            console.warn(
+              "⚠️ [AI] WARNING: Passed images count (",
+              pastedImages.length,
+              ") does not match current state count (",
+              currentImages.length,
+              ")"
+            );
+            console.warn(
+              "⚠️ [AI] This indicates images were removed after the initial filtering"
+            );
+            console.warn(
+              "⚠️ [AI] Using current state images instead of passed parameter"
+            );
           }
 
-          console.log("🔍 [AI] Image validation in callOpenAIWithNewArchitecture:", {
-            passedParameterCount: pastedImages.length,
-            currentStateCount: currentImages.length,
-            passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
-            currentImages: currentImages.map(img => ({ id: img.id, name: img.name, status: img.status }))
-          });
+          console.log(
+            "🔍 [AI] Image validation in callOpenAIWithNewArchitecture:",
+            {
+              passedParameterCount: pastedImages.length,
+              currentStateCount: currentImages.length,
+              passedImages: pastedImages.map((img) => ({
+                id: img.id,
+                name: img.name,
+                status: img.status,
+              })),
+              currentImages: currentImages.map((img) => ({
+                id: img.id,
+                name: img.name,
+                status: img.status,
+              })),
+            }
+          );
 
           // CRITICAL: Get the most current images right before building the system prompt
-          const finalCurrentImages = AppState.pastedImages.filter(img => 
-            img && 
-            img.status === 'uploaded' && 
-            img.flipletUrl && 
-            img.flipletFileId
+          const finalCurrentImages = AppState.pastedImages.filter(
+            (img) =>
+              img &&
+              img.status === "uploaded" &&
+              img.flipletUrl &&
+              img.flipletFileId
           );
-          
+
           // Log current image state before building system prompt
-          console.log('🔍 [AI] Current image state before AI call:', {
+          console.log("🔍 [AI] Current image state before AI call:", {
             appStateImagesCount: AppState.pastedImages.length,
-            appStateImages: AppState.pastedImages.map(img => ({ 
-              id: img.id, 
-              name: img.name, 
+            appStateImages: AppState.pastedImages.map((img) => ({
+              id: img.id,
+              name: img.name,
               status: img.status,
               flipletUrl: !!img.flipletUrl,
-              flipletFileId: !!img.flipletFileId
+              flipletFileId: !!img.flipletFileId,
             })),
             filteredImagesCount: finalCurrentImages.length,
-            filteredImages: finalCurrentImages.map(img => ({ 
-              id: img.id, 
-              name: img.name, 
+            filteredImages: finalCurrentImages.map((img) => ({
+              id: img.id,
+              name: img.name,
               status: img.status,
               flipletUrl: !!img.flipletUrl,
-              flipletFileId: !!img.flipletFileId
-            }))
+              flipletFileId: !!img.flipletFileId,
+            })),
           });
-          
+
           // CRITICAL: Use the most current images for the system prompt
-          const systemPrompt = buildSystemPromptWithContext(context, finalCurrentImages, AppState);
+          const systemPrompt = buildSystemPromptWithContext(
+            context,
+            finalCurrentImages,
+            AppState
+          );
 
           // Build complete conversation history
           const messages = [{ role: "system", content: systemPrompt }];
@@ -2852,9 +2953,9 @@ Fliplet.Widget.generateInterface({
           console.log("📚 [AI] Processing conversation history:", {
             totalHistory: AppState.chatHistory.length,
             recentHistoryCount: recentHistory.length,
-            currentUserMessage: userMessage
+            currentUserMessage: userMessage,
           });
-          
+
           // Process each history item and properly map images
           recentHistory.forEach((historyItem) => {
             if (historyItem.message && historyItem.type) {
@@ -2863,178 +2964,250 @@ Fliplet.Widget.generateInterface({
                 historyItem.message === userMessage &&
                 historyItem.type === "user"
               ) {
-                console.log("⏭️ [AI] Skipping duplicate current user message in history");
+                console.log(
+                  "⏭️ [AI] Skipping duplicate current user message in history"
+                );
                 return;
               }
-              
+
               // Convert our internal format to OpenAI format
               const role = historyItem.type === "user" ? "user" : "assistant";
-              
-              if (role === "user" && historyItem.images && historyItem.images.length > 0) {
+
+              if (
+                role === "user" &&
+                historyItem.images &&
+                historyItem.images.length > 0
+              ) {
                 // User message with images - use OpenAI's image format
-                const content = [
-                  { type: "text", text: historyItem.message }
-                ];
-                
+                const content = [{ type: "text", text: historyItem.message }];
+
                 // Add all images from this history item
                 historyItem.images.forEach((img) => {
                   if (img.flipletUrl) {
                     content.push({
                       type: "image_url",
-                      image_url: { url: img.flipletUrl }
+                      image_url: { url: img.flipletUrl },
                     });
                   } else {
-                    console.warn('⚠️ [AI] Historical image missing flipletUrl, skipping:', { id: img.id, name: img.name });
+                    console.warn(
+                      "⚠️ [AI] Historical image missing flipletUrl, skipping:",
+                      { id: img.id, name: img.name }
+                    );
                   }
                 });
-                
+
                 messages.push({
                   role: role,
-                  content: content
+                  content: content,
                 });
-                
-                console.log(`📝 [AI] Added user history message with ${historyItem.images.length} images: ${historyItem.message.substring(0, 50)}...`);
+
+                console.log(
+                  `📝 [AI] Added user history message with ${
+                    historyItem.images.length
+                  } images: ${historyItem.message.substring(0, 50)}...`
+                );
               } else {
                 // Assistant message or user message without images - use text format
                 messages.push({
                   role: role,
                   content: historyItem.message,
                 });
-                console.log(`📝 [AI] Added ${role} history message: ${historyItem.message.substring(0, 50)}...`);
+                console.log(
+                  `📝 [AI] Added ${role} history message: ${historyItem.message.substring(
+                    0,
+                    50
+                  )}...`
+                );
               }
             }
           });
 
           // Add current user message - always check for images (current or historical)
-          const content = [
-            { type: "text", text: userMessage }
-          ];
-          
+          const content = [{ type: "text", text: userMessage }];
+
           // First, add any current images
           if (finalCurrentImages && finalCurrentImages.length > 0) {
             finalCurrentImages.forEach((img) => {
               if (img.flipletUrl) {
                 content.push({
                   type: "image_url",
-                  image_url: { url: img.flipletUrl }
+                  image_url: { url: img.flipletUrl },
                 });
               } else {
-                console.warn('⚠️ [AI] Current image missing flipletUrl, skipping:', { id: img.id, name: img.name });
+                console.warn(
+                  "⚠️ [AI] Current image missing flipletUrl, skipping:",
+                  { id: img.id, name: img.name }
+                );
               }
             });
-            console.log("📤 [AI] Added current images to user message:", finalCurrentImages.length);
+            console.log(
+              "📤 [AI] Added current images to user message:",
+              finalCurrentImages.length
+            );
           }
-          
+
           // Then, check if we need to add images from chat history for context
           // This ensures that if the current message has no new images, we still include
           // the images from previous user messages for complete context
           const allHistoricalImages = [];
           recentHistory.forEach((historyItem) => {
-            if (historyItem.type === "user" && historyItem.images && historyItem.images.length > 0) {
+            if (
+              historyItem.type === "user" &&
+              historyItem.images &&
+              historyItem.images.length > 0
+            ) {
               allHistoricalImages.push(...historyItem.images);
-              console.log(`🖼️ [AI] Found ${historyItem.images.length} images in historical user message: "${historyItem.message.substring(0, 30)}..."`);
+              console.log(
+                `🖼️ [AI] Found ${
+                  historyItem.images.length
+                } images in historical user message: "${historyItem.message.substring(
+                  0,
+                  30
+                )}..."`
+              );
             }
           });
-          
+
           // Remove duplicates and add historical images that aren't already included
-          const uniqueHistoricalImages = allHistoricalImages.filter((img, index, self) => 
-            index === self.findIndex(t => String(t.id) === String(img.id))
+          const uniqueHistoricalImages = allHistoricalImages.filter(
+            (img, index, self) =>
+              index === self.findIndex((t) => String(t.id) === String(img.id))
           );
-          
-          console.log('🔍 [AI] Historical image analysis:', {
+
+          console.log("🔍 [AI] Historical image analysis:", {
             totalHistoricalImages: allHistoricalImages.length,
             uniqueHistoricalImages: uniqueHistoricalImages.length,
-            historicalImages: uniqueHistoricalImages.map(img => ({ id: img.id, name: img.name, flipletUrl: !!img.flipletUrl }))
+            historicalImages: uniqueHistoricalImages.map((img) => ({
+              id: img.id,
+              name: img.name,
+              flipletUrl: !!img.flipletUrl,
+            })),
           });
-          
+
           // Add historical images that aren't already in current images
           let addedHistoricalImages = 0;
           uniqueHistoricalImages.forEach((img) => {
-            const alreadyIncluded = finalCurrentImages && finalCurrentImages.some(currentImg => 
-              String(currentImg.id) === String(img.id)
-            );
-            
+            const alreadyIncluded =
+              finalCurrentImages &&
+              finalCurrentImages.some(
+                (currentImg) => String(currentImg.id) === String(img.id)
+              );
+
             if (!alreadyIncluded && img.flipletUrl) {
               content.push({
                 type: "image_url",
-                image_url: { url: img.flipletUrl }
+                image_url: { url: img.flipletUrl },
               });
               addedHistoricalImages++;
-              console.log("📤 [AI] Added historical image for context:", { id: img.id, name: img.name });
+              console.log("📤 [AI] Added historical image for context:", {
+                id: img.id,
+                name: img.name,
+              });
             } else if (alreadyIncluded) {
-              console.log("📤 [AI] Historical image already included via current images:", { id: img.id, name: img.name });
+              console.log(
+                "📤 [AI] Historical image already included via current images:",
+                { id: img.id, name: img.name }
+              );
             } else if (!img.flipletUrl) {
-              console.warn("⚠️ [AI] Historical image missing flipletUrl:", { id: img.id, name: img.name });
+              console.warn("⚠️ [AI] Historical image missing flipletUrl:", {
+                id: img.id,
+                name: img.name,
+              });
             }
           });
-          
-          console.log(`📤 [AI] Added ${addedHistoricalImages} historical images for context`);
-          
+
+          console.log(
+            `📤 [AI] Added ${addedHistoricalImages} historical images for context`
+          );
+
           // Always send the user message with content array (even if no images)
           messages.push({ role: "user", content: content });
-          
-          const totalImagesInMessage = content.filter(c => c.type === 'image_url').length;
+
+          const totalImagesInMessage = content.filter(
+            (c) => c.type === "image_url"
+          ).length;
           console.log("📤 [AI] Sending current user message:", {
             textLength: userMessage.length,
-            currentImageCount: finalCurrentImages ? finalCurrentImages.length : 0,
-            historicalImageCount: totalImagesInMessage - (finalCurrentImages ? finalCurrentImages.length : 0),
+            currentImageCount: finalCurrentImages
+              ? finalCurrentImages.length
+              : 0,
+            historicalImageCount:
+              totalImagesInMessage -
+              (finalCurrentImages ? finalCurrentImages.length : 0),
             totalImageCount: totalImagesInMessage,
-            hasImages: totalImagesInMessage > 0
+            hasImages: totalImagesInMessage > 0,
           });
-          
+
           // Log the final content structure
           console.log("📤 [AI] Current user message content structure:", {
             contentLength: content.length,
-            textContent: content.find(c => c.type === 'text')?.text,
-            imageContents: content.filter(c => c.type === 'image_url').map(img => ({
-              url: img.image_url.url,
-              name: img.image_url.url.split('/').pop() // Extract filename from URL
-            }))
+            textContent: content.find((c) => c.type === "text")?.text,
+            imageContents: content
+              .filter((c) => c.type === "image_url")
+              .map((img) => ({
+                url: img.image_url.url,
+                name: img.image_url.url.split("/").pop(), // Extract filename from URL
+              })),
           });
 
           console.log("📤 [AI] Request messages with history:", messages);
           console.log("📤 [AI] Final message count:", messages.length);
-          
+
           // Summary of what we're sending
-          const userMessagesWithImages = messages.filter(msg => 
-            msg.role === 'user' && Array.isArray(msg.content) && msg.content.some(c => c.type === 'image_url')
+          const userMessagesWithImages = messages.filter(
+            (msg) =>
+              msg.role === "user" &&
+              Array.isArray(msg.content) &&
+              msg.content.some((c) => c.type === "image_url")
           );
-          const userMessagesTextOnly = messages.filter(msg => 
-            msg.role === 'user' && typeof msg.content === 'string'
+          const userMessagesTextOnly = messages.filter(
+            (msg) => msg.role === "user" && typeof msg.content === "string"
           );
-          
+
           console.log("📊 [AI] Message Summary:", {
             totalMessages: messages.length,
-            systemMessages: messages.filter(msg => msg.role === 'system').length,
+            systemMessages: messages.filter((msg) => msg.role === "system")
+              .length,
             userMessagesWithImages: userMessagesWithImages.length,
             userMessagesTextOnly: userMessagesTextOnly.length,
-            assistantMessages: messages.filter(msg => msg.role === 'assistant').length,
+            assistantMessages: messages.filter(
+              (msg) => msg.role === "assistant"
+            ).length,
             totalImagesInRequest: messages.reduce((count, msg) => {
-              if (msg.role === 'user' && Array.isArray(msg.content)) {
-                return count + msg.content.filter(c => c.type === 'image_url').length;
+              if (msg.role === "user" && Array.isArray(msg.content)) {
+                return (
+                  count +
+                  msg.content.filter((c) => c.type === "image_url").length
+                );
               }
               return count;
-            }, 0)
+            }, 0),
           });
-          
+
           // Log each message for debugging
           messages.forEach((msg, index) => {
-            if (msg.role === 'user' && Array.isArray(msg.content)) {
+            if (msg.role === "user" && Array.isArray(msg.content)) {
               console.log(`📤 [AI] Message ${index} (user with images):`, {
-                textContent: msg.content.find(c => c.type === 'text')?.text,
-                imageCount: msg.content.filter(c => c.type === 'image_url').length,
-                images: msg.content.filter(c => c.type === 'image_url').map(img => ({
-                  url: img.image_url.url,
-                  type: img.type
-                }))
+                textContent: msg.content.find((c) => c.type === "text")?.text,
+                imageCount: msg.content.filter((c) => c.type === "image_url")
+                  .length,
+                images: msg.content
+                  .filter((c) => c.type === "image_url")
+                  .map((img) => ({
+                    url: img.image_url.url,
+                    type: img.type,
+                  })),
               });
             } else {
               console.log(`📤 [AI] Message ${index} (${msg.role}):`, {
-                content: typeof msg.content === 'string' ? msg.content.substring(0, 100) : msg.content
+                content:
+                  typeof msg.content === "string"
+                    ? msg.content.substring(0, 100)
+                    : msg.content,
               });
             }
           });
-          
+
           console.log(
             "🎯 [AI] Using structured outputs for reliable JSON responses"
           );
@@ -3042,57 +3215,82 @@ Fliplet.Widget.generateInterface({
           // Final validation of what we're about to send to the AI
           console.log("🚀 [AI] Final request body validation:", {
             messageCount: messages.length,
-            userMessageIndex: messages.findIndex(msg => msg.role === 'user'),
-            userMessageContent: messages.find(msg => msg.role === 'user')?.content,
-            hasImages: messages.some(msg => 
-              msg.role === 'user' && 
-              Array.isArray(msg.content) && 
-              msg.content.some(c => c.type === 'image_url')
+            userMessageIndex: messages.findIndex((msg) => msg.role === "user"),
+            userMessageContent: messages.find((msg) => msg.role === "user")
+              ?.content,
+            hasImages: messages.some(
+              (msg) =>
+                msg.role === "user" &&
+                Array.isArray(msg.content) &&
+                msg.content.some((c) => c.type === "image_url")
             ),
             imageCount: messages.reduce((count, msg) => {
-              if (msg.role === 'user' && Array.isArray(msg.content)) {
-                return count + msg.content.filter(c => c.type === 'image_url').length;
+              if (msg.role === "user" && Array.isArray(msg.content)) {
+                return (
+                  count +
+                  msg.content.filter((c) => c.type === "image_url").length
+                );
               }
               return count;
-            }, 0)
+            }, 0),
           });
 
           // FINAL VALIDATION: Double-check that no removed images are in the request
           const finalImageValidation = messages.reduce((count, msg) => {
-            if (msg.role === 'user' && Array.isArray(msg.content)) {
-              return count + msg.content.filter(c => c.type === 'image_url').length;
+            if (msg.role === "user" && Array.isArray(msg.content)) {
+              return (
+                count + msg.content.filter((c) => c.type === "image_url").length
+              );
             }
             return count;
           }, 0);
-          
-          console.log('🔍 [AI] FINAL VALIDATION - Images in request:', {
+
+          console.log("🔍 [AI] FINAL VALIDATION - Images in request:", {
             totalImagesInRequest: finalImageValidation,
-            messagesWithImages: messages.filter(msg => 
-              msg.role === 'user' && 
-              Array.isArray(msg.content) && 
-              msg.content.some(c => c.type === 'image_url')
+            messagesWithImages: messages.filter(
+              (msg) =>
+                msg.role === "user" &&
+                Array.isArray(msg.content) &&
+                msg.content.some((c) => c.type === "image_url")
             ).length,
             currentAppStateImages: AppState.pastedImages.length,
-            currentValidImages: AppState.pastedImages.filter(img => 
-              img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
-            ).length
+            currentValidImages: AppState.pastedImages.filter(
+              (img) =>
+                img &&
+                img.status === "uploaded" &&
+                img.flipletUrl &&
+                img.flipletFileId
+            ).length,
           });
-          
+
           // If we have images in the request but no valid images in state, this is an error
-          if (finalImageValidation > 0 && AppState.pastedImages.filter(img => 
-            img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
-          ).length === 0) {
-            console.error('❌ [AI] CRITICAL ERROR: Request contains images but AppState has no valid images!');
-            console.error('❌ [AI] This should never happen - images were removed after filtering');
-            
+          if (
+            finalImageValidation > 0 &&
+            AppState.pastedImages.filter(
+              (img) =>
+                img &&
+                img.status === "uploaded" &&
+                img.flipletUrl &&
+                img.flipletFileId
+            ).length === 0
+          ) {
+            console.error(
+              "❌ [AI] CRITICAL ERROR: Request contains images but AppState has no valid images!"
+            );
+            console.error(
+              "❌ [AI] This should never happen - images were removed after filtering"
+            );
+
             // Force remove all images from the request
-            messages.forEach(msg => {
-              if (msg.role === 'user' && Array.isArray(msg.content)) {
-                msg.content = msg.content.filter(c => c.type !== 'image_url');
+            messages.forEach((msg) => {
+              if (msg.role === "user" && Array.isArray(msg.content)) {
+                msg.content = msg.content.filter((c) => c.type !== "image_url");
               }
             });
-            
-            console.log('🔧 [AI] Forced removal of all images from request due to state mismatch');
+
+            console.log(
+              "🔧 [AI] Forced removal of all images from request due to state mismatch"
+            );
           }
 
           const requestBody = {
@@ -3161,21 +3359,27 @@ Fliplet.Widget.generateInterface({
           };
 
           // Log the final request body to verify what's being sent
-          console.log('🚀 [AI] Final request body being sent to API:', {
+          console.log("🚀 [AI] Final request body being sent to API:", {
             model: requestBody.model,
             messageCount: requestBody.messages.length,
-            hasImages: requestBody.messages.some(msg => 
-              msg.role === 'user' && 
-              Array.isArray(msg.content) && 
-              msg.content.some(c => c.type === 'image_url')
+            hasImages: requestBody.messages.some(
+              (msg) =>
+                msg.role === "user" &&
+                Array.isArray(msg.content) &&
+                msg.content.some((c) => c.type === "image_url")
             ),
             imageCount: requestBody.messages.reduce((count, msg) => {
-              if (msg.role === 'user' && Array.isArray(msg.content)) {
-                return count + msg.content.filter(c => c.type === 'image_url').length;
+              if (msg.role === "user" && Array.isArray(msg.content)) {
+                return (
+                  count +
+                  msg.content.filter((c) => c.type === "image_url").length
+                );
               }
               return count;
             }, 0),
-            userMessageContent: requestBody.messages.find(msg => msg.role === 'user')?.content
+            userMessageContent: requestBody.messages.find(
+              (msg) => msg.role === "user"
+            )?.content,
           });
 
           const response = await Fliplet.AI.createCompletion(requestBody);
@@ -3227,7 +3431,7 @@ Fliplet.Widget.generateInterface({
             return "✅ No code changes were needed.";
           }
 
-          return '';
+          return "";
         }
 
         /**
@@ -3953,28 +4157,35 @@ Fliplet.Widget.generateInterface({
         function saveChatHistoryToStorage() {
           try {
             // Log what we're saving to help debug image preservation issues
-            const messagesWithImages = AppState.chatHistory.filter(item => item.images && item.images.length > 0);
+            const messagesWithImages = AppState.chatHistory.filter(
+              (item) => item.images && item.images.length > 0
+            );
             if (messagesWithImages.length > 0) {
-              console.log('💾 Saving chat history to Fliplet field with images:', {
-                totalMessages: AppState.chatHistory.length,
-                messagesWithImages: messagesWithImages.length,
-                imageDetails: messagesWithImages.map(item => ({
-                  messageType: item.type,
-                  messagePreview: item.message.substring(0, 50) + '...',
-                  imageCount: item.images.length,
-                  imageUrls: item.images.map(img => ({ 
-                    id: img.id, 
-                    name: img.name, 
-                    flipletUrl: !!img.flipletUrl
-                  }))
-                }))
-              });
+              console.log(
+                "💾 Saving chat history to Fliplet field with images:",
+                {
+                  totalMessages: AppState.chatHistory.length,
+                  messagesWithImages: messagesWithImages.length,
+                  imageDetails: messagesWithImages.map((item) => ({
+                    messageType: item.type,
+                    messagePreview: item.message.substring(0, 50) + "...",
+                    imageCount: item.images.length,
+                    imageUrls: item.images.map((img) => ({
+                      id: img.id,
+                      name: img.name,
+                      flipletUrl: !!img.flipletUrl,
+                    })),
+                  })),
+                }
+              );
             }
-            
+
             // Save to Fliplet field
-            Fliplet.Helper.field('chatHistory').set(JSON.stringify(AppState.chatHistory));
-            
-            console.log('✅ Chat history saved to Fliplet field successfully');
+            Fliplet.Helper.field("chatHistory").set(
+              JSON.stringify(AppState.chatHistory)
+            );
+
+            console.log("✅ Chat history saved to Fliplet field successfully");
           } catch (error) {
             console.error(
               "Failed to save chat history to Fliplet field:",
@@ -3988,9 +4199,9 @@ Fliplet.Widget.generateInterface({
          */
         function loadChatHistoryFromStorage() {
           try {
-            const history = Fliplet.Helper.field('chatHistory').get();
-            console.log('💾 Loading chat history from Fliplet field:', history);
-            
+            const history = Fliplet.Helper.field("chatHistory").get();
+            console.log("💾 Loading chat history from Fliplet field:", history);
+
             if (history) {
               const parsedHistory = JSON.parse(history);
               if (Array.isArray(parsedHistory)) {
@@ -4004,26 +4215,31 @@ Fliplet.Widget.generateInterface({
                     message: item.message,
                     type: item.type,
                     timestamp: item.timestamp || new Date().toISOString(),
-                    images: item.images || [] // Include images if they exist
+                    images: item.images || [], // Include images if they exist
                   }));
-                
+
                 // Log what we loaded to help debug image preservation issues
-                const messagesWithImages = filteredHistory.filter(item => item.images && item.images.length > 0);
+                const messagesWithImages = filteredHistory.filter(
+                  (item) => item.images && item.images.length > 0
+                );
                 if (messagesWithImages.length > 0) {
-                  console.log('📂 Loaded chat history from Fliplet field with images:', {
-                    totalMessages: filteredHistory.length,
-                    messagesWithImages: messagesWithImages.length,
-                    imageDetails: messagesWithImages.map(item => ({
-                      messageType: item.type,
-                      messagePreview: item.message.substring(0, 50) + '...',
-                      imageCount: item.images.length,
-                                          imageUrls: item.images.map(img => ({ 
-                      id: img.id, 
-                      name: img.name, 
-                      flipletUrl: !!img.flipletUrl
-                    }))
-                    }))
-                  });
+                  console.log(
+                    "📂 Loaded chat history from Fliplet field with images:",
+                    {
+                      totalMessages: filteredHistory.length,
+                      messagesWithImages: messagesWithImages.length,
+                      imageDetails: messagesWithImages.map((item) => ({
+                        messageType: item.type,
+                        messagePreview: item.message.substring(0, 50) + "...",
+                        imageCount: item.images.length,
+                        imageUrls: item.images.map((img) => ({
+                          id: img.id,
+                          name: img.name,
+                          flipletUrl: !!img.flipletUrl,
+                        })),
+                      })),
+                    }
+                  );
                 }
 
                 // Update AppState with filtered history
@@ -4036,39 +4252,54 @@ Fliplet.Widget.generateInterface({
                   messageDiv.className = `message ${item.type}-message`;
 
                   const prefix =
-                    item.type === "user" ? "You" : item.type === "ai" ? "AI" : "System";
-                  
+                    item.type === "user"
+                      ? "You"
+                      : item.type === "ai"
+                      ? "AI"
+                      : "System";
+
                   // Build message content
-                  let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(item.message)}`;
-                  
+                  let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(
+                    item.message
+                  )}`;
+
                   // Add images if present
                   if (item.images && item.images.length > 0) {
-                    const imagesHTML = item.images.map(img => {
-                      // Use flipletUrl for permanent image storage
-                      const imageSrc = img.flipletUrl;
-                      if (!imageSrc) {
-                        console.warn('⚠️ Image missing flipletUrl:', img);
-                        return '';
-                      }
-                      
-                      return `<div class="chat-image-container">
-                        <img src="${imageSrc}" alt="${img.name}" class="chat-image" />
-                        <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
+                    const imagesHTML = item.images
+                      .map((img) => {
+                        // Use flipletUrl for permanent image storage
+                        const imageSrc = img.flipletUrl;
+                        if (!imageSrc) {
+                          console.warn("⚠️ Image missing flipletUrl:", img);
+                          return "";
+                        }
+
+                        return `<div class="chat-image-container">
+                        <img src="${imageSrc}" alt="${
+                          img.name
+                        }" class="chat-image" />
+                        <div class="chat-image-info">${
+                          img.name
+                        } (${formatFileSize(img.size)})</div>
                        </div>`;
-                    }).join('');
-                    
+                      })
+                      .join("");
+
                     if (imagesHTML) {
                       messageContent += `<div class="chat-images">${imagesHTML}</div>`;
                     }
                   }
-                  
+
                   messageDiv.innerHTML = messageContent;
                   DOM.chatMessages.appendChild(messageDiv);
                 });
-                
+
                 // Ensure resize handle is added back after repopulating
-                if (window.chatResizeHandle && !DOM.chatMessages.contains(window.chatResizeHandle)) {
-                  DOM.chatMessages.style.position = 'relative';
+                if (
+                  window.chatResizeHandle &&
+                  !DOM.chatMessages.contains(window.chatResizeHandle)
+                ) {
+                  DOM.chatMessages.style.position = "relative";
                   DOM.chatMessages.appendChild(window.chatResizeHandle);
                 }
 
@@ -4076,7 +4307,7 @@ Fliplet.Widget.generateInterface({
                 return true;
               }
             } else {
-              console.log('⚠️ No chat history found in Fliplet field');
+              console.log("⚠️ No chat history found in Fliplet field");
             }
           } catch (error) {
             console.error(
@@ -4093,8 +4324,8 @@ Fliplet.Widget.generateInterface({
         function clearChatHistoryFromStorage() {
           try {
             // Clear the Fliplet field
-            Fliplet.Helper.field('chatHistory').set('');
-            console.log('✅ Chat history cleared from Fliplet field');
+            Fliplet.Helper.field("chatHistory").set("");
+            console.log("✅ Chat history cleared from Fliplet field");
           } catch (error) {
             console.error(
               "Failed to clear chat history from Fliplet field:",
@@ -4108,7 +4339,12 @@ Fliplet.Widget.generateInterface({
          * @param {string} message - The message content
          * @param {string} type - Message type ('user', 'ai', 'system')
          */
-        function addMessageToChat(message, type, images = [], skipStorage = false) {
+        function addMessageToChat(
+          message,
+          type,
+          images = [],
+          skipStorage = false
+        ) {
           console.assert(
             typeof message === "string",
             "message must be a string"
@@ -4118,86 +4354,104 @@ Fliplet.Widget.generateInterface({
             "type must be user, ai, or system"
           );
 
-
-
           const messageDiv = document.createElement("div");
           messageDiv.className = `message ${type}-message`;
 
           const prefix =
             type === "user" ? "You" : type === "ai" ? "AI" : "System";
-          
+
           // Build message content
-          let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(message)}`;
-          
+          let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(
+            message
+          )}`;
+
           // Add images if present
           if (images && images.length > 0) {
-            const imagesHTML = images.map(img => {
-              // Use flipletUrl for permanent image storage
-              const imageSrc = img.flipletUrl;
-              if (!imageSrc) {
-                console.warn('⚠️ Image missing flipletUrl:', img);
-                return '';
-              }
-              
-              return `<div class="chat-image-container">
+            const imagesHTML = images
+              .map((img) => {
+                // Use flipletUrl for permanent image storage
+                const imageSrc = img.flipletUrl;
+                if (!imageSrc) {
+                  console.warn("⚠️ Image missing flipletUrl:", img);
+                  return "";
+                }
+
+                return `<div class="chat-image-container">
                 <img src="${imageSrc}" alt="${img.name}" class="chat-image" />
-                <div class="chat-image-info">${img.name} (${formatFileSize(img.size)})</div>
+                <div class="chat-image-info">${img.name} (${formatFileSize(
+                  img.size
+                )})</div>
                </div>`;
-            }).join('');
-            
+              })
+              .join("");
+
             if (imagesHTML) {
               messageContent += `<div class="chat-images">${imagesHTML}</div>`;
             }
           }
-          
+
           messageDiv.innerHTML = messageContent;
 
           DOM.chatMessages.appendChild(messageDiv);
-          
+
           // Ensure resize handle is present after adding message
           ensureResizeHandlePresent();
-          
+
           scrollToBottom();
 
           // Add to history (unless skipStorage is true)
           if (!skipStorage) {
             // Create a deep copy of images to avoid reference issues when AppState.pastedImages is cleared
-            const imagesCopy = images ? images.map(img => {
-              const copy = {
-                id: img.id,
-                name: img.name,
-                size: img.size,
-                status: img.status,
-                flipletFileId: img.flipletFileId,
-                flipletUrl: img.flipletUrl
-              };
-              
-              // Log the copy to verify it's complete
-              if (images && images.length > 0) {
-                console.log('💾 Creating deep copy for chat history:', {
-                  original: { id: img.id, name: img.name, flipletUrl: img.flipletUrl },
-                  copy: { id: copy.id, name: copy.name, flipletUrl: copy.flipletUrl }
-                });
-              }
-              
-              return copy;
-            }) : [];
-            
+            const imagesCopy = images
+              ? images.map((img) => {
+                  const copy = {
+                    id: img.id,
+                    name: img.name,
+                    size: img.size,
+                    status: img.status,
+                    flipletFileId: img.flipletFileId,
+                    flipletUrl: img.flipletUrl,
+                  };
+
+                  // Log the copy to verify it's complete
+                  if (images && images.length > 0) {
+                    console.log("💾 Creating deep copy for chat history:", {
+                      original: {
+                        id: img.id,
+                        name: img.name,
+                        flipletUrl: img.flipletUrl,
+                      },
+                      copy: {
+                        id: copy.id,
+                        name: copy.name,
+                        flipletUrl: copy.flipletUrl,
+                      },
+                    });
+                  }
+
+                  return copy;
+                })
+              : [];
+
             const historyItem = {
               message,
               type,
               timestamp: new Date().toISOString(),
-              images: imagesCopy // Store copy of images in history
+              images: imagesCopy, // Store copy of images in history
             };
-            
+
             AppState.chatHistory.push(historyItem);
-            
+
             // Log what we're storing in history
             if (images && images.length > 0) {
-              console.log('💾 Storing message in chat history with images:', {
+              console.log("💾 Storing message in chat history with images:", {
                 messageType: type,
                 imageCount: images.length,
-                imageIds: images.map(img => ({ id: img.id, name: img.name, type: typeof img.id }))
+                imageIds: images.map((img) => ({
+                  id: img.id,
+                  name: img.name,
+                  type: typeof img.id,
+                })),
               });
             }
 
@@ -4205,8 +4459,6 @@ Fliplet.Widget.generateInterface({
             saveChatHistoryToStorage();
           }
         }
-
-
 
         /**
          * Scroll chat to bottom
@@ -4261,8 +4513,11 @@ Fliplet.Widget.generateInterface({
           }
 
           // Ensure resize handle is added back after clearing
-          if (window.chatResizeHandle && !DOM.chatMessages.contains(window.chatResizeHandle)) {
-            DOM.chatMessages.style.position = 'relative';
+          if (
+            window.chatResizeHandle &&
+            !DOM.chatMessages.contains(window.chatResizeHandle)
+          ) {
+            DOM.chatMessages.style.position = "relative";
             DOM.chatMessages.appendChild(window.chatResizeHandle);
           }
 
@@ -4275,7 +4530,7 @@ Fliplet.Widget.generateInterface({
          */
         function initializeTextarea() {
           if (!DOM.userInput) return;
-          
+
           // Set initial height
           autoResizeTextarea(DOM.userInput);
         }
@@ -4286,41 +4541,44 @@ Fliplet.Widget.generateInterface({
          */
         function autoResizeTextarea(textarea) {
           if (!textarea) return;
-          
+
           // Store current scroll position
           const scrollTop = textarea.scrollTop;
-          
+
           // Reset height completely to get accurate scrollHeight
-          textarea.style.height = 'auto';
-          
+          textarea.style.height = "auto";
+
           // Calculate the new height based on content
           const scrollHeight = textarea.scrollHeight;
           const minHeight = 45; // Match CSS min-height
           const maxHeight = 200;
-          
+
           // Set the height to match the content, respecting min/max bounds
-          const newHeight = Math.max(minHeight, Math.min(scrollHeight, maxHeight));
-          textarea.style.height = newHeight + 'px';
-          
+          const newHeight = Math.max(
+            minHeight,
+            Math.min(scrollHeight, maxHeight)
+          );
+          textarea.style.height = newHeight + "px";
+
           // If content exceeds max height, show scrollbar
           if (scrollHeight > maxHeight) {
-            textarea.style.overflowY = 'auto';
+            textarea.style.overflowY = "auto";
           } else {
-            textarea.style.overflowY = 'hidden';
+            textarea.style.overflowY = "hidden";
           }
-          
+
           // Restore scroll position if it was scrolled
           if (scrollTop > 0) {
             textarea.scrollTop = scrollTop;
           }
-          
-          console.log('🔧 Textarea resized:', {
+
+          console.log("🔧 Textarea resized:", {
             scrollHeight: scrollHeight,
             newHeight: newHeight,
             contentLength: textarea.value.length,
-            currentHeight: textarea.style.height
+            currentHeight: textarea.style.height,
           });
-          
+
           // Update resize handle position after textarea resize
           updateResizeHandlePosition();
         }
@@ -4331,13 +4589,16 @@ Fliplet.Widget.generateInterface({
          */
         function resetTextarea(textarea) {
           if (!textarea) return;
-          
+
           textarea.value = "";
-          textarea.style.height = '45px'; // Match CSS min-height
-          textarea.style.overflowY = 'hidden';
-          
-          console.log('🔧 Textarea reset to minimum height:', textarea.style.height);
-          
+          textarea.style.height = "45px"; // Match CSS min-height
+          textarea.style.overflowY = "hidden";
+
+          console.log(
+            "🔧 Textarea reset to minimum height:",
+            textarea.style.height
+          );
+
           // Update resize handle position after reset
           updateResizeHandlePosition();
         }
@@ -4346,22 +4607,22 @@ Fliplet.Widget.generateInterface({
          * Update resize handle position to track chat-input height
          */
         function updateResizeHandlePosition() {
-          const resizeHandle = document.querySelector('.resize-handle');
+          const resizeHandle = document.querySelector(".resize-handle");
           if (!resizeHandle) return;
-          
-          const chatInput = document.querySelector('.chat-input');
+
+          const chatInput = document.querySelector(".chat-input");
           if (!chatInput) return;
-          
+
           // Calculate the bottom position based on chat-input height
           const chatInputHeight = chatInput.offsetHeight;
-          
+
           // Position the resize handle above the chat-input
           const handleOffset = 10; // 10px gap above chat-input
-          resizeHandle.style.bottom = (chatInputHeight + handleOffset) + 'px';
-          
-          console.log('🔧 Resize handle repositioned:', {
+          resizeHandle.style.bottom = chatInputHeight + handleOffset + "px";
+
+          console.log("🔧 Resize handle repositioned:", {
             chatInputHeight: chatInputHeight,
-            newBottom: resizeHandle.style.bottom
+            newBottom: resizeHandle.style.bottom,
           });
         }
 
@@ -4369,33 +4630,33 @@ Fliplet.Widget.generateInterface({
          * Make the chat messages div resizable with custom resize handle
          */
         function makeChatMessagesResizable() {
-          const chatMessages = document.getElementById('chat-messages');
+          const chatMessages = document.getElementById("chat-messages");
           if (!chatMessages) return;
 
           // Check if resize handle already exists
-          if (chatMessages.querySelector('.resize-handle')) {
+          if (chatMessages.querySelector(".resize-handle")) {
             return; // Already has resize handle
           }
 
           // Create resize handle
-          const resizeHandle = document.createElement('div');
-          resizeHandle.className = 'resize-handle';
-          resizeHandle.innerHTML = '⋮⋮';
+          const resizeHandle = document.createElement("div");
+          resizeHandle.className = "resize-handle";
+          resizeHandle.innerHTML = "⋮⋮";
 
           // Find the chat-section container and add resize handle to it
-          const chatSection = document.querySelector('.chat-section');
+          const chatSection = document.querySelector(".chat-section");
           if (chatSection) {
-            chatSection.style.position = 'relative';
+            chatSection.style.position = "relative";
             chatSection.appendChild(resizeHandle);
           } else {
             // Fallback to chat messages if chat-section not found
-            chatMessages.style.position = 'relative';
+            chatMessages.style.position = "relative";
             chatMessages.appendChild(resizeHandle);
           }
-          
+
           // Store reference to resize handle globally for other functions
           window.chatResizeHandle = resizeHandle;
-          
+
           // Set initial position
           updateResizeHandlePosition();
 
@@ -4403,29 +4664,30 @@ Fliplet.Widget.generateInterface({
           let startY, startHeight;
 
           // Mouse events for resizing
-          resizeHandle.addEventListener('mousedown', function(e) {
+          resizeHandle.addEventListener("mousedown", function (e) {
             isResizing = true;
             startY = e.clientY;
             startHeight = chatMessages.offsetHeight;
-            document.body.style.cursor = 'ns-resize';
+            document.body.style.cursor = "ns-resize";
             e.preventDefault();
           });
 
-          document.addEventListener('mousemove', function(e) {
+          document.addEventListener("mousemove", function (e) {
             if (!isResizing) return;
-            
+
             const deltaY = e.clientY - startY;
             const newHeight = startHeight + deltaY;
-            
-            if (newHeight > 100) { // Minimum height
-              chatMessages.style.height = newHeight + 'px';
+
+            if (newHeight > 100) {
+              // Minimum height
+              chatMessages.style.height = newHeight + "px";
             }
           });
 
-          document.addEventListener('mouseup', function() {
+          document.addEventListener("mouseup", function () {
             if (isResizing) {
               isResizing = false;
-              document.body.style.cursor = '';
+              document.body.style.cursor = "";
             }
           });
         }
@@ -4437,21 +4699,21 @@ Fliplet.Widget.generateInterface({
           if (!window.chatResizeHandle || !DOM.chatMessages) {
             return;
           }
-          
+
           // Check if resize handle is already present
           if (DOM.chatMessages.contains(window.chatResizeHandle)) {
             return;
           }
-          
+
           // Ensure chat messages has relative positioning
-          if (DOM.chatMessages.style.position !== 'relative') {
-            DOM.chatMessages.style.position = 'relative';
+          if (DOM.chatMessages.style.position !== "relative") {
+            DOM.chatMessages.style.position = "relative";
           }
-          
+
           // Add the resize handle
           DOM.chatMessages.appendChild(window.chatResizeHandle);
-          
-          console.log('✅ Resize handle added to chat messages');
+
+          console.log("✅ Resize handle added to chat messages");
         }
 
         // Export for testing (if needed)
@@ -4472,37 +4734,43 @@ Fliplet.Widget.generateInterface({
          * Useful for troubleshooting upload/delete issues
          */
         function debugPastedImages() {
-          console.log('🔍 Current pasted images state:', {
+          console.log("🔍 Current pasted images state:", {
             totalImages: AppState.pastedImages.length,
-            images: AppState.pastedImages.map(img => ({
+            images: AppState.pastedImages.map((img) => ({
               id: img.id,
               name: img.name,
               status: img.status,
               flipletFileId: img.flipletFileId,
               flipletUrl: img.flipletUrl,
               size: img.size,
-              timestamp: img.timestamp
-            }))
+              timestamp: img.timestamp,
+            })),
           });
-          
+
           // Also check DOM elements
-          const containers = document.querySelectorAll('.pasted-image-container');
-          console.log('🔍 DOM containers found:', containers.length);
+          const containers = document.querySelectorAll(
+            ".pasted-image-container"
+          );
+          console.log("🔍 DOM containers found:", containers.length);
           containers.forEach((container, index) => {
             console.log(`Container ${index}:`, {
               imageId: container.dataset.imageId,
-              hasRemoveButton: !!container.querySelector('.remove-image-btn'),
-              removeButtonOnclick: container.querySelector('.remove-image-btn')?.getAttribute('onclick')
+              hasRemoveButton: !!container.querySelector(".remove-image-btn"),
+              removeButtonOnclick: container
+                .querySelector(".remove-image-btn")
+                ?.getAttribute("onclick"),
             });
           });
-          
+
           // Check if AppState is the same reference
-          console.log('🔍 AppState reference check:', {
-            isAppStateDefined: typeof AppState !== 'undefined',
+          console.log("🔍 AppState reference check:", {
+            isAppStateDefined: typeof AppState !== "undefined",
             AppStateType: typeof AppState,
-            hasPastedImages: AppState && 'pastedImages' in AppState,
-            pastedImagesType: AppState ? typeof AppState.pastedImages : 'undefined',
-            isArray: AppState ? Array.isArray(AppState.pastedImages) : false
+            hasPastedImages: AppState && "pastedImages" in AppState,
+            pastedImagesType: AppState
+              ? typeof AppState.pastedImages
+              : "undefined",
+            isArray: AppState ? Array.isArray(AppState.pastedImages) : false,
           });
         }
 
@@ -4560,6 +4828,85 @@ function logAiCall(data) {
     },
     "ai.feature.component"
   );
+}
+
+async function getCurrentPageSettings() {
+  return await Fliplet.API.request({
+    url: `v1/apps/${appId}/pages/${pageId}?richLayout`,
+    method: "GET",
+  }).catch((error) => {
+    return Fliplet.UI.Toast("Error getting current settings: " + error);
+  });
+}
+
+async function populateCurrentPageContent() {
+  try {
+    const currentSettings = await getCurrentPageSettings();
+
+    if (currentSettings && currentSettings.page) {
+      // Extract widget-specific HTML content
+      const htmlContent = extractHtmlContent(currentSettings.page.richLayout || "");
+      
+      // Extract widget-specific CSS content
+      const cssContent = extractCodeBetweenDelimiters(
+        "css", 
+        currentSettings.page.settings.customSCSS || ""
+      );
+      
+      // Extract widget-specific JavaScript content
+      const jsContent = extractCodeBetweenDelimiters(
+        "js", 
+        currentSettings.page.settings.customJS || ""
+      );
+      
+      // Populate the Helper fields with widget-specific content
+      Fliplet.Helper.field("layoutHTML").set(htmlContent);
+      Fliplet.Helper.field("css").set(cssContent);
+      Fliplet.Helper.field("javascript").set(jsContent);
+    }
+  } catch (error) {
+    console.error("Error populating current page content:", error);
+    Fliplet.UI.Toast("Error loading current page content: " + error);
+  }
+}
+
+function extractHtmlContent(richLayout) {
+  // Create a temporary wrapper to parse HTML
+  let $wrapper = $("<div>").html(richLayout);
+  
+  // Find the widget-specific container and extract its content
+  const $widgetContainer = $wrapper.find(`.ai-feature-dev-${widgetId}`);
+  
+  if ($widgetContainer.length > 0) {
+    return $widgetContainer.html() || "";
+  }
+  
+  return "";
+}
+
+function extractCodeBetweenDelimiters(type, code) {
+  let start, end;
+  
+  if (type === "js") {
+    start = `// start-ai-feature-dev ${widgetId}`;
+    end = `// end-ai-feature-dev ${widgetId}`;
+  } else if (type === "css") {
+    start = `/* start-ai-feature-dev ${widgetId} */`;
+    end = `/* end-ai-feature-dev ${widgetId} */`;
+  }
+  
+  // Find the start and end positions
+  const startIndex = code.indexOf(start);
+  const endIndex = code.indexOf(end);
+  
+  if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+    // Extract content between delimiters (excluding the delimiter lines)
+    const startPos = startIndex + start.length;
+    const content = code.substring(startPos, endIndex).trim();
+    return content;
+  }
+  
+  return "";
 }
 
 function saveGeneratedCode(parsedContent) {

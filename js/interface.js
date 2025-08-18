@@ -110,6 +110,7 @@ Fliplet.Widget.generateInterface({
             </div>
             
             <div class="chat-input">
+                <div class="resize-handle">⋮⋮</div>
                 <textarea id="user-input" placeholder="How can I help?" autocomplete="off" rows="1"></textarea>
                 <input type="button" id="send-btn" class="btn-primary" value="Send">
             </div>
@@ -2387,11 +2388,7 @@ Fliplet.Widget.generateInterface({
             // No need to add another system message since there's already one in the HTML
           }
 
-          // Ensure resize handle is present after initialization
-          setTimeout(ensureResizeHandlePresent, 100);
 
-          // Set up periodic check to ensure resize handle is always present
-          setInterval(ensureResizeHandlePresent, 2000);
 
           // Set up periodic cleanup of old file signatures and orphaned signatures (every 10 minutes)
           setInterval(() => {
@@ -2411,8 +2408,7 @@ Fliplet.Widget.generateInterface({
             if (DOM.userInput) {
               autoResizeTextarea(DOM.userInput);
             }
-            // Also update resize handle position on window resize
-            updateResizeHandlePosition();
+
           });
 
           console.log("✅ App initialization complete");
@@ -4394,8 +4390,7 @@ Fliplet.Widget.generateInterface({
 
           DOM.chatMessages.appendChild(messageDiv);
 
-          // Ensure resize handle is present after adding message
-          ensureResizeHandlePresent();
+
 
           scrollToBottom();
 
@@ -4579,8 +4574,7 @@ Fliplet.Widget.generateInterface({
             currentHeight: textarea.style.height,
           });
 
-          // Update resize handle position after textarea resize
-          updateResizeHandlePosition();
+
         }
 
         /**
@@ -4599,66 +4593,19 @@ Fliplet.Widget.generateInterface({
             textarea.style.height
           );
 
-          // Update resize handle position after reset
-          updateResizeHandlePosition();
+
         }
 
-        /**
-         * Update resize handle position to track chat-input height
-         */
-        function updateResizeHandlePosition() {
-          const resizeHandle = document.querySelector(".resize-handle");
-          if (!resizeHandle) return;
 
-          const chatInput = document.querySelector(".chat-input");
-          if (!chatInput) return;
-
-          // Calculate the bottom position based on chat-input height
-          const chatInputHeight = chatInput.offsetHeight;
-
-          // Position the resize handle above the chat-input
-          const handleOffset = 10; // 10px gap above chat-input
-          resizeHandle.style.bottom = chatInputHeight + handleOffset + "px";
-
-          console.log("🔧 Resize handle repositioned:", {
-            chatInputHeight: chatInputHeight,
-            newBottom: resizeHandle.style.bottom,
-          });
-        }
 
         /**
-         * Make the chat messages div resizable with custom resize handle
+         * Make the chat messages div resizable using the static resize handle
          */
         function makeChatMessagesResizable() {
           const chatMessages = document.getElementById("chat-messages");
-          if (!chatMessages) return;
-
-          // Check if resize handle already exists
-          if (chatMessages.querySelector(".resize-handle")) {
-            return; // Already has resize handle
-          }
-
-          // Create resize handle
-          const resizeHandle = document.createElement("div");
-          resizeHandle.className = "resize-handle";
-          resizeHandle.innerHTML = "⋮⋮";
-
-          // Find the chat-section container and add resize handle to it
-          const chatSection = document.querySelector(".chat-section");
-          if (chatSection) {
-            chatSection.style.position = "relative";
-            chatSection.appendChild(resizeHandle);
-          } else {
-            // Fallback to chat messages if chat-section not found
-            chatMessages.style.position = "relative";
-            chatMessages.appendChild(resizeHandle);
-          }
-
-          // Store reference to resize handle globally for other functions
-          window.chatResizeHandle = resizeHandle;
-
-          // Set initial position
-          updateResizeHandlePosition();
+          const resizeHandle = document.querySelector(".resize-handle");
+          
+          if (!chatMessages || !resizeHandle) return;
 
           let isResizing = false;
           let startY, startHeight;
@@ -4692,35 +4639,7 @@ Fliplet.Widget.generateInterface({
           });
         }
 
-        /**
-         * Ensure the resize handle is present in the chat messages
-         */
-        function ensureResizeHandlePresent() {
-          if (!window.chatResizeHandle || !DOM.chatMessages) {
-            updateResizeHandlePosition()
-            return;
-          }
 
-          // Check if resize handle is already present
-          if (DOM.chatMessages.contains(window.chatResizeHandle)) {
-            // Handle is present, but make sure position is updated
-            updateResizeHandlePosition();
-            return;
-          }
-
-          // Ensure chat messages has relative positioning
-          if (DOM.chatMessages.style.position !== "relative") {
-            DOM.chatMessages.style.position = "relative";
-          }
-
-          // Add the resize handle
-          DOM.chatMessages.appendChild(window.chatResizeHandle);
-
-          // Update position after adding
-          updateResizeHandlePosition();
-
-          console.log("✅ Resize handle added to chat messages");
-        }
 
         // Export for testing (if needed)
         if (typeof module !== "undefined" && module.exports) {

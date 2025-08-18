@@ -1071,8 +1071,7 @@ function updateChatInterface(DOM, AppState) {
     DOM.chatMessages.appendChild(messageDiv);
   });
 
-  // Ensure resize handle is present
-  ensureResizeHandlePresent();
+
 
   // Scroll to bottom
   scrollToBottom();

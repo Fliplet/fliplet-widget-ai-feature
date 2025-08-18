@@ -17,8 +17,6 @@
   user-select: none !important;
   z-index: 1000 !important;
   transition: background-color 0.2s ease !important;
-  /* Ensure it's always visible and not overlapping */
-  pointer-events: auto !important;
 }
 
 .resize-handle:hover {
@@ -34,11 +32,6 @@
   position: relative !important;
   min-height: 200px !important;
   resize: none !important;
-}
-
-/* Ensure chat-section container has proper positioning for resize handle */
-.chat-section {
-  position: relative !important;
 }
 
 /* .interface .generate-code-disabled .spinner-holder {

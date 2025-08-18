@@ -4394,12 +4394,8 @@ Fliplet.Widget.generateInterface({
 
           DOM.chatMessages.appendChild(messageDiv);
 
-          // Ensure resize handle is present and positioned after adding message
+          // Ensure resize handle is present after adding message
           ensureResizeHandlePresent();
-          // Update position in case the chat input height or other elements changed
-          setTimeout(() => {
-            updateResizeHandlePosition();
-          }, 10);
 
           scrollToBottom();
 
@@ -4617,36 +4613,16 @@ Fliplet.Widget.generateInterface({
           const chatInput = document.querySelector(".chat-input");
           if (!chatInput) return;
 
-          // Get the parent container for the resize handle
-          const handleParent = window.chatResizeHandleParent || document.querySelector(".chat-section") || document.getElementById("chat-messages");
-          if (!handleParent) return;
-
           // Calculate the bottom position based on chat-input height
           const chatInputHeight = chatInput.offsetHeight;
-          
-          // Get additional elements that might affect positioning
-          const imagePasteHint = document.querySelector(".image-paste-hint");
-          const uploadedImages = document.querySelector(".uploaded-images");
-          
-          let additionalHeight = 0;
-          if (imagePasteHint) {
-            additionalHeight += imagePasteHint.offsetHeight;
-          }
-          if (uploadedImages && uploadedImages.offsetHeight > 0) {
-            additionalHeight += uploadedImages.offsetHeight;
-          }
 
-          // Position the resize handle above the chat-input with proper offset
+          // Position the resize handle above the chat-input
           const handleOffset = 10; // 10px gap above chat-input
-          const totalBottomOffset = chatInputHeight + additionalHeight + handleOffset;
-          resizeHandle.style.bottom = totalBottomOffset + "px";
+          resizeHandle.style.bottom = chatInputHeight + handleOffset + "px";
 
           console.log("🔧 Resize handle repositioned:", {
             chatInputHeight: chatInputHeight,
-            additionalHeight: additionalHeight,
-            totalBottomOffset: totalBottomOffset,
             newBottom: resizeHandle.style.bottom,
-            parentElement: handleParent.tagName + (handleParent.id ? '#' + handleParent.id : '') + (handleParent.className ? '.' + handleParent.className.replace(/\s+/g, '.') : '')
           });
         }
 
@@ -4667,7 +4643,7 @@ Fliplet.Widget.generateInterface({
           resizeHandle.className = "resize-handle";
           resizeHandle.innerHTML = "⋮⋮";
 
-          // Always add resize handle to chat-section for consistent positioning
+          // Find the chat-section container and add resize handle to it
           const chatSection = document.querySelector(".chat-section");
           if (chatSection) {
             chatSection.style.position = "relative";
@@ -4680,8 +4656,6 @@ Fliplet.Widget.generateInterface({
 
           // Store reference to resize handle globally for other functions
           window.chatResizeHandle = resizeHandle;
-          // Store reference to parent container for consistent positioning
-          window.chatResizeHandleParent = chatSection || chatMessages;
 
           // Set initial position
           updateResizeHandlePosition();
@@ -4719,39 +4693,33 @@ Fliplet.Widget.generateInterface({
         }
 
         /**
-         * Ensure the resize handle is present in the correct parent container
+         * Ensure the resize handle is present in the chat messages
          */
         function ensureResizeHandlePresent() {
           if (!window.chatResizeHandle || !DOM.chatMessages) {
+            updateResizeHandlePosition()
             return;
           }
 
-          // Get the correct parent container (should be consistent with makeChatMessagesResizable)
-          const chatSection = document.querySelector(".chat-section");
-          const targetParent = chatSection || DOM.chatMessages;
-          
-          // Update the stored parent reference if it changed
-          window.chatResizeHandleParent = targetParent;
-
-          // Check if resize handle is already present in the correct parent
-          if (targetParent.contains(window.chatResizeHandle)) {
+          // Check if resize handle is already present
+          if (DOM.chatMessages.contains(window.chatResizeHandle)) {
             // Handle is present, but make sure position is updated
             updateResizeHandlePosition();
             return;
           }
 
-          // Ensure target parent has relative positioning
-          if (targetParent.style.position !== "relative") {
-            targetParent.style.position = "relative";
+          // Ensure chat messages has relative positioning
+          if (DOM.chatMessages.style.position !== "relative") {
+            DOM.chatMessages.style.position = "relative";
           }
 
-          // Add the resize handle to the correct parent
-          targetParent.appendChild(window.chatResizeHandle);
+          // Add the resize handle
+          DOM.chatMessages.appendChild(window.chatResizeHandle);
 
           // Update position after adding
           updateResizeHandlePosition();
 
-          console.log("✅ Resize handle added to:", targetParent.tagName + (targetParent.id ? '#' + targetParent.id : '') + (targetParent.className ? '.' + targetParent.className.replace(/\s+/g, '.') : ''));
+          console.log("✅ Resize handle added to chat messages");
         }
 
         // Export for testing (if needed)

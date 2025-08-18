@@ -1,7 +1,7 @@
 /* Resize handle styles */
 .resize-handle {
   position: absolute !important;
-  bottom: 0 !important; /* Will be dynamically positioned above chat-input */
+  bottom: 0; /* Will be dynamically positioned above chat-input */
   right: 5px !important;
   width: 20px !important;
   height: 20px !important;

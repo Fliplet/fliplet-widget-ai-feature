@@ -1074,11 +1074,6 @@ function updateChatInterface(DOM, AppState) {
   // Ensure resize handle is present
   ensureResizeHandlePresent();
 
-  // Reset resize handle position after updating chat interface
-  if (typeof updateResizeHandlePosition === 'function') {
-    updateResizeHandlePosition();
-  }
-
   // Scroll to bottom
   scrollToBottom();
 

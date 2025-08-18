@@ -4303,9 +4303,6 @@ Fliplet.Widget.generateInterface({
                   DOM.chatMessages.appendChild(window.chatResizeHandle);
                 }
 
-                // Reset resize handle position after chat is loaded
-                updateResizeHandlePosition();
-
                 scrollToBottom();
                 return true;
               }

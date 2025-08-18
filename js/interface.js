@@ -2802,7 +2802,7 @@ Fliplet.Widget.generateInterface({
             updateCode();
 
             // Remove loading indicator
-            // DOM.chatMessages.removeChild(loadingDiv);
+            DOM.chatMessages.removeChild(loadingDiv);
 
             // Add AI response to chat with change summary
             const changesSummary = generateChangesSummary(

@@ -918,6 +918,7 @@
   margin-bottom: 15px;
   margin-right: auto;
   max-width: 80%;
+  position: relative;
 }
 
 .interface .loading-message .loading {

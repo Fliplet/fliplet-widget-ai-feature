@@ -1,0 +1,75 @@
+/* AI Feature Placeholder Styles */
+.ai-feature-content {
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+}
+
+.ai-placeholder-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  height: 100%;
+  color: #000033;
+  background: #ffd856;
+  border-radius: 12px;
+  position: relative;
+  pointer-events: none;
+  cursor: default;
+}
+
+.ai-placeholder-content {
+  margin-bottom: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.ai-placeholder-title {
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0 0 12px 0;
+  color: #000033;
+}
+
+.ai-placeholder-description {
+  font-size: 16px;
+  margin: 0;
+  opacity: 0.9;
+  line-height: 1.5;
+  max-width: 280px;
+}
+
+.ai-placeholder-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #000033;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 25px;
+  font-weight: 500;
+  font-size: 14px;
+  border: none;
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+/* Mobile Styles (up to 480px) */
+@media (max-width: 480px) {
+  .ai-placeholder-container {
+    padding: 30px 15px;
+  }
+
+  .ai-placeholder-title {
+    font-size: 20px;
+  }
+
+  .ai-placeholder-description {
+    font-size: 14px;
+    max-width: 240px;
+  }
+}

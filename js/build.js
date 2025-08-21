@@ -4,7 +4,60 @@ Fliplet.Widget.instance({
   displayName: "AI feature",
   render: {
     template: `<div class="ai-feature-content">
-                <div class="well text-center">AI feature</div>
+                <div class="ai-placeholder-container" style="display: none;">
+                  <div class="ai-placeholder-content">
+                    <h3 class="ai-placeholder-title">Create with AI</h3>
+                    <p class="ai-placeholder-description">Click to describe what you want and let AI build it for you.</p>
+                  </div>
+                  <div class="ai-placeholder-cta">
+                    <span class="ai-cta-text">Start here</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
+                <div class="ai-demo-container" style="display: none;">
+                  <div class="ai-demo-header">
+                    <h2 class="ai-demo-title">Generate any feature with AI</h2>
+                  </div>
+                  <div class="ai-demo-prompt-section">
+                    <div class="ai-demo-input-container">
+                      <input type="text" class="ai-demo-input" value="generate a tax calculator for US" readonly>
+                      <button class="ai-demo-submit-btn">
+                        <i class="fa fa-paper-plane-o" aria-hidden="true"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="ai-demo-result">
+                    <div class="ai-demo-component">
+                      <h3 class="component-title">Tax Calculator</h3>
+                      <div class="form-group">
+                        <label class="form-label">Annual Income</label>
+                        <input type="text" class="form-input" value="$75,000" readonly>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">Filing Status</label>
+                        <select class="form-select" disabled>
+                          <option>Single</option>
+                        </select>
+                      </div>
+                      <div class="form-group">
+                        <label class="form-label">Standard Deduction</label>
+                        <input type="text" class="form-input" value="$13,850" readonly>
+                      </div>
+                      <div class="result-row">
+                        <div class="result-item">
+                          <label class="result-label">Federal Tax</label>
+                          <div class="result-value">$9,235</div>
+                        </div>
+                        <div class="result-item">
+                          <label class="result-label">After Tax</label>
+                          <div class="result-value">$65,765</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>`,
     ready: function () {
       // Initialize children components when this widget is ready
@@ -15,9 +68,17 @@ Fliplet.Widget.instance({
       const pageId = Fliplet.Env.get("pageId");
       const organizationId = Fliplet.Env.get("organizationId");
       const userId = Fliplet.Env.get("user")?.id || "";
+      const widgetId = AI.fields.aiFeatureId;
+      const data = Fliplet.Widget.getData(widgetId);
 
       if (Fliplet.Env.get("mode") == "interact") {
         $(".ai-feature-content").show();
+        $(".ai-placeholder-container").show();
+        $(".ai-demo-container").hide();
+      } else if (!data.layoutHTML) {
+        $(".ai-feature-content").show();
+        $(".ai-demo-container").show();
+        $(".ai-placeholder-container").hide();
       } else {
         $(".ai-feature-content").hide();
       }
@@ -33,8 +94,6 @@ Fliplet.Widget.instance({
         },
         AI.fields
       );
-
-      const widgetId = AI.fields.aiFeatureId;
      
       Fliplet.Hooks.on("componentEvent", async function (event) {
         if (
@@ -63,10 +122,7 @@ Fliplet.Widget.instance({
         }
       });
 
-      if (!AI.fields.prompt) {
-        Fliplet.UI.Toast("Please enter a prompt");
-        return;
-      } else if (!AI.fields.regenerateCode) {
+      if (!AI.fields.prompt || !AI.fields.regenerateCode) {
         return;
       }
 

@@ -4,7 +4,18 @@ Fliplet.Widget.instance({
   displayName: "AI feature",
   render: {
     template: `<div class="ai-feature-content">
-                <div class="well text-center">AI feature</div>
+                <div class="ai-placeholder-container">
+                  <div class="ai-placeholder-content">
+                    <h3 class="ai-placeholder-title">Create with AI</h3>
+                    <p class="ai-placeholder-description">Click to describe what you want and let AI build it for you.</p>
+                  </div>
+                  <div class="ai-placeholder-cta">
+                    <span class="ai-cta-text">Start here</span>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </div>
+                </div>
               </div>`,
     ready: function () {
       // Initialize children components when this widget is ready
@@ -15,6 +26,7 @@ Fliplet.Widget.instance({
       const pageId = Fliplet.Env.get("pageId");
       const organizationId = Fliplet.Env.get("organizationId");
       const userId = Fliplet.Env.get("user")?.id || "";
+      const widgetId = AI.fields.aiFeatureId;
 
       if (Fliplet.Env.get("mode") == "interact") {
         $(".ai-feature-content").show();
@@ -33,8 +45,6 @@ Fliplet.Widget.instance({
         },
         AI.fields
       );
-
-      const widgetId = AI.fields.aiFeatureId;
      
       Fliplet.Hooks.on("componentEvent", async function (event) {
         if (
@@ -63,10 +73,7 @@ Fliplet.Widget.instance({
         }
       });
 
-      if (!AI.fields.prompt) {
-        Fliplet.UI.Toast("Please enter a prompt");
-        return;
-      } else if (!AI.fields.regenerateCode) {
+      if (!AI.fields.prompt || !AI.fields.regenerateCode) {
         return;
       }
 

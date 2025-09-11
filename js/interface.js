@@ -21,30 +21,20 @@ Fliplet.Widget.generateInterface({
               Instructions
             </h4>
             <div class="panel-collapse collapse" id="collapse-3543664">
-              <div class="panel-body"> 
-                Use this component to generate features within a screen using AI. The code created will be available in the developer tools.
-                <br>
-                <br>
-                Select a data source if you want your feature to use a data source.
-                <br>
-                <br>
-                The following features are available via your prompt:
-                <br>
-                1. Read, insert, update, delete, join data source names (ensure you configure the security rules)
-                <br>
-                2. Load screen names or URLs
-                <br>
-                3. User data based on the columns in the user data source
-                <br>
-                4. Charts using eCharts library (Add echarts via Dev Tools > Libraries)
-                <br>
-                5. Tables using DataTables (Add datatables via Dev Tools > Libraries)
-                <br>
-                6. The ability to send Emails
-                <br>
-		7. The ability to query AI
-  		<br>
-                Note: Only the information in your prompt is shared with AI. AI cannot access your data or app.
+              <div class="panel-body">
+                <p>Use this component to generate features within a screen using AI. The code created will be available in the developer tools.</p>
+                <p>Select a data source if you want your feature to use a data source.</p>
+                <p>The following features are available via your prompt:</p>
+                <ol>
+                  <li>Read, insert, update, delete, join data source names (ensure you configure the security rules)</li>
+                  <li>Load screen names or URLs</li>
+                  <li>User data based on the columns in the user data source</li>
+                  <li>Charts using eCharts library (Add <code>echarts</code> via Dev Tools > Libraries)</li>
+                  <li>Tables using DataTables (Add <code>datatables</code> via Dev Tools > Libraries)</li>
+                  <li>The ability to send Emails</li>
+                  <li>The ability to query AI</li>
+                </ol>
+                <p>Note: Only the information in your prompt is shared with AI. AI cannot access your data or app.</p>
               </div>
             </div>
           </div>
@@ -52,80 +42,28 @@ Fliplet.Widget.generateInterface({
       `,
     },
     {
-      type: "provider",
-      name: "dataSourceId",
-      package: "com.fliplet.data-source-provider",
-      data: function (value) {
-        return {
-          dataSourceTitle: "Data source",
-          dataSourceId: value,
-          appId: Fliplet.Env.get("appId"),
-          default: {
-            name: "Data source",
-            entries: [],
-            columns: [],
-          },
-          accessRules: [
-            {
-              allow: "all",
-              type: ["select"],
-            },
-          ],
-        };
-      },
-      onEvent: function (eventName, data) {
-        // Listen for events fired from the provider
-        if (eventName === "dataSourceSelect") {
-          selectedDataSourceId = data.id;
-          selectedDataSourceName = data.name;
-
-          if (selectedDataSourceId) {
-            Fliplet.DataSources.getById(selectedDataSourceId, {
-              attributes: ["columns"],
-            }).then(function (response) {
-              dataSourceColumns = response.columns;
-            });
-          } else {
-            dataSourceColumns = [];
-          }
-        }
-      },
-      beforeSave: function (value) {
-        return value && value.id;
-      },
-    },
-    {
       type: "html",
       html: `<div class="container">
+        <p class="text-right"><a id="reset-btn" href="#">Clear chat history <i class="fa fa-trash-o"></i></a></p>
         <!-- Chat Interface -->
         <div class="chat-section">
-            <div class="chat-header">
-                <h2>Chat Interface</h2>
-            </div>
-            
             <div id="chat-messages" class="chat-messages">
                 <div class="message system-message">
-                    <strong>System:</strong> Ready to generate code! Ask for HTML, CSS, or JavaScript to get started.
+                    Describe a feature you want to build and AI will create it for you. You can attach images and data sources to your instructions.
                 </div>
             </div>
-            
+
             <div class="chat-input">
-                <div class="resize-handle">⋮⋮</div>
-                <textarea id="user-input" placeholder="How can I help?" autocomplete="off" rows="1"></textarea>
-                <input type="button" id="send-btn" class="btn-primary" value="Send">
+                <div class="resize-handle">...</div>
+                <textarea id="user-input" placeholder="Describe what you want..." autocomplete="off" rows="3"></textarea>
             </div>
-            <div class="image-paste-hint">💡 Tip: You can paste or drag and drop images!</div>
-            </div>
-            <div class="uploaded-images">
-                <div class="no-images-placeholder">No images attached</div>
-            </div>
-        </div>
-        <input type="button" id="reset-btn" class="btn-secondary" value="Reset Session">
-        <div class="btn-info">
-            <div class="info-container">
-                <div class="info-content">
-                    <p>This will clear your chat history but keep your generated code intact. Your HTML, CSS, and JavaScript files will remain unchanged.</p>
-                </div>
+            <div class="chat-btn-container">
+              <span class="btn btn-primary" id="send-btn"><i class="fa fa-paper-plane"></i></span>
+              <div class="image-paste-hint">💡 Tip: You can paste or drag and drop images!</div>
+              <br class="clear" />
+              <div class="uploaded-images">
+                  <div class="no-images-placeholder">No images attached</div>
+              </div>
             </div>
         </div>
     </div>
@@ -2608,7 +2546,7 @@ Fliplet.Widget.generateInterface({
           const loadingDiv = document.createElement("div");
           loadingDiv.className = "message ai-message loading-message";
           loadingDiv.innerHTML =
-            '<div class="loading"></div><span>🧠 AI is analyzing your request...</span>';
+            '<div class="loading"></div><span>AI is working on your request...</span>';
           DOM.chatMessages.appendChild(loadingDiv);
           scrollToBottom();
 
@@ -4272,10 +4210,10 @@ Fliplet.Widget.generateInterface({
                       ? "You"
                       : item.type === "ai"
                       ? "AI"
-                      : "System";
+                      : "";
 
                   // Build message content
-                  let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(
+                  let messageContent = `${prefix ? `<strong>${prefix}</strong>: ` : ''}${escapeHTML(
                     item.message
                   )}`;
 
@@ -4374,10 +4312,10 @@ Fliplet.Widget.generateInterface({
           messageDiv.className = `message ${type}-message`;
 
           const prefix =
-            type === "user" ? "You" : type === "ai" ? "AI" : "System";
+            type === "user" ? "You" : type === "ai" ? "AI" : "";
 
           // Build message content
-          let messageContent = `<strong>${prefix}:</strong> ${escapeHTML(
+          let messageContent = `${prefix ? `<strong>${prefix}</strong>: ` : ''}${escapeHTML(
             message
           )}`;
 
@@ -4498,55 +4436,78 @@ Fliplet.Widget.generateInterface({
         /**
          * Handle session reset
          */
-        function handleReset() {
-          console.log("🔄 Resetting session");
+        function handleReset(e) {
+          e.preventDefault();
 
-          // Reset application state
-          AppState.currentHTML = "";
-          AppState.currentCSS = "";
-          AppState.currentJS = "";
-          AppState.previousHTML = "";
-          AppState.previousCSS = "";
-          AppState.previousJS = "";
-          AppState.chatHistory = [];
-          AppState.isFirstGeneration = true;
-          AppState.requestCount = 0;
+          Fliplet.Modal.confirm({
+            title: 'Clear chat history',
+            message: '<p>This will clear your chat history but keep your generated code intact. Your HTML, CSS, and JavaScript files will remain unchanged.</p>',
+            buttons: {
+              confirm: {
+                label: 'Clear chat history',
+                className: 'btn-danger'
+              },
+              cancel: {
+                label: 'Cancel',
+                className: 'btn-default'
+              }
+            }
+          })
+            .then((result) => {
+              if (!result) {
+                return;
+              }
 
-          logAnalytics({
-            category: 'link',
-            action: 'action',
-            label: 'Chat reset - Chat GUID: ' + AppState.chatGUID
-          });
+              console.log("🔄 Resetting session");
 
-          AppState.chatGUID = Fliplet.guid();
-          Fliplet.Helper.field("chatGUID").set(AppState.chatGUID);   
+              // Reset application state
+              AppState.currentHTML = "";
+              AppState.currentCSS = "";
+              AppState.currentJS = "";
+              AppState.previousHTML = "";
+              AppState.previousCSS = "";
+              AppState.previousJS = "";
+              AppState.chatHistory = [];
+              AppState.isFirstGeneration = true;
+              AppState.requestCount = 0;
 
-          // Clear Fliplet field
-          clearChatHistoryFromStorage();
+              logAnalytics({
+                category: 'link',
+                action: 'action',
+                label: 'Chat reset - Chat GUID: ' + AppState.chatGUID
+              });
 
-          // Clear pasted images
-          clearPastedImages(false, DOM, AppState);
+              AppState.chatGUID = Fliplet.guid();
+              Fliplet.Helper.field("chatGUID").set(AppState.chatGUID);
 
-          // Clear displays
-          DOM.chatMessages.innerHTML =
-            '<div class="message system-message"><strong>System:</strong> Ready to generate code! Ask for HTML, CSS, or JavaScript to get started.</div>';
+              // Clear Fliplet field
+              clearChatHistoryFromStorage();
 
-          // Reset textarea height
-          if (DOM.userInput) {
-            resetTextarea(DOM.userInput);
-          }
+              // Clear pasted images
+              clearPastedImages(false, DOM, AppState);
 
-          // Ensure resize handle is added back after clearing
-          if (
-            window.chatResizeHandle &&
-            !DOM.chatMessages.contains(window.chatResizeHandle)
-          ) {
-            DOM.chatMessages.style.position = "relative";
-            DOM.chatMessages.appendChild(window.chatResizeHandle);
-          }
+              // Clear displays
+              DOM.chatMessages.innerHTML =
+                '<div class="message system-message">Describe a feature you want to build and AI will create it for you. You can select a data source or drag images to add them to your instructions.</div>';
 
-          // Reset
-          updateCode();
+              // Reset textarea height
+              if (DOM.userInput) {
+                resetTextarea(DOM.userInput);
+              }
+
+              // Ensure resize handle is added back after clearing
+              if (
+                window.chatResizeHandle &&
+                !DOM.chatMessages.contains(window.chatResizeHandle)
+              ) {
+                DOM.chatMessages.style.position = "relative";
+                DOM.chatMessages.appendChild(window.chatResizeHandle);
+              }
+
+              // Reset
+              updateCode();
+            });
+          return; // Stop execution here
         }
 
         /**
@@ -4557,6 +4518,7 @@ Fliplet.Widget.generateInterface({
 
           // Set initial height
           autoResizeTextarea(DOM.userInput);
+          DOM.userInput.focus();
         }
 
         /**
@@ -4612,9 +4574,8 @@ Fliplet.Widget.generateInterface({
          */
         function resetTextarea(textarea) {
           if (!textarea) return;
-
           textarea.value = "";
-          textarea.style.height = "45px"; // Match CSS min-height
+          textarea.style.height = "75px"; // Match CSS min-height
           textarea.style.overflowY = "hidden";
 
           console.log(
@@ -4622,7 +4583,7 @@ Fliplet.Widget.generateInterface({
             textarea.style.height
           );
 
-
+          textarea.focus();
         }
 
 
@@ -4633,7 +4594,7 @@ Fliplet.Widget.generateInterface({
         function makeChatMessagesResizable() {
           const chatMessages = document.getElementById("chat-messages");
           const resizeHandle = document.querySelector(".resize-handle");
-          
+
           if (!chatMessages || !resizeHandle) return;
 
           let isResizing = false;
@@ -4733,6 +4694,49 @@ Fliplet.Widget.generateInterface({
       },
     },
     {
+      type: "provider",
+      name: "dataSourceId",
+      package: "com.fliplet.data-source-provider",
+      data: function (value) {
+        return {
+          dataSourceTitle: "Attach data source",
+          dataSourceId: value,
+          appId: Fliplet.Env.get("appId"),
+          default: {
+            name: "Data source",
+            entries: [],
+            columns: [],
+          },
+          accessRules: [
+            {
+              allow: "all",
+              type: ["select"],
+            },
+          ],
+        };
+      },
+      onEvent: function (eventName, data) {
+        // Listen for events fired from the provider
+        if (eventName === "dataSourceSelect") {
+          selectedDataSourceId = data.id;
+          selectedDataSourceName = data.name;
+
+          if (selectedDataSourceId) {
+            Fliplet.DataSources.getById(selectedDataSourceId, {
+              attributes: ["columns"],
+            }).then(function (response) {
+              dataSourceColumns = response.columns;
+            });
+          } else {
+            dataSourceColumns = [];
+          }
+        }
+      },
+      beforeSave: function (value) {
+        return value && value.id;
+      },
+    },
+    {
       type: "hidden",
       name: "chatGUID",
       label: "Chat GUID",
@@ -4814,19 +4818,19 @@ async function populateCurrentPageContent() {
     if (currentSettings && currentSettings.page) {
       // Extract widget-specific HTML content
       const htmlContent = extractHtmlContent(currentSettings.page.richLayout || "");
-      
+
       // Extract widget-specific CSS content
       const cssContent = extractCodeBetweenDelimiters(
-        "css", 
+        "css",
         currentSettings.page.settings.customSCSS || ""
       );
-      
+
       // Extract widget-specific JavaScript content
       const jsContent = extractCodeBetweenDelimiters(
-        "js", 
+        "js",
         currentSettings.page.settings.customJS || ""
       );
-      
+
       // Populate the Helper fields with widget-specific content
       Fliplet.Helper.field("layoutHTML").set(htmlContent);
       Fliplet.Helper.field("css").set(cssContent);
@@ -4841,20 +4845,20 @@ async function populateCurrentPageContent() {
 function extractHtmlContent(richLayout) {
   // Create a temporary wrapper to parse HTML
   let $wrapper = $("<div>").html(richLayout);
-  
+
   // Find the widget-specific container and extract its content
   const $widgetContainer = $wrapper.find(`.ai-feature-dev-${widgetId}`);
-  
+
   if ($widgetContainer.length > 0) {
     return $widgetContainer.html() || "";
   }
-  
+
   return "";
 }
 
 function extractCodeBetweenDelimiters(type, code) {
   let start, end;
-  
+
   if (type === "js") {
     start = `// start-ai-feature-dev ${widgetId}`;
     end = `// end-ai-feature-dev ${widgetId}`;
@@ -4862,18 +4866,18 @@ function extractCodeBetweenDelimiters(type, code) {
     start = `/* start-ai-feature-dev ${widgetId} */`;
     end = `/* end-ai-feature-dev ${widgetId} */`;
   }
-  
+
   // Find the start and end positions
   const startIndex = code.indexOf(start);
   const endIndex = code.indexOf(end);
-  
+
   if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
     // Extract content between delimiters (excluding the delimiter lines)
     const startPos = startIndex + start.length;
     const content = code.substring(startPos, endIndex).trim();
     return content;
   }
-  
+
   return "";
 }
 

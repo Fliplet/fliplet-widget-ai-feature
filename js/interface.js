@@ -234,7 +234,7 @@ Fliplet.Widget.generateInterface({
          */
         const CONFIG = {
           /** @type {string} AI Model - Options: gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
-          OPENAI_MODEL: "gpt-5"
+          OPENAI_MODEL: "gpt-4.1" // "gpt-5"
         };
 
         /**
@@ -2356,6 +2356,13 @@ Fliplet.Widget.generateInterface({
           AppState.css = Fliplet.Helper.field("css").get();
           AppState.javascript = Fliplet.Helper.field("javascript").get();
 
+          if (!Fliplet.Helper.field("chatGUID").get()) {
+            AppState.chatGUID = Fliplet.guid();
+            Fliplet.Helper.field("chatGUID").set(AppState.chatGUID);
+          } else {
+            AppState.chatGUID = Fliplet.Helper.field("chatGUID").get();
+          }
+
           // Validation - ensure all required DOM elements exist
           const requiredElements = [
             "chatMessages",
@@ -2773,10 +2780,26 @@ Fliplet.Widget.generateInterface({
               javascript: AppState.currentJS,
               layoutHTML: AppState.currentHTML,
               images: AppState.pastedImages.map((el) => el.flipletUrl),
+              chatGUID: AppState.chatGUID,
+            });
+
+            if (AppState.pastedImages.length > 0) {
+              logAnalytics({
+                category: 'link',
+                action: 'action',
+                label: 'Images uploaded - Chat GUID: ' + AppState.chatGUID + ' - Images: ' + AppState.pastedImages.map((el) => el.flipletUrl)
+              });
+            }
+
+            logAnalytics({
+              category: 'link',
+              action: 'action',
+              label: 'AI Call - Chat GUID: ' + AppState.chatGUID
             });
 
             // Step 6: Update change history
             AppState.changeHistory.push({
+              chatGUID: AppState.chatGUID,
               timestamp: Date.now(),
               userMessage: userMessage,
               changeRequest: changeRequest,
@@ -2931,7 +2954,9 @@ Fliplet.Widget.generateInterface({
           const systemPrompt = buildSystemPromptWithContext(
             context,
             finalCurrentImages,
-            AppState
+            AppState,
+            dataSourceColumns,
+            selectedDataSourceName
           );
 
           // Build complete conversation history
@@ -4486,6 +4511,15 @@ Fliplet.Widget.generateInterface({
           AppState.isFirstGeneration = true;
           AppState.requestCount = 0;
 
+          logAnalytics({
+            category: 'link',
+            action: 'action',
+            label: 'Chat reset - Chat GUID: ' + AppState.chatGUID
+          });
+
+          AppState.chatGUID = Fliplet.guid();
+          Fliplet.Helper.field("chatGUID").set(AppState.chatGUID);   
+
           // Clear Fliplet field
           clearChatHistoryFromStorage();
 
@@ -4699,6 +4733,12 @@ Fliplet.Widget.generateInterface({
     },
     {
       type: "hidden",
+      name: "chatGUID",
+      label: "Chat GUID",
+      default: "",
+    },
+    {
+      type: "hidden",
       name: "chatHistory",
       label: "Chat History",
       default: "",
@@ -4747,6 +4787,14 @@ function logAiCall(data) {
     },
     "ai.feature.component"
   );
+}
+
+function logAnalytics(data) {
+  return Fliplet.App.Analytics.track('event', {
+    category: data.category,
+    action: data.action,
+    label: data.label
+  });
 }
 
 async function getCurrentPageSettings() {

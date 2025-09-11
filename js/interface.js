@@ -234,7 +234,7 @@ Fliplet.Widget.generateInterface({
          */
         const CONFIG = {
           /** @type {string} AI Model - Options: gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
-          OPENAI_MODEL: "gpt-4.1" // "gpt-5"
+          OPENAI_MODEL: "gpt-5" // "gpt-4.1"
         };
 
         /**
@@ -3311,7 +3311,8 @@ Fliplet.Widget.generateInterface({
           const requestBody = {
             model: AIConfig.model,
             messages: messages,
-            temperature: AIConfig.temperature,
+            // temperature: AIConfig.temperature,
+            reasoning: { effort: "low" },
             response_format: {
               type: "json_schema",
               json_schema: {

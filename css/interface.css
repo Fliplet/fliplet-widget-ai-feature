@@ -338,7 +338,7 @@
   min-height: 200px;
   resize: vertical;
   overflow: auto;
-  height: calc(100vh - 425px);
+  height: calc(100vh - 445px);
   background: #f8f6f7;
 }
 

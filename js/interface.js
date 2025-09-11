@@ -3312,7 +3312,7 @@ Fliplet.Widget.generateInterface({
             model: AIConfig.model,
             messages: messages,
             // temperature: AIConfig.temperature,
-            reasoning: { effort: "low" },
+            reasoning_effort: "low",
             response_format: {
               type: "json_schema",
               json_schema: {

@@ -172,7 +172,9 @@ Fliplet.Widget.generateInterface({
          */
         const CONFIG = {
           /** @type {string} AI Model - Options: gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
-          OPENAI_MODEL: "gpt-5" // "gpt-4.1"
+          OPENAI_MODEL: "gpt-4.1",
+          TEMPERATURE: 0.7,
+          MAX_TOKENS: 10000,
         };
 
         /**
@@ -2240,6 +2242,7 @@ Fliplet.Widget.generateInterface({
           model: CONFIG.OPENAI_MODEL,
           /** @type {number} Temperature for response randomness */
           temperature: CONFIG.TEMPERATURE,
+          max_tokens: CONFIG.MAX_TOKENS
         };
 
         /**
@@ -3249,8 +3252,9 @@ Fliplet.Widget.generateInterface({
           const requestBody = {
             model: AIConfig.model,
             messages: messages,
-            // temperature: AIConfig.temperature,
-            reasoning_effort: "low",
+            temperature: AIConfig.temperature,
+            max_tokens: CONFIG.MAX_TOKENS,
+            // reasoning_effort: "low",
             response_format: {
               type: "json_schema",
               json_schema: {

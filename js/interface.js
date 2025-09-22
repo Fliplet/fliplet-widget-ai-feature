@@ -2682,10 +2682,29 @@ Fliplet.Widget.generateInterface({
             const changeRequest = protocolParser.parseResponse(aiResponse);
             console.log("📋 [Main] Parsed change request:", changeRequest);
 
-            // Step 4: Apply changes - route between string replacement and traditional methods
+            // Step 4: Handle different response types
+            console.log(`🔧 [Main] Processing ${changeRequest.type} response...`);
+            
             let applicationResult;
+            let isAnswerType = changeRequest.type === "answer";
 
-            if (
+            if (isAnswerType) {
+              console.log("💬 [Main] Handling informational answer response...");
+              // For answer type, we don't modify code, just create a mock result
+              applicationResult = {
+                updatedCode: {
+                  html: AppState.currentHTML,
+                  css: AppState.currentCSS,
+                  js: AppState.currentJS
+                },
+                changeLog: {
+                  html: [],
+                  css: [],
+                  js: []
+                },
+                success: true
+              };
+            } else if (
               changeRequest.type === "string_replacement" &&
               changeRequest.instructions &&
               changeRequest.instructions.length > 0
@@ -2704,14 +2723,16 @@ Fliplet.Widget.generateInterface({
               );
             }
 
-            // Step 5: Update application state
-            AppState.previousHTML = AppState.currentHTML;
-            AppState.previousCSS = AppState.currentCSS;
-            AppState.previousJS = AppState.currentJS;
+            // Step 5: Update application state (only for non-answer types)
+            if (!isAnswerType) {
+              AppState.previousHTML = AppState.currentHTML;
+              AppState.previousCSS = AppState.currentCSS;
+              AppState.previousJS = AppState.currentJS;
 
-            AppState.currentHTML = applicationResult.updatedCode.html;
-            AppState.currentCSS = applicationResult.updatedCode.css;
-            AppState.currentJS = applicationResult.updatedCode.js;
+              AppState.currentHTML = applicationResult.updatedCode.html;
+              AppState.currentCSS = applicationResult.updatedCode.css;
+              AppState.currentJS = applicationResult.updatedCode.js;
+            }
 
             const logAiCallResponse = await logAiCall({
               "Chat history": AppState.chatHistory,
@@ -2735,7 +2756,7 @@ Fliplet.Widget.generateInterface({
             logAnalytics({
               category: 'link',
               action: 'action',
-              label: 'AI Call - Chat GUID: ' + AppState.chatGUID
+              label: `AI ${isAnswerType ? 'Answer' : 'Code Generation'} - Chat GUID: ${AppState.chatGUID} - Type: ${changeRequest.type}`
             });
 
             // Step 6: Update change history
@@ -2745,24 +2766,39 @@ Fliplet.Widget.generateInterface({
               userMessage: userMessage,
               changeRequest: changeRequest,
               changeLog: applicationResult.changeLog,
+              responseType: changeRequest.type, // Track response type for history
             });
 
-            AppState.lastAppliedChanges = applicationResult.changeLog;
+            // Only update lastAppliedChanges for code modification responses
+            if (!isAnswerType) {
+              AppState.lastAppliedChanges = applicationResult.changeLog;
+            }
 
             // Step 6b: User message already added to chat history by addMessageToChat() in handleSendMessage()
             // No need to add it again here
 
-            // Step 7: Update
-            updateCode();
+            // Step 7: Update code (only for non-answer types)
+            if (!isAnswerType) {
+              updateCode();
+            }
 
             // Remove loading indicator
             DOM.chatMessages.removeChild(loadingDiv);
 
-            // Add AI response to chat with change summary
-            const changesSummary = generateChangesSummary(
-              applicationResult.changeLog
-            );
-            const aiResponseText = `${changeRequest.explanation}\n\n${changesSummary}`;
+            // Add AI response to chat
+            let aiResponseText;
+            if (isAnswerType) {
+              // For answer type, use the direct answer from the response
+              aiResponseText = changeRequest.answer || changeRequest.explanation;
+              console.log("💬 [Main] Displaying informational answer to user");
+            } else {
+              // For string_replacement type, show explanation with change summary
+              const changesSummary = generateChangesSummary(
+                applicationResult.changeLog
+              );
+              aiResponseText = `${changeRequest.explanation}\n\n${changesSummary}`;
+              console.log("🔧 [Main] Displaying code changes to user");
+            }
             addMessageToChat(aiResponseText, "ai");
 
             // AI response already added to chat history by addMessageToChat()
@@ -3258,22 +3294,26 @@ Fliplet.Widget.generateInterface({
             response_format: {
               type: "json_schema",
               json_schema: {
-                name: "code_change_response",
+                name: "ai_response",
                 strict: true,
                 schema: {
                   type: "object",
                   properties: {
                     type: {
                       type: "string",
-                      enum: ["string_replacement"],
+                      enum: ["string_replacement", "answer"],
                     },
                     explanation: {
                       type: "string",
-                      description: "Human-readable explanation of the changes",
+                      description: "Human-readable explanation of the changes or response",
+                    },
+                    answer: {
+                      type: "string",
+                      description: "Direct answer for informational responses (required when type is 'answer')",
                     },
                     instructions: {
                       type: "array",
-                      description: "String replacement instructions",
+                      description: "String replacement instructions (required when type is 'string_replacement')",
                       items: {
                         type: "object",
                         properties: {
@@ -3309,8 +3349,22 @@ Fliplet.Widget.generateInterface({
                       },
                     },
                   },
-                  required: ["type", "explanation", "instructions"],
+                  required: ["type", "explanation"],
                   additionalProperties: false,
+                  anyOf: [
+                    {
+                      properties: {
+                        type: { const: "string_replacement" }
+                      },
+                      required: ["instructions"]
+                    },
+                    {
+                      properties: {
+                        type: { const: "answer" }
+                      },
+                      required: ["answer"]
+                    }
+                  ],
                 },
               },
             },

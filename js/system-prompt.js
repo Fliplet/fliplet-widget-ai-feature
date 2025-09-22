@@ -1073,14 +1073,40 @@ runChatCompletion();
 
 
 CRITICAL INSTRUCTIONS:
-You MUST respond with a JSON object using the string replacement format. This provides maximum reliability and precision.
+You MUST respond with a JSON object in one of two formats depending on the user's request:
+
+1. CODE GENERATION (when user wants to create/modify HTML, CSS, JavaScript):
+Use the string replacement format for maximum reliability and precision.
+
+2. INFORMATIONAL RESPONSES (when user asks questions, needs explanations, or requests information):
+Use the answer format to provide helpful information without code.
+
+RESPONSE TYPE DETERMINATION:
+- Use CODE GENERATION format when user wants to:
+  * Create new features, forms, layouts, components
+  * Modify existing code, add functionality
+  * Fix bugs, improve styling
+  * Build interactive elements
+
+- Use INFORMATIONAL RESPONSE format when user wants to:
+  * Ask questions about concepts, best practices, or how things work
+  * Get explanations about code, frameworks, or technologies
+  * Request information, documentation, or guidance
+  * Understand errors or debugging help
 
 String Replacement Format (type: "string_replacement"):
-Always use this method for both new projects and modifications. Populate "instructions" array.
+Use this method for both new projects and modifications when generating code. Populate "instructions" array.
 
 Example JSON responses:
 
-For MODIFICATIONS (existing code):
+For INFORMATIONAL RESPONSES (type: "answer"):
+{
+  "type": "answer",
+  "explanation": "Explained Bootstrap grid system concepts",
+  "answer": "Bootstrap uses a 12-column grid system that allows you to create responsive layouts. Each row is divided into 12 equal columns, and you can specify how many columns an element should span using classes like col-md-6 (6 columns on medium screens). The grid automatically adjusts for different screen sizes using breakpoints like xs, sm, md, lg, and xl."
+}
+
+For CODE GENERATION - MODIFICATIONS (existing code):
 {
   "type": "string_replacement",
   "explanation": "Added phone number field to the form",
@@ -1095,7 +1121,7 @@ For MODIFICATIONS (existing code):
   ]
 }
 
-For NEW PROJECTS (empty code):
+For CODE GENERATION - NEW PROJECTS (empty code):
 {
   "type": "string_replacement",
   "explanation": "Created complete contact form",
@@ -1117,7 +1143,7 @@ For NEW PROJECTS (empty code):
   ]
 }
 
-Rules for String Replacements:
+Rules for String Replacements (CODE GENERATION only):
    - old_string must be a non-empty string that matches EXACTLY (including whitespace and indentation)
    - Be as specific as possible to avoid multiple matches  
    - For adding elements, replace a closing tag with content + closing tag
@@ -1128,10 +1154,34 @@ Rules for String Replacements:
    - Always preserve existing functionality
    - NEVER use empty strings or null values for old_string or new_string
 
+Rules for Informational Responses (ANSWER format):
+   - Use "type": "answer" when the user is asking questions or needs explanations
+   - Provide clear, helpful information in the "answer" field
+   - Keep explanations user-friendly and avoid unnecessary technical jargon
+   - Include examples when helpful for understanding
+   - No code generation is needed for these responses
+
 USER'S INTENT: ${context.intent}
 
 RESPONSE STRATEGY FOR THIS REQUEST:
-Always use "string_replacement" type with precise replacement instructions for maximum reliability.
+- If user wants to CREATE or MODIFY code: Use "string_replacement" type with precise replacement instructions
+- If user asks QUESTIONS or needs EXPLANATIONS: Use "answer" type with helpful information
+
+EXAMPLES OF WHEN TO USE EACH FORMAT:
+
+Use "answer" format for requests like:
+- "What is Bootstrap?"
+- "How does CSS flexbox work?"
+- "Explain the difference between var, let, and const"
+- "What are the best practices for form validation?"
+- "How do I debug JavaScript errors?"
+
+Use "string_replacement" format for requests like:
+- "Create a contact form"
+- "Add a navigation menu"
+- "Change the button color to blue"
+- "Make the layout responsive"
+- "Add form validation"
 `;
 
     // Add context about existing code structure

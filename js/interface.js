@@ -3356,13 +3356,15 @@ Fliplet.Widget.generateInterface({
                       properties: {
                         type: { const: "string_replacement" }
                       },
-                      required: ["instructions"]
+                      required: ["instructions"],
+                      additionalProperties: false
                     },
                     {
                       properties: {
                         type: { const: "answer" }
                       },
-                      required: ["answer"]
+                      required: ["answer"],
+                      additionalProperties: false
                     }
                   ],
                 },

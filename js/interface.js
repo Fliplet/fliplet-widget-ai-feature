@@ -3302,128 +3302,58 @@ Fliplet.Widget.generateInterface({
                     type: {
                       type: "string",
                       enum: ["string_replacement", "answer"],
+                      description: "The type of response - either code changes or informational answer"
                     },
                     explanation: {
                       type: "string",
-                      description: "Human-readable explanation of the changes or response",
+                      description: "Human-readable explanation of the changes or response"
                     },
                     answer: {
                       type: "string",
-                      description: "Direct answer for informational responses (required when type is 'answer')",
+                      description: "Direct answer for informational responses (only include when type is 'answer')"
                     },
                     instructions: {
                       type: "array",
-                      description: "String replacement instructions (required when type is 'string_replacement')",
+                      description: "String replacement instructions (only include when type is 'string_replacement')",
                       items: {
                         type: "object",
                         properties: {
                           target_type: {
                             type: "string",
-                            enum: ["html", "css", "js"],
+                            enum: ["html", "css", "js"]
                           },
                           old_string: {
                             type: "string",
-                            description: "Exact string to replace",
+                            description: "Exact string to replace"
                           },
                           new_string: {
                             type: "string",
-                            description: "Replacement string",
+                            description: "Replacement string"
                           },
                           description: {
                             type: "string",
-                            description: "Description of this change",
+                            description: "Description of this change"
                           },
                           replace_all: {
                             type: "boolean",
-                            description: "Whether to replace all occurrences",
-                          },
+                            description: "Whether to replace all occurrences"
+                          }
                         },
                         required: [
                           "target_type",
                           "old_string",
                           "new_string",
                           "description",
-                          "replace_all",
+                          "replace_all"
                         ],
-                        additionalProperties: false,
-                      },
-                    },
+                        additionalProperties: false
+                      }
+                    }
                   },
                   required: ["type", "explanation"],
-                  additionalProperties: false,
-                  anyOf: [
-                    {
-                      properties: {
-                        type: { 
-                          type: "string",
-                          const: "string_replacement" 
-                        },
-                        explanation: {
-                          type: "string",
-                          description: "Human-readable explanation of the changes"
-                        },
-                        instructions: {
-                          type: "array",
-                          description: "String replacement instructions",
-                          items: {
-                            type: "object",
-                            properties: {
-                              target_type: {
-                                type: "string",
-                                enum: ["html", "css", "js"],
-                              },
-                              old_string: {
-                                type: "string",
-                                description: "Exact string to replace",
-                              },
-                              new_string: {
-                                type: "string",
-                                description: "Replacement string",
-                              },
-                              description: {
-                                type: "string",
-                                description: "Description of this change",
-                              },
-                              replace_all: {
-                                type: "boolean",
-                                description: "Whether to replace all occurrences",
-                              },
-                            },
-                            required: [
-                              "target_type",
-                              "old_string",
-                              "new_string",
-                              "description",
-                              "replace_all",
-                            ],
-                            additionalProperties: false,
-                          },
-                        },
-                      },
-                      required: ["type", "explanation", "instructions"],
-                      additionalProperties: false
-                    },
-                    {
-                      properties: {
-                        type: { 
-                          type: "string",
-                          const: "answer" 
-                        },
-                        explanation: {
-                          type: "string",
-                          description: "Human-readable explanation of the response"
-                        },
-                        answer: {
-                          type: "string",
-                          description: "Direct answer for informational responses"
-                        }
-                      },
-                      required: ["type", "explanation", "answer"],
-                      additionalProperties: false
-                    }
-                  ],
-                },
-              },
+                  additionalProperties: false
+                }
+              }
             },
           };
 

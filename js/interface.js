@@ -4475,6 +4475,11 @@ Fliplet.Widget.generateInterface({
               AppState.isFirstGeneration = true;
               AppState.requestCount = 0;
 
+              dataSourceColumns = [];
+              selectedDataSourceName = "";
+              selectedDataSourceId = "";
+              Fliplet.Helper.field("dataSourceId").set("");
+
               logAnalytics({
                 category: 'link',
                 action: 'action',
@@ -4892,8 +4897,8 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("regenerateCode").set(true);
 
   var data = Fliplet.Widget.getData();
-  data.fields.dataSourceId = selectedDataSourceId;
-  data.fields.dataSourceName = selectedDataSourceName;
+  data.fields.dataSourceId = '';
+  data.fields.dataSourceName = '';
   data.fields.layoutHTML = parsedContent.html;
   data.fields.css = parsedContent.css;
   data.fields.javascript = parsedContent.javascript;

@@ -3354,16 +3354,71 @@ Fliplet.Widget.generateInterface({
                   anyOf: [
                     {
                       properties: {
-                        type: { const: "string_replacement" }
+                        type: { 
+                          type: "string",
+                          const: "string_replacement" 
+                        },
+                        explanation: {
+                          type: "string",
+                          description: "Human-readable explanation of the changes"
+                        },
+                        instructions: {
+                          type: "array",
+                          description: "String replacement instructions",
+                          items: {
+                            type: "object",
+                            properties: {
+                              target_type: {
+                                type: "string",
+                                enum: ["html", "css", "js"],
+                              },
+                              old_string: {
+                                type: "string",
+                                description: "Exact string to replace",
+                              },
+                              new_string: {
+                                type: "string",
+                                description: "Replacement string",
+                              },
+                              description: {
+                                type: "string",
+                                description: "Description of this change",
+                              },
+                              replace_all: {
+                                type: "boolean",
+                                description: "Whether to replace all occurrences",
+                              },
+                            },
+                            required: [
+                              "target_type",
+                              "old_string",
+                              "new_string",
+                              "description",
+                              "replace_all",
+                            ],
+                            additionalProperties: false,
+                          },
+                        },
                       },
-                      required: ["instructions"],
+                      required: ["type", "explanation", "instructions"],
                       additionalProperties: false
                     },
                     {
                       properties: {
-                        type: { const: "answer" }
+                        type: { 
+                          type: "string",
+                          const: "answer" 
+                        },
+                        explanation: {
+                          type: "string",
+                          description: "Human-readable explanation of the response"
+                        },
+                        answer: {
+                          type: "string",
+                          description: "Direct answer for informational responses"
+                        }
                       },
-                      required: ["answer"],
+                      required: ["type", "explanation", "answer"],
                       additionalProperties: false
                     }
                   ],

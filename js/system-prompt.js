@@ -1103,13 +1103,15 @@ For INFORMATIONAL RESPONSES (type: "answer"):
 {
   "type": "answer",
   "explanation": "Explained Bootstrap grid system concepts",
-  "answer": "Bootstrap uses a 12-column grid system that allows you to create responsive layouts. Each row is divided into 12 equal columns, and you can specify how many columns an element should span using classes like col-md-6 (6 columns on medium screens). The grid automatically adjusts for different screen sizes using breakpoints like xs, sm, md, lg, and xl."
+  "answer": "Bootstrap uses a 12-column grid system that allows you to create responsive layouts. Each row is divided into 12 equal columns, and you can specify how many columns an element should span using classes like col-md-6 (6 columns on medium screens). The grid automatically adjusts for different screen sizes using breakpoints like xs, sm, md, lg, and xl.",
+  "instructions": []
 }
 
 For CODE GENERATION - MODIFICATIONS (existing code):
 {
   "type": "string_replacement",
   "explanation": "Added phone number field to the form",
+  "answer": "",
   "instructions": [
     {
       "target_type": "html",
@@ -1125,6 +1127,7 @@ For CODE GENERATION - NEW PROJECTS (empty code):
 {
   "type": "string_replacement",
   "explanation": "Created complete contact form",
+  "answer": "",
   "instructions": [
     {
       "target_type": "html",
@@ -1142,6 +1145,11 @@ For CODE GENERATION - NEW PROJECTS (empty code):
     }
   ]
 }
+
+CRITICAL: ALL responses must include ALL four fields (type, explanation, answer, instructions):
+   - For "answer" type: Set instructions to empty array []
+   - For "string_replacement" type: Set answer to empty string ""
+   - This is required by the strict JSON schema validation
 
 Rules for String Replacements (CODE GENERATION only):
    - old_string must be a non-empty string that matches EXACTLY (including whitespace and indentation)

@@ -3350,7 +3350,7 @@ Fliplet.Widget.generateInterface({
                       }
                     }
                   },
-                  required: ["type", "explanation"],
+                  required: ["type", "explanation", "answer", "instructions"],
                   additionalProperties: false
                 }
               }

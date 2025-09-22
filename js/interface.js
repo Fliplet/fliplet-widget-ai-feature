@@ -4903,6 +4903,7 @@ function saveGeneratedCode(parsedContent) {
   data.fields.css = parsedContent.css;
   data.fields.javascript = parsedContent.javascript;
   data.fields.regenerateCode = true;
+  Fliplet.Helper.field("dataSourceId").set('');
 
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);

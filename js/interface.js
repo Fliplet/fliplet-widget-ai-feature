@@ -2275,6 +2275,8 @@ Fliplet.Widget.generateInterface({
           DOM.resetBtn = document.getElementById("reset-btn");
           DOM.uploadedImages = document.querySelector(".uploaded-images");
 
+          DOM.resetBtn.css("display", "none");
+
           // Initialize textarea styling and behavior
           setTimeout(() => {
             if (DOM.userInput) {
@@ -2328,9 +2330,9 @@ Fliplet.Widget.generateInterface({
           if (!historyLoaded) {
             // If no history loaded, the existing system message in HTML template is sufficient
             // No need to add another system message since there's already one in the HTML
+          } else {
+            DOM.resetBtn.css("display", "block");
           }
-
-
 
           // Set up periodic cleanup of old file signatures and orphaned signatures (every 10 minutes)
           setInterval(() => {
@@ -4351,6 +4353,8 @@ Fliplet.Widget.generateInterface({
           images = [],
           skipStorage = false
         ) {
+
+          DOM.resetBtn.css("display", "block");
           console.assert(
             typeof message === "string",
             "message must be a string"

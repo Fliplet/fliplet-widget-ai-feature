@@ -171,7 +171,7 @@ Fliplet.Widget.generateInterface({
         // Debug utility function to conditionally log console messages
         function debugLog(...args) {
           if (debugMode) {
-            debugLog(...args);
+            console.log(...args);
           }
         }
         

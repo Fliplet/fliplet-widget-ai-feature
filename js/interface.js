@@ -2777,9 +2777,16 @@ Fliplet.Widget.generateInterface({
             // Step 6b: User message already added to chat history by addMessageToChat() in handleSendMessage()
             // No need to add it again here
 
-            // Step 7: Update code (only for non-answer types)
+            // Step 7: Update code and save fields
             if (!isAnswerType) {
               updateCode();
+            } else {
+              // For answer type, we still need to save the fields even without code changes
+              saveGeneratedCode({
+                html: AppState.currentHTML || "",
+                css: AppState.currentCSS || "",
+                javascript: AppState.currentJS || ""
+              });
             }
 
             // Remove loading indicator

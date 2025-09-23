@@ -124,7 +124,7 @@ function handleImageDrop(event, DOM, AppState) {
 
   // Check if we've already processed this event to prevent duplicates
   if (AppState.processedFileSignatures.has(`event-${eventId}`)) {
-    console.log("⚠️ Event already processed, skipping duplicate:", eventId);
+    debugLog("⚠️ Event already processed, skipping duplicate:", eventId);
     return;
   }
 
@@ -132,7 +132,7 @@ function handleImageDrop(event, DOM, AppState) {
   AppState.processedFileSignatures.add(`event-${eventId}`);
 
   // Log the drop target to help debug duplicate processing
-  console.log("📥 Image drop event triggered:", {
+  debugLog("📥 Image drop event triggered:", {
     eventId: eventId,
     target: event.target,
     targetId: event.target.id,
@@ -152,7 +152,7 @@ function handleImageDrop(event, DOM, AppState) {
   const nonImageFiles = files.filter((file) => !file.type.startsWith("image/"));
 
   if (validImageFiles.length > 0) {
-    console.log(
+    debugLog(
       "📥 Dropped valid image files:",
       validImageFiles.map((f) => ({ name: f.name, type: f.type, size: f.size }))
     );
@@ -167,7 +167,7 @@ function handleImageDrop(event, DOM, AppState) {
   }
 
   if (invalidImageFiles.length > 0) {
-    console.log(
+    debugLog(
       "⚠️ Dropped invalid image files:",
       invalidImageFiles.map((f) => ({
         name: f.name,
@@ -191,7 +191,7 @@ function handleImageDrop(event, DOM, AppState) {
   }
 
   if (nonImageFiles.length > 0) {
-    console.log(
+    debugLog(
       "⚠️ Dropped non-image files ignored:",
       nonImageFiles.map((f) => f.type)
     );
@@ -381,13 +381,13 @@ function handleImagePaste(event, DOM, AppState) {
 async function processPastedImage(file, DOM, AppState) {
   // Validate file type
   if (!file.type.startsWith("image/")) {
-    console.log("⚠️ Non-image file ignored:", file.type);
+    debugLog("⚠️ Non-image file ignored:", file.type);
     return;
   }
 
   // Validate file size (max 5MB)
   if (file.size > 5 * 1024 * 1024) {
-    console.log("⚠️ Image too large, max 5MB allowed");
+    debugLog("⚠️ Image too large, max 5MB allowed");
     showDropErrorMessage("Image too large, max 5MB allowed");
     return;
   }
@@ -397,7 +397,7 @@ async function processPastedImage(file, DOM, AppState) {
   const fileSignature = `${file.name}-${file.size}-${file.lastModified}`;
 
   if (AppState.processedFileSignatures.has(fileSignature)) {
-    console.log("⚠️ File already processed, skipping duplicate:", {
+    debugLog("⚠️ File already processed, skipping duplicate:", {
       name: file.name,
       size: file.size,
       lastModified: file.lastModified,
@@ -410,7 +410,7 @@ async function processPastedImage(file, DOM, AppState) {
     );
 
     if (!stillExists) {
-      console.log(
+      debugLog(
         "ℹ️ Image was removed, allowing re-addition by removing old signature"
       );
       AppState.processedFileSignatures.delete(fileSignature);
@@ -423,7 +423,7 @@ async function processPastedImage(file, DOM, AppState) {
   AppState.processedFileSignatures.add(fileSignature);
 
   // Log the signature for debugging
-  console.log("📝 Added file signature to prevent duplicates:", {
+  debugLog("📝 Added file signature to prevent duplicates:", {
     signature: fileSignature,
     totalSignatures: AppState.processedFileSignatures.size,
   });
@@ -432,7 +432,7 @@ async function processPastedImage(file, DOM, AppState) {
   if (typeof window !== "undefined") {
     window.resetFileSignatures = resetFileSignatures;
     window.cleanupOrphanedFileSignatures = cleanupOrphanedFileSignatures;
-    console.log(
+    debugLog(
       "🔧 Debug functions available: window.resetFileSignatures(), window.cleanupOrphanedFileSignatures()"
     );
   }
@@ -456,17 +456,17 @@ async function processPastedImage(file, DOM, AppState) {
   try {
     // Add to state immediately
     AppState.pastedImages.push(imageData);
-    console.log("📥 Image added to AppState.pastedImages:", {
+    debugLog("📥 Image added to AppState.pastedImages:", {
       id: imageData.id,
       name: imageData.name,
       status: imageData.status,
       appStateInstanceId: AppState.instanceId,
     });
-    console.log(
+    debugLog(
       "📥 Total images in state after adding:",
       AppState.pastedImages.length
     );
-    console.log(
+    debugLog(
       "📥 All IDs in state:",
       AppState.pastedImages.map((img) => img.id)
     );
@@ -492,7 +492,7 @@ async function processPastedImage(file, DOM, AppState) {
       // Use Fliplet.Media.Files.upload() as specified in the documentation
       // You can specify a folderId to organize images in specific folders
       // Example: folderId: 123 for a specific media folder
-      console.log("📤 Starting Fliplet Media upload for file:", {
+      debugLog("📤 Starting Fliplet Media upload for file:", {
         name: file.name,
         size: file.size,
         type: file.type,
@@ -503,18 +503,18 @@ async function processPastedImage(file, DOM, AppState) {
         folderId: null, // Optional: specify folderId if you want to organize images
       });
 
-      console.log("📤 Fliplet Media upload result:", uploadResult);
+      debugLog("📤 Fliplet Media upload result:", uploadResult);
 
       if (uploadResult && uploadResult.length) {
         const uploadedFile = uploadResult[0];
-        console.log("📤 Uploaded file details:", uploadedFile);
+        debugLog("📤 Uploaded file details:", uploadedFile);
 
         // Update image data with Fliplet Media URL and file ID
         imageData.flipletUrl = Fliplet.Media.authenticate(uploadedFile.url);
         imageData.flipletFileId = uploadedFile.id; // Store the file ID for deletion
         imageData.status = "uploaded";
 
-        console.log("✅ Image data updated after upload:", {
+        debugLog("✅ Image data updated after upload:", {
           id: imageData.id,
           flipletUrl: imageData.flipletUrl,
           flipletFileId: imageData.flipletFileId,
@@ -529,7 +529,7 @@ async function processPastedImage(file, DOM, AppState) {
         };
         reader.readAsDataURL(file);
 
-        console.log("✅ Image uploaded to Fliplet Media successfully:", {
+        debugLog("✅ Image uploaded to Fliplet Media successfully:", {
           name: imageData.name,
           flipletUrl: imageData.flipletUrl,
           flipletFileId: imageData.flipletFileId,
@@ -538,11 +538,11 @@ async function processPastedImage(file, DOM, AppState) {
         throw new Error("No files returned from Fliplet Media upload");
       }
     } catch (uploadError) {
-      console.error("❌ Failed to upload to Fliplet Media:", uploadError);
+      debugError("❌ Failed to upload to Fliplet Media:", uploadError);
       throw uploadError; // Re-throw to be caught by outer catch block
     }
   } catch (error) {
-    console.error("❌ Failed to upload image to Fliplet Media:", error);
+    debugError("❌ Failed to upload image to Fliplet Media:", error);
 
     // Update status to failed
     const failedImage = AppState.pastedImages.find(
@@ -662,31 +662,31 @@ function updateImageDisplay(imageData, container = null) {
  * @param {string} imageId - The ID of the image to remove
  */
 async function removePastedImage(imageId, DOM, AppState) {
-  console.log(
+  debugLog(
     "🔍 Starting image removal process for ID:",
     imageId,
     "(keeping in Fliplet Media)"
   );
-  console.log("🔍 Current AppState.pastedImages:", AppState.pastedImages);
-  console.log("🔍 AppState.pastedImages length:", AppState.pastedImages.length);
-  console.log(
+  debugLog("🔍 Current AppState.pastedImages:", AppState.pastedImages);
+  debugLog("🔍 AppState.pastedImages length:", AppState.pastedImages.length);
+  debugLog(
     "🔍 All image IDs in state:",
     AppState.pastedImages.map((img) => img.id)
   );
-  console.log("🔍 AppState instance ID:", AppState.instanceId);
+  debugLog("🔍 AppState instance ID:", AppState.instanceId);
 
   // Find the image data first
   let imageData = AppState.pastedImages.find((img) => img.id == imageId);
 
   if (!imageData) {
-    console.error("❌ Image data not found for ID:", imageId);
-    console.error(
+    debugError("❌ Image data not found for ID:", imageId);
+    debugError(
       "❌ Available IDs:",
       AppState.pastedImages.map((img) => img.id)
     );
-    console.error("❌ Searching for:", imageId);
-    console.error("❌ Type of search ID:", typeof imageId);
-    console.error(
+    debugError("❌ Searching for:", imageId);
+    debugError("❌ Type of search ID:", typeof imageId);
+    debugError(
       "❌ Type of stored IDs:",
       AppState.pastedImages.map((img) => typeof img.id)
     );
@@ -696,7 +696,7 @@ async function removePastedImage(imageId, DOM, AppState) {
       (img) => String(img.id) === String(imageId)
     );
     if (stringMatch) {
-      console.log("🔍 Found match using string comparison:", stringMatch);
+      debugLog("🔍 Found match using string comparison:", stringMatch);
       // Use this match instead
       imageData = stringMatch;
     } else {
@@ -704,7 +704,7 @@ async function removePastedImage(imageId, DOM, AppState) {
     }
   }
 
-  console.log("🔍 Found image data:", {
+  debugLog("🔍 Found image data:", {
     id: imageData.id,
     name: imageData.name,
     status: imageData.status,
@@ -715,7 +715,7 @@ async function removePastedImage(imageId, DOM, AppState) {
   // Note: We're keeping the image in Fliplet Media for future reference
   // Only removing it from local state and chat history
   if (imageData.flipletFileId) {
-    console.log(
+    debugLog(
       "ℹ️ Keeping image in Fliplet Media (ID:",
       imageData.flipletFileId,
       ") - only removing from local state and chat history"
@@ -753,7 +753,7 @@ async function removePastedImage(imageId, DOM, AppState) {
     possibleSignatures.forEach((signature) => {
       if (AppState.processedFileSignatures.has(signature)) {
         AppState.processedFileSignatures.delete(signature);
-        console.log(
+        debugLog(
           "🗑️ File signature removed from processedFileSignatures:",
           signature
         );
@@ -762,7 +762,7 @@ async function removePastedImage(imageId, DOM, AppState) {
     });
 
     if (!signatureRemoved) {
-      console.log("ℹ️ No matching file signature found to remove for:", {
+      debugLog("ℹ️ No matching file signature found to remove for:", {
         name: imageData.name,
         size: imageData.size,
         lastModified: imageData.lastModified,
@@ -771,7 +771,7 @@ async function removePastedImage(imageId, DOM, AppState) {
     }
   }
 
-  console.log("🗑️ Local state updated (image kept in Fliplet Media):", {
+  debugLog("🗑️ Local state updated (image kept in Fliplet Media):", {
     removedId: imageId,
     initialCount: initialCount,
     finalCount: finalCount,
@@ -784,11 +784,11 @@ async function removePastedImage(imageId, DOM, AppState) {
   const imageContainer = document.querySelector(`[data-image-id="${imageId}"]`);
   if (imageContainer) {
     imageContainer.remove();
-    console.log(
+    debugLog(
       "🗑️ Image container removed from DOM (image kept in Fliplet Media)"
     );
   } else {
-    console.warn("⚠️ Image container not found in DOM for ID:", imageId);
+    debugWarn("⚠️ Image container not found in DOM for ID:", imageId);
   }
 
   // Hide uploaded-images section if no images left
@@ -796,19 +796,19 @@ async function removePastedImage(imageId, DOM, AppState) {
     DOM.uploadedImages.innerHTML =
       '<div class="no-images-placeholder">No images attached</div>';
     DOM.uploadedImages.style.display = "none";
-    console.log(
+    debugLog(
       "🗑️ Uploaded images section hidden (no local images remaining - Fliplet Media images preserved)"
     );
   }
 
   // Clean up chat history messages that reference this removed image
-  console.log("🧹 About to clean up chat history for image ID:", imageId);
+  debugLog("🧹 About to clean up chat history for image ID:", imageId);
   cleanupChatHistoryImages(imageId, DOM, AppState);
 
   // Clean up orphaned file signatures to prevent "File already processed" issues
   cleanupOrphanedFileSignatures(AppState);
 
-  console.log(
+  debugLog(
     "✅ Image removal process completed for ID:",
     imageId,
     "- image kept in Fliplet Media"
@@ -822,8 +822,8 @@ async function removePastedImage(imageId, DOM, AppState) {
  * @param {Object} AppState - Application state object
  */
 function cleanupChatHistoryImages(imageId, DOM, AppState) {
-  console.log("🧹 Cleaning up chat history for removed image ID:", imageId);
-  console.log("🧹 Current chat history length:", AppState.chatHistory.length);
+  debugLog("🧹 Cleaning up chat history for removed image ID:", imageId);
+  debugLog("🧹 Current chat history length:", AppState.chatHistory.length);
 
   let messagesUpdated = 0;
   let totalImagesRemoved = 0;
@@ -831,7 +831,7 @@ function cleanupChatHistoryImages(imageId, DOM, AppState) {
   // Update chat history to remove references to the deleted image
   AppState.chatHistory = AppState.chatHistory.map((historyItem) => {
     if (historyItem.images && Array.isArray(historyItem.images)) {
-      console.log("🧹 Checking message for images:", {
+      debugLog("🧹 Checking message for images:", {
         messageId: historyItem.timestamp,
         imageCount: historyItem.images.length,
         imageIds: historyItem.images.map((img) => ({
@@ -844,7 +844,7 @@ function cleanupChatHistoryImages(imageId, DOM, AppState) {
       const filteredImages = historyItem.images.filter((img) => {
         const match = String(img.id) !== String(imageId);
         if (!match) {
-          console.log("🧹 Found matching image to remove:", {
+          debugLog("🧹 Found matching image to remove:", {
             storedId: img.id,
             type: typeof img.id,
             searchId: imageId,
@@ -860,7 +860,7 @@ function cleanupChatHistoryImages(imageId, DOM, AppState) {
         messagesUpdated++;
         totalImagesRemoved += removedCount;
 
-        console.log("🧹 Removed image reference from chat history message:", {
+        debugLog("🧹 Removed image reference from chat history message:", {
           messageId: historyItem.timestamp,
           originalImageCount: historyItem.images.length,
           newImageCount: filteredImages.length,
@@ -878,7 +878,7 @@ function cleanupChatHistoryImages(imageId, DOM, AppState) {
     return historyItem;
   });
 
-  console.log("🧹 Cleanup summary:", {
+  debugLog("🧹 Cleanup summary:", {
     messagesUpdated: messagesUpdated,
     totalImagesRemoved: totalImagesRemoved,
   });
@@ -891,7 +891,7 @@ function cleanupChatHistoryImages(imageId, DOM, AppState) {
     updateChatInterface(DOM, AppState);
   }
 
-  console.log("🧹 Chat history cleanup completed for image ID:", imageId);
+  debugLog("🧹 Chat history cleanup completed for image ID:", imageId);
 
   // Verify cleanup was successful
   verifyChatHistoryCleanup(imageId, DOM, AppState);
@@ -904,7 +904,7 @@ function cleanupChatHistoryImages(imageId, DOM, AppState) {
  * @param {Object} AppState - Application state object
  */
 function verifyChatHistoryCleanup(imageId, DOM, AppState) {
-  console.log("🔍 Verifying chat history cleanup for image ID:", imageId);
+  debugLog("🔍 Verifying chat history cleanup for image ID:", imageId);
 
   let referencesFound = 0;
   let totalMessagesChecked = 0;
@@ -917,7 +917,7 @@ function verifyChatHistoryCleanup(imageId, DOM, AppState) {
       );
       if (hasReference) {
         referencesFound++;
-        console.error(
+        debugError(
           "❌ [VERIFICATION] Image reference still found in chat history:",
           {
             messageIndex: index,
@@ -931,12 +931,12 @@ function verifyChatHistoryCleanup(imageId, DOM, AppState) {
   });
 
   if (referencesFound === 0) {
-    console.log(
+    debugLog(
       "✅ [VERIFICATION] Chat history cleanup verified - no remaining references to image ID:",
       imageId
     );
   } else {
-    console.error(
+    debugError(
       "❌ [VERIFICATION] Chat history cleanup failed - found",
       referencesFound,
       "remaining references to image ID:",
@@ -944,7 +944,7 @@ function verifyChatHistoryCleanup(imageId, DOM, AppState) {
     );
   }
 
-  console.log("🔍 Verification summary:", {
+  debugLog("🔍 Verification summary:", {
     totalMessagesChecked: totalMessagesChecked,
     referencesFound: referencesFound,
     imageId: imageId,
@@ -956,7 +956,7 @@ function verifyChatHistoryCleanup(imageId, DOM, AppState) {
  * This prevents the "File already processed" issue when images are removed
  */
 function cleanupOrphanedFileSignatures(AppState) {
-  console.log("🧹 Cleaning up orphaned file signatures...");
+  debugLog("🧹 Cleaning up orphaned file signatures...");
 
   const initialSignatureCount = AppState.processedFileSignatures.size;
   const signaturesToRemove = [];
@@ -988,11 +988,11 @@ function cleanupOrphanedFileSignatures(AppState) {
   // Remove orphaned signatures
   signaturesToRemove.forEach((signature) => {
     AppState.processedFileSignatures.delete(signature);
-    console.log("🗑️ Removed orphaned file signature:", signature);
+    debugLog("🗑️ Removed orphaned file signature:", signature);
   });
 
   const finalSignatureCount = AppState.processedFileSignatures.size;
-  console.log("🧹 Orphaned signature cleanup complete:", {
+  debugLog("🧹 Orphaned signature cleanup complete:", {
     initialCount: initialSignatureCount,
     removedCount: signaturesToRemove.length,
     finalCount: finalSignatureCount,
@@ -1004,10 +1004,10 @@ function cleanupOrphanedFileSignatures(AppState) {
  * This will allow all files to be processed again
  */
 function resetFileSignatures(AppState) {
-  console.log("🔄 Manually resetting file signatures...");
+  debugLog("🔄 Manually resetting file signatures...");
   const initialCount = AppState.processedFileSignatures.size;
   AppState.processedFileSignatures.clear();
-  console.log("🔄 File signatures reset:", {
+  debugLog("🔄 File signatures reset:", {
     initialCount: initialCount,
     finalCount: AppState.processedFileSignatures.size,
   });
@@ -1019,7 +1019,7 @@ function resetFileSignatures(AppState) {
  * @param {Object} AppState - Application state object
  */
 function updateChatInterface(DOM, AppState) {
-  console.log("🔄 Updating chat interface with current history:", {
+  debugLog("🔄 Updating chat interface with current history:", {
     historyLength: AppState.chatHistory.length,
     messagesWithImages: AppState.chatHistory.filter(
       (item) => item.images && item.images.length > 0
@@ -1049,7 +1049,7 @@ function updateChatInterface(DOM, AppState) {
           // Use flipletUrl for permanent image storage
           const imageSrc = img.flipletUrl;
           if (!imageSrc) {
-            console.warn("⚠️ Image missing flipletUrl:", img);
+            debugWarn("⚠️ Image missing flipletUrl:", img);
             return "";
           }
 
@@ -1076,7 +1076,7 @@ function updateChatInterface(DOM, AppState) {
   // Scroll to bottom
   scrollToBottom();
 
-  console.log("🔄 Chat interface update completed");
+  debugLog("🔄 Chat interface update completed");
 }
 
 /**
@@ -1101,7 +1101,7 @@ async function handleImageRemove(imageId, DOM, AppState) {
       // Button will be removed with the container, so no need to restore
     }
   } catch (error) {
-    console.error("❌ Error removing image:", error);
+    debugError("❌ Error removing image:", error);
     // Fliplet.UI.Toast.error("Failed to remove image. Please try again.");
 
     // Restore button state if there was an error
@@ -1135,7 +1135,7 @@ function formatFileSize(bytes) {
 function clearPastedImages(skipChatHistoryCleanup = false, DOM, AppState) {
   // Note: We're keeping all images in Fliplet Media for future reference
   // Only clearing them from local state and chat history
-  console.log(
+  debugLog(
     "ℹ️ Keeping all images in Fliplet Media - only clearing from local state"
   );
 
@@ -1143,7 +1143,7 @@ function clearPastedImages(skipChatHistoryCleanup = false, DOM, AppState) {
     (img) => img.flipletFileId
   ).length;
   if (imageCount > 0) {
-    console.log(
+    debugLog(
       `ℹ️ ${imageCount} images will remain in Fliplet Media (not deleted from service)`
     );
   }
@@ -1158,7 +1158,7 @@ function clearPastedImages(skipChatHistoryCleanup = false, DOM, AppState) {
 
   // Clear processed file signatures to allow re-adding the same images
   AppState.processedFileSignatures.clear();
-  console.log(
+  debugLog(
     "🧹 Processed file signatures cleared - same images can now be added again"
   );
 
@@ -1166,24 +1166,24 @@ function clearPastedImages(skipChatHistoryCleanup = false, DOM, AppState) {
     DOM.uploadedImages.innerHTML =
       '<div class="no-images-placeholder">No images attached</div>';
     DOM.uploadedImages.style.display = "none";
-    console.log(
+    debugLog(
       "🗑️ Uploaded images section hidden (local state cleared, Fliplet Media images preserved)"
     );
   }
 
   // Only clean up chat history if this is NOT an automatic clearing after AI processing
   if (!skipChatHistoryCleanup && imageIdsToCleanup.length > 0) {
-    console.log("🧹 Cleaning up chat history for automatically cleared images");
+    debugLog("🧹 Cleaning up chat history for automatically cleared images");
     imageIdsToCleanup.forEach((imageId) => {
       cleanupChatHistoryImages(imageId, DOM, AppState);
     });
   } else {
-    console.log(
+    debugLog(
       "ℹ️ Skipping chat history cleanup - preserving visual context for AI responses"
     );
   }
 
-  console.log(
+  debugLog(
     "🧹 All pasted images cleared from local state (kept in Fliplet Media)"
   );
 }

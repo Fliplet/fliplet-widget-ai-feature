@@ -4,8 +4,8 @@
  * @returns {string} System prompt
  */
 function buildSystemPromptWithContext(context, pastedImages = [], AppState, dataSourceColumns, selectedDataSourceName) {
-    console.log("📝 [AI] Building system prompt with context...");
-    console.log("📝 [AI] Images passed to system prompt:", {
+    debugLog("📝 [AI] Building system prompt with context...");
+    debugLog("📝 [AI] Images passed to system prompt:", {
       passedImagesCount: pastedImages.length,
       passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
       currentAppStateImages: AppState.pastedImages.length,
@@ -1325,15 +1325,15 @@ For NEW projects: Use code blocks \`\`\`html \`\`\`css \`\`\`javascript
 
 Make sure each code block is complete and functional.`;
 
-    console.log("✅ [AI] System prompt built");
-    console.log(
+    debugLog("✅ [AI] System prompt built");
+    debugLog(
       "📄 [AI] Full system prompt being sent:",
       prompt.substring(0, 500) + "..."
     );
 
     // Log if we're including existing code
     if (!context.isFirstGeneration) {
-      console.log("🔄 [AI] Including existing code in prompt:", {
+      debugLog("🔄 [AI] Including existing code in prompt:", {
         htmlLength: AppState.currentHTML.length,
         cssLength: AppState.currentCSS.length,
         jsLength: AppState.currentJS.length,

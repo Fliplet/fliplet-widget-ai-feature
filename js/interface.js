@@ -167,26 +167,26 @@ Fliplet.Widget.generateInterface({
 
         // Debug mode configuration - set to true to show console logs
         const debugMode = true;
-        
+
         // Debug utility function to conditionally log console messages
         function debugLog(...args) {
           if (debugMode) {
             console.log(...args);
           }
         }
-        
+
         function debugError(...args) {
           if (debugMode) {
             console.error(...args);
           }
         }
-        
+
         function debugWarn(...args) {
           if (debugMode) {
             console.warn(...args);
           }
         }
-        
+
         // Make debug functions globally available
         window.debugMode = debugMode;
         window.debugLog = debugLog;
@@ -322,10 +322,7 @@ Fliplet.Widget.generateInterface({
                 });
               });
 
-              debugLog(
-                "✅ [CodeAnalyzer] HTML analysis complete:",
-                analysis
-              );
+              debugLog("✅ [CodeAnalyzer] HTML analysis complete:", analysis);
               return analysis;
             } catch (error) {
               debugError("❌ [CodeAnalyzer] HTML analysis failed:", error);
@@ -529,10 +526,7 @@ Fliplet.Widget.generateInterface({
               }
             });
 
-            debugLog(
-              "✅ [CodeAnalyzer] Cross-references complete:",
-              crossRefs
-            );
+            debugLog("✅ [CodeAnalyzer] Cross-references complete:", crossRefs);
             return crossRefs;
           }
         }
@@ -763,10 +757,7 @@ Fliplet.Widget.generateInterface({
               });
             }
 
-            debugLog(
-              "✅ [ContextBuilder] Relevant sections found:",
-              sections
-            );
+            debugLog("✅ [ContextBuilder] Relevant sections found:", sections);
             return sections;
           }
 
@@ -830,9 +821,7 @@ Fliplet.Widget.generateInterface({
                 "❌ [ProtocolParser] Structured JSON parse failed:",
                 error
               );
-              debugLog(
-                "📄 [ProtocolParser] Full response that caused error:"
-              );
+              debugLog("📄 [ProtocolParser] Full response that caused error:");
               debugLog("---START RESPONSE---");
               debugLog(response);
               debugLog("---END RESPONSE---");
@@ -908,9 +897,7 @@ Fliplet.Widget.generateInterface({
               try {
                 const jsonMatch = beforeCodeBlock.match(/\{[\s\S]*\}/);
                 if (jsonMatch) {
-                  debugLog(
-                    "🎯 [ProtocolParser] Found JSON before code blocks"
-                  );
+                  debugLog("🎯 [ProtocolParser] Found JSON before code blocks");
                   return JSON.parse(jsonMatch[0]);
                 }
               } catch (error) {
@@ -938,10 +925,7 @@ Fliplet.Widget.generateInterface({
                 return JSON.parse(jsonMatch[0]);
               }
             } catch (error) {
-              debugLog(
-                "❌ [ProtocolParser] Strategy 3 failed:",
-                error.message
-              );
+              debugLog("❌ [ProtocolParser] Strategy 3 failed:", error.message);
             }
 
             debugLog(
@@ -1431,18 +1415,15 @@ Fliplet.Widget.generateInterface({
               typeof instruction.old_string !== "string" ||
               instruction.old_string.trim() === ""
             ) {
-              debugLog(
-                "❌ [StringReplacement] old_string validation failed:",
-                {
-                  exists: !!instruction.old_string,
-                  type: typeof instruction.old_string,
-                  value: instruction.old_string,
-                  isEmpty: instruction.old_string === "",
-                  isOnlyWhitespace:
-                    typeof instruction.old_string === "string" &&
-                    instruction.old_string.trim() === "",
-                }
-              );
+              debugLog("❌ [StringReplacement] old_string validation failed:", {
+                exists: !!instruction.old_string,
+                type: typeof instruction.old_string,
+                value: instruction.old_string,
+                isEmpty: instruction.old_string === "",
+                isOnlyWhitespace:
+                  typeof instruction.old_string === "string" &&
+                  instruction.old_string.trim() === "",
+              });
               return {
                 valid: false,
                 error: "old_string is required and must be a non-empty string",
@@ -1491,9 +1472,7 @@ Fliplet.Widget.generateInterface({
            * @returns {Object} Validation results
            */
           async validateChanges(changeRequest, currentCode) {
-            debugLog(
-              "🛡️ [ValidationEngine] Starting validation pipeline..."
-            );
+            debugLog("🛡️ [ValidationEngine] Starting validation pipeline...");
 
             const results = {
               valid: true,
@@ -1558,9 +1537,7 @@ Fliplet.Widget.generateInterface({
            * @returns {Object} Protocol validation results
            */
           validateProtocol(changeRequest) {
-            debugLog(
-              "🔍 [ValidationEngine] Layer 1: Protocol validation..."
-            );
+            debugLog("🔍 [ValidationEngine] Layer 1: Protocol validation...");
 
             const result = {
               valid: true,
@@ -1680,9 +1657,7 @@ Fliplet.Widget.generateInterface({
            * @returns {Object} Semantic validation results
            */
           validateSemantics(changeRequest, currentCode) {
-            debugLog(
-              "🔍 [ValidationEngine] Layer 3: Semantic validation..."
-            );
+            debugLog("🔍 [ValidationEngine] Layer 3: Semantic validation...");
 
             const result = {
               valid: true,
@@ -2268,7 +2243,7 @@ Fliplet.Widget.generateInterface({
           model: CONFIG.OPENAI_MODEL,
           /** @type {number} Temperature for response randomness */
           temperature: CONFIG.TEMPERATURE,
-          max_tokens: CONFIG.MAX_TOKENS
+          max_tokens: CONFIG.MAX_TOKENS,
         };
 
         /**
@@ -2378,7 +2353,6 @@ Fliplet.Widget.generateInterface({
             if (DOM.userInput) {
               autoResizeTextarea(DOM.userInput);
             }
-
           });
 
           debugLog("✅ App initialization complete");
@@ -2688,17 +2662,14 @@ Fliplet.Widget.generateInterface({
 
             // Note: Images are now handled within the AI call function using chat history
             // This ensures all historical images are preserved for context
-            debugLog(
-              "🔍 [Main] Sending request to AI with current images:",
-              {
-                currentImagesCount: currentImages.length,
-                currentImages: currentImages.map((img) => ({
-                  id: img.id,
-                  name: img.name,
-                })),
-                note: "Historical images will be automatically included from chat history",
-              }
-            );
+            debugLog("🔍 [Main] Sending request to AI with current images:", {
+              currentImagesCount: currentImages.length,
+              currentImages: currentImages.map((img) => ({
+                id: img.id,
+                name: img.name,
+              })),
+              note: "Historical images will be automatically included from chat history",
+            });
 
             const aiResponse = await callOpenAIWithNewArchitecture(
               userMessage,
@@ -2712,7 +2683,7 @@ Fliplet.Widget.generateInterface({
 
             // Step 4: Handle different response types
             debugLog(`🔧 [Main] Processing ${changeRequest.type} response...`);
-            
+
             let applicationResult;
             let isAnswerType = changeRequest.type === "answer";
 
@@ -2723,14 +2694,14 @@ Fliplet.Widget.generateInterface({
                 updatedCode: {
                   html: AppState.currentHTML,
                   css: AppState.currentCSS,
-                  js: AppState.currentJS
+                  js: AppState.currentJS,
                 },
                 changeLog: {
                   html: [],
                   css: [],
-                  js: []
+                  js: [],
                 },
-                success: true
+                success: true,
               };
             } else if (
               changeRequest.type === "string_replacement" &&
@@ -2775,16 +2746,24 @@ Fliplet.Widget.generateInterface({
 
             if (AppState.pastedImages.length > 0) {
               logAnalytics({
-                category: 'link',
-                action: 'action',
-                label: 'Images uploaded - Chat GUID: ' + AppState.chatGUID + ' - Images: ' + AppState.pastedImages.map((el) => el.flipletUrl)
+                category: "link",
+                action: "action",
+                label:
+                  "Images uploaded - Chat GUID: " +
+                  AppState.chatGUID +
+                  " - Images: " +
+                  AppState.pastedImages.map((el) => el.flipletUrl),
               });
             }
 
             logAnalytics({
-              category: 'link',
-              action: 'action',
-              label: `AI ${isAnswerType ? 'Answer' : 'Code Generation'} - Chat GUID: ${AppState.chatGUID} - Type: ${changeRequest.type}`
+              category: "link",
+              action: "action",
+              label: `AI ${
+                isAnswerType ? "Answer" : "Code Generation"
+              } - Chat GUID: ${AppState.chatGUID} - Type: ${
+                changeRequest.type
+              }`,
             });
 
             // Step 6: Update change history
@@ -2813,7 +2792,7 @@ Fliplet.Widget.generateInterface({
               saveGeneratedCode({
                 html: AppState.currentHTML || "",
                 css: AppState.currentCSS || "",
-                javascript: AppState.currentJS || ""
+                javascript: AppState.currentJS || "",
               });
             }
 
@@ -2824,7 +2803,8 @@ Fliplet.Widget.generateInterface({
             let aiResponseText;
             if (isAnswerType) {
               // For answer type, use the direct answer from the response
-              aiResponseText = changeRequest.answer || changeRequest.explanation;
+              aiResponseText =
+                changeRequest.answer || changeRequest.explanation;
               debugLog("💬 [Main] Displaying informational answer to user");
             } else {
               // For string_replacement type, show explanation with change summary
@@ -3337,58 +3317,62 @@ Fliplet.Widget.generateInterface({
                     type: {
                       type: "string",
                       enum: ["string_replacement", "answer"],
-                      description: "The type of response - either code changes or informational answer"
+                      description:
+                        "The type of response - either code changes or informational answer",
                     },
                     explanation: {
                       type: "string",
-                      description: "Human-readable explanation of the changes or response"
+                      description:
+                        "Human-readable explanation of the changes or response",
                     },
                     answer: {
                       type: "string",
-                      description: "Direct answer for informational responses (only include when type is 'answer')"
+                      description:
+                        "Direct answer for informational responses (only include when type is 'answer')",
                     },
                     instructions: {
                       type: "array",
-                      description: "String replacement instructions (only include when type is 'string_replacement')",
+                      description:
+                        "String replacement instructions (only include when type is 'string_replacement')",
                       items: {
                         type: "object",
                         properties: {
                           target_type: {
                             type: "string",
-                            enum: ["html", "css", "js"]
+                            enum: ["html", "css", "js"],
                           },
                           old_string: {
                             type: "string",
-                            description: "Exact string to replace"
+                            description: "Exact string to replace",
                           },
                           new_string: {
                             type: "string",
-                            description: "Replacement string"
+                            description: "Replacement string",
                           },
                           description: {
                             type: "string",
-                            description: "Description of this change"
+                            description: "Description of this change",
                           },
                           replace_all: {
                             type: "boolean",
-                            description: "Whether to replace all occurrences"
-                          }
+                            description: "Whether to replace all occurrences",
+                          },
                         },
                         required: [
                           "target_type",
                           "old_string",
                           "new_string",
                           "description",
-                          "replace_all"
+                          "replace_all",
                         ],
-                        additionalProperties: false
-                      }
-                    }
+                        additionalProperties: false,
+                      },
+                    },
                   },
                   required: ["type", "explanation", "answer", "instructions"],
-                  additionalProperties: false
-                }
-              }
+                  additionalProperties: false,
+                },
+              },
             },
           };
 
@@ -3579,10 +3563,7 @@ Fliplet.Widget.generateInterface({
                       targetRegex,
                       `$1${diff.content}`
                     );
-                    debugLog(
-                      "✅ Added content to element with ID:",
-                      targetId
-                    );
+                    debugLog("✅ Added content to element with ID:", targetId);
                   } else {
                     console.warn("⚠️ Target ID not found:", targetId);
                   }
@@ -4159,13 +4140,13 @@ Fliplet.Widget.generateInterface({
 
           try {
             // Check if we have any code to update
-            if (
-              !AppState.currentHTML &&
-              !AppState.currentCSS &&
-              !AppState.currentJS
-            ) {
-              return;
-            }
+            // if (
+            //   !AppState.currentHTML &&
+            //   !AppState.currentCSS &&
+            //   !AppState.currentJS
+            // ) {
+            //   return;
+            // }
 
             // Build complete HTML document
             const rawHTMLContent =
@@ -4195,23 +4176,20 @@ Fliplet.Widget.generateInterface({
               (item) => item.images && item.images.length > 0
             );
             if (messagesWithImages.length > 0) {
-              debugLog(
-                "💾 Saving chat history to Fliplet field with images:",
-                {
-                  totalMessages: AppState.chatHistory.length,
-                  messagesWithImages: messagesWithImages.length,
-                  imageDetails: messagesWithImages.map((item) => ({
-                    messageType: item.type,
-                    messagePreview: item.message.substring(0, 50) + "...",
-                    imageCount: item.images.length,
-                    imageUrls: item.images.map((img) => ({
-                      id: img.id,
-                      name: img.name,
-                      flipletUrl: !!img.flipletUrl,
-                    })),
+              debugLog("💾 Saving chat history to Fliplet field with images:", {
+                totalMessages: AppState.chatHistory.length,
+                messagesWithImages: messagesWithImages.length,
+                imageDetails: messagesWithImages.map((item) => ({
+                  messageType: item.type,
+                  messagePreview: item.message.substring(0, 50) + "...",
+                  imageCount: item.images.length,
+                  imageUrls: item.images.map((img) => ({
+                    id: img.id,
+                    name: img.name,
+                    flipletUrl: !!img.flipletUrl,
                   })),
-                }
-              );
+                })),
+              });
             }
 
             // Save to Fliplet field
@@ -4293,9 +4271,9 @@ Fliplet.Widget.generateInterface({
                       : "";
 
                   // Build message content
-                  let messageContent = `${prefix ? `<strong>${prefix}</strong>: ` : ''}${escapeHTML(
-                    item.message
-                  )}`;
+                  let messageContent = `${
+                    prefix ? `<strong>${prefix}</strong>: ` : ""
+                  }${escapeHTML(item.message)}`;
 
                   // Add images if present
                   if (item.images && item.images.length > 0) {
@@ -4379,7 +4357,6 @@ Fliplet.Widget.generateInterface({
           images = [],
           skipStorage = false
         ) {
-
           DOM.resetBtn.style.display = "block";
           console.assert(
             typeof message === "string",
@@ -4393,13 +4370,12 @@ Fliplet.Widget.generateInterface({
           const messageDiv = document.createElement("div");
           messageDiv.className = `message ${type}-message`;
 
-          const prefix =
-            type === "user" ? "You" : type === "ai" ? "AI" : "";
+          const prefix = type === "user" ? "You" : type === "ai" ? "AI" : "";
 
           // Build message content
-          let messageContent = `${prefix ? `<strong>${prefix}</strong>: ` : ''}${escapeHTML(
-            message
-          )}`;
+          let messageContent = `${
+            prefix ? `<strong>${prefix}</strong>: ` : ""
+          }${escapeHTML(message)}`;
 
           // Add images if present
           if (images && images.length > 0) {
@@ -4429,8 +4405,6 @@ Fliplet.Widget.generateInterface({
           messageDiv.innerHTML = messageContent;
 
           DOM.chatMessages.appendChild(messageDiv);
-
-
 
           scrollToBottom();
 
@@ -4526,81 +4500,80 @@ Fliplet.Widget.generateInterface({
           }
 
           Fliplet.Modal.confirm({
-            title: 'Clear chat history',
-            message: '<p>This will clear your chat history but keep your generated code intact. Your HTML, CSS, and JavaScript files will remain unchanged.</p>',
+            title: "Clear chat history",
+            message:
+              "<p>This will clear your chat history but keep your generated code intact. Your HTML, CSS, and JavaScript files will remain unchanged.</p>",
             buttons: {
               confirm: {
-                label: 'Clear chat history',
-                className: 'btn-danger'
+                label: "Clear chat history",
+                className: "btn-danger",
               },
               cancel: {
-                label: 'Cancel',
-                className: 'btn-default'
-              }
+                label: "Cancel",
+                className: "btn-default",
+              },
+            },
+          }).then((result) => {
+            if (!result) {
+              return;
             }
-          })
-            .then((result) => {
 
-              if (!result) {
-                return;
-              }
+            DOM.resetBtn.style.display = "none";
 
-              DOM.resetBtn.style.display = "none";
+            debugLog("🔄 Resetting session");
 
-              debugLog("🔄 Resetting session");
+            // Reset application state
+            AppState.currentHTML = "";
+            AppState.currentCSS = "";
+            AppState.currentJS = "";
+            AppState.previousHTML = "";
+            AppState.previousCSS = "";
+            AppState.previousJS = "";
+            AppState.chatHistory = [];
+            AppState.isFirstGeneration = true;
+            AppState.requestCount = 0;
 
-              // Reset application state
-              AppState.currentHTML = "";
-              AppState.currentCSS = "";
-              AppState.currentJS = "";
-              AppState.previousHTML = "";
-              AppState.previousCSS = "";
-              AppState.previousJS = "";
-              AppState.chatHistory = [];
-              AppState.isFirstGeneration = true;
-              AppState.requestCount = 0;
+            dataSourceColumns = [];
+            selectedDataSourceName = "";
+            selectedDataSourceId = "";
+            Fliplet.Helper.field("dataSourceId").set("");
 
-              dataSourceColumns = [];
-              selectedDataSourceName = "";
-              selectedDataSourceId = "";
-              Fliplet.Helper.field("dataSourceId").set("");
-
-              logAnalytics({
-                category: 'link',
-                action: 'action',
-                label: 'Chat reset - Chat GUID: ' + AppState.chatGUID
-              });
-
-              AppState.chatGUID = Fliplet.guid();
-              Fliplet.Helper.field("chatGUID").set(AppState.chatGUID);
-
-              // Clear Fliplet field
-              clearChatHistoryFromStorage();
-
-              // Clear pasted images
-              clearPastedImages(false, DOM, AppState);
-
-              // Clear displays
-              DOM.chatMessages.innerHTML =
-                '<div class="message system-message">Describe a feature you want to build and AI will create it for you. You can select a data source or drag images to add them to your instructions.</div>';
-
-              // Reset textarea height
-              if (DOM.userInput) {
-                resetTextarea(DOM.userInput);
-              }
-
-              // Ensure resize handle is added back after clearing
-              if (
-                window.chatResizeHandle &&
-                !DOM.chatMessages.contains(window.chatResizeHandle)
-              ) {
-                DOM.chatMessages.style.position = "relative";
-                DOM.chatMessages.appendChild(window.chatResizeHandle);
-              }
-
-              // Reset
-              updateCode();
+            logAnalytics({
+              category: "link",
+              action: "action",
+              label: "Chat reset - Chat GUID: " + AppState.chatGUID,
             });
+
+            AppState.chatGUID = Fliplet.guid();
+            Fliplet.Helper.field("chatGUID").set(AppState.chatGUID);
+
+            // Clear Fliplet field
+            clearChatHistoryFromStorage();
+
+            // Clear pasted images
+            clearPastedImages(false, DOM, AppState);
+
+            // Clear displays
+            DOM.chatMessages.innerHTML =
+              '<div class="message system-message">Describe a feature you want to build and AI will create it for you. You can select a data source or drag images to add them to your instructions.</div>';
+
+            // Reset textarea height
+            if (DOM.userInput) {
+              resetTextarea(DOM.userInput);
+            }
+
+            // Ensure resize handle is added back after clearing
+            if (
+              window.chatResizeHandle &&
+              !DOM.chatMessages.contains(window.chatResizeHandle)
+            ) {
+              DOM.chatMessages.style.position = "relative";
+              DOM.chatMessages.appendChild(window.chatResizeHandle);
+            }
+
+            // Reset
+            updateCode();
+          });
           return; // Stop execution here
         }
 
@@ -4658,8 +4631,6 @@ Fliplet.Widget.generateInterface({
             contentLength: textarea.value.length,
             currentHeight: textarea.style.height,
           });
-
-
         }
 
         /**
@@ -4679,8 +4650,6 @@ Fliplet.Widget.generateInterface({
 
           textarea.focus();
         }
-
-
 
         /**
          * Make the chat messages div resizable using the static resize handle
@@ -4722,8 +4691,6 @@ Fliplet.Widget.generateInterface({
             }
           });
         }
-
-
 
         // Export for testing (if needed)
         if (typeof module !== "undefined" && module.exports) {
@@ -4889,10 +4856,10 @@ function logAiCall(data) {
 }
 
 function logAnalytics(data) {
-  return Fliplet.App.Analytics.track('event', {
+  return Fliplet.App.Analytics.track("event", {
     category: data.category,
     action: data.action,
-    label: data.label
+    label: data.label,
   });
 }
 
@@ -4911,7 +4878,9 @@ async function populateCurrentPageContent() {
 
     if (currentSettings && currentSettings.page) {
       // Extract widget-specific HTML content
-      const htmlContent = extractHtmlContent(currentSettings.page.richLayout || "");
+      const htmlContent = extractHtmlContent(
+        currentSettings.page.richLayout || ""
+      );
 
       // Extract widget-specific CSS content
       const cssContent = extractCodeBetweenDelimiters(
@@ -4982,13 +4951,13 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("regenerateCode").set(true);
 
   var data = Fliplet.Widget.getData();
-  data.fields.dataSourceId = '';
-  data.fields.dataSourceName = '';
+  data.fields.dataSourceId = "";
+  data.fields.dataSourceName = "";
   data.fields.layoutHTML = parsedContent.html;
   data.fields.css = parsedContent.css;
   data.fields.javascript = parsedContent.javascript;
   data.fields.regenerateCode = true;
-  Fliplet.Helper.field("dataSourceId").set('');
+  Fliplet.Helper.field("dataSourceId").set("");
 
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);

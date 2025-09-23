@@ -188,6 +188,7 @@ function handleImageDrop(event, DOM, AppState) {
     });
 
     showDropErrorMessage(`Invalid images: ${errorDetails.join(", ")}`);
+    showDropErrorMessage("Currently you can upload PNG (.png), JPEG (.jpeg and .jpg), WEBP (.webp), and non-animated GIF (.gif) for consuming vision capability.");
   }
 
   if (nonImageFiles.length > 0) {
@@ -238,8 +239,7 @@ function isValidImageFile(file) {
     "image/jpg",
     "image/png",
     "image/gif",
-    "image/webp",
-    "image/bmp",
+    "image/webp"
   ];
   if (!allowedTypes.includes(file.type.toLowerCase())) {
     return false;

@@ -4491,6 +4491,10 @@ Fliplet.Widget.generateInterface({
         function handleReset(e) {
           e.preventDefault();
 
+          if (!AppState.chatHistory.length) {
+            return;
+          }
+
           Fliplet.Modal.confirm({
             title: 'Clear chat history',
             message: '<p>This will clear your chat history but keep your generated code intact. Your HTML, CSS, and JavaScript files will remain unchanged.</p>',

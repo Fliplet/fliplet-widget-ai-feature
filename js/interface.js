@@ -4514,9 +4514,12 @@ Fliplet.Widget.generateInterface({
             }
           })
             .then((result) => {
+
               if (!result) {
                 return;
               }
+
+              DOM.resetBtn.style.display = "none";
 
               console.log("🔄 Resetting session");
 

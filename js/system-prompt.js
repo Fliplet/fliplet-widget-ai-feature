@@ -67,8 +67,10 @@ CSV, encryption, parsing: listed accordingly
 Fliplet-specific: fliplet-audio, fliplet-audio-player, fliplet-barcode, fliplet-chat, fliplet-communicate, fliplet-content, fliplet-csv, fliplet-datasources, fliplet-encryption, fliplet-gamify, fliplet-helper, fliplet-icons, fliplet-like, fliplet-media, fliplet-notifications, fliplet-oauth2, fliplet-payments, fliplet-ravenjs, fliplet-session, fliplet-socket, fliplet-studio-ui, fliplet-themes, fliplet-ui-datetime, fliplet-ui-number, fliplet-ui-panzoom
 Charts and utilities: highcharts, jssocials, jwt-decode, lodash-joins, mixitup, moment-timezone, object-hash
 
+If user is requesting a chart always use highcharts unless they specify otherwise.
+
 3. SASS variables
-For styling the following types of elemments use these SASS variables if possible. e.g. 
+For styling the following types of elements use these SASS variables if possible. e.g. 
 
 body {
   background-color: $primaryButtonColor;

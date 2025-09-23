@@ -84,7 +84,9 @@ Text link color: $linkColor
 Text link color when clicked: $linkHoverColor
 Text link decoration when clicked: $linkHoverDecor
 
-Ask the user if you need clarification on the requirements, do not start creating code if you are not clear on the requirements.    
+Ask the user if you need clarification on the requirements, do not start creating code if you are not clear on the requirements.
+
+CRITICAL: When users request features that require specific parameters (like data source names, column names, API endpoints, etc.), you MUST ask for these details if they are not provided. Never assume or make up values for required parameters. Use the "answer" response type to request missing information before generating code.    
 
           ${pastedImages.length > 0 && AppState.pastedImages.filter(img => 
             img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
@@ -112,6 +114,73 @@ These are the list of columns in the data source selected by the user: ${dataSou
 The Data Source JS APIs allows you to interact and make any sort of change to your app's Data Sources from the app itself.
 
 ## Data Sources
+
+### Create a new data source
+
+Use the "create" method to programmatically create a new data source with specified columns and initial data:
+
+**IMPORTANT: When a user requests data source creation, you MUST ask for the required parameters if they are not provided in their request. Do not assume or make up values.**
+
+Required information to ask for:
+1. **Data source name** - What should the data source be called?
+2. **Column names** - What fields/columns should the data source have?
+3. **Purpose/context** - What will this data source be used for? (helps determine appropriate columns)
+
+If any of these are missing from the user's request, respond with type "answer" asking for the missing information before generating any code.
+
+Example response when information is missing:
+{
+  "type": "answer",
+  "explanation": "Requested missing parameters for data source creation",
+  "answer": "To create a data source for you, I need some additional information:\n\n1. What would you like to name this data source?\n2. What columns/fields should it have? (e.g., Name, Email, Phone, etc.)\n3. What will this data source be used for?\n\nOnce you provide these details, I can generate the code to create the data source.",
+  "instructions": []
+}
+
+// Create a new data source
+Fliplet.DataSources.create({
+  name: 'Your Data Source Name',
+  appId: Fliplet.Env.get('appId'),
+  organizationId: Fliplet.Env.get('organizationId'),
+  columns: ['Column1', 'Column2', 'Column3'], // Define your columns here
+  entries: [
+    { Column1: 'Value1', Column2: 'Value2', Column3: 'Value3' },
+    // Add more entries as needed
+  ],
+  accessRules: [
+    { type: ['select', 'insert', 'update', 'delete'], allow: 'all' }
+  ]
+}).then(function (dataSource) {
+  console.log('New data source created:', dataSource);
+  // dataSource.id contains the ID of the newly created data source
+}).catch(function (error) {
+  console.error('Error creating data source:', error);
+  Fliplet.UI.Toast('Failed to create data source: ' + error.message);
+});
+
+Parameters for creating a data source:
+- **name** (required): The name of the data source - MUST be provided by user
+- **appId** (required): The app ID - automatically set using Fliplet.Env.get('appId')
+- **organizationId** (required): The organization ID - automatically set using Fliplet.Env.get('organizationId')
+- **columns** (recommended): Array of column names for the data source structure - SHOULD be specified by user
+- **entries** (optional): Array of initial data entries to populate the data source
+- **accessRules** (optional): Array of access rules defining permissions for the data source
+
+Example of creating a data source for a contact form:
+// Create a contacts data source
+Fliplet.DataSources.create({
+  name: 'Contact Submissions',
+  appId: Fliplet.Env.get('appId'),
+  organizationId: Fliplet.Env.get('organizationId'),
+  columns: ['Name', 'Email', 'Phone', 'Message', 'Submitted At'],
+  accessRules: [
+    { type: ['select', 'insert', 'update', 'delete'], allow: 'all' }
+  ]
+}).then(function (dataSource) {
+  console.log('Contact data source created with ID:', dataSource.id);
+  // You can now use this data source to store form submissions
+}).catch(function (error) {
+  console.error('Failed to create contact data source:', error);
+});
 
 ### Get the list of data sources in use by the current app
 

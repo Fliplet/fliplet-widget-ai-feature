@@ -803,11 +803,8 @@ Fliplet.Widget.generateInterface({
             );
 
             try {
-              // Clean and decode the response first to handle hex escapes and encoding issues
-              const cleanedResponse = this.cleanEncodedResponse(response);
-              
               // With structured outputs, this should always be valid JSON
-              const parsed = JSON.parse(cleanedResponse);
+              const parsed = JSON.parse(response);
               debugLog(
                 "✅ [ProtocolParser] Structured JSON response parsed:",
                 parsed
@@ -849,62 +846,20 @@ Fliplet.Widget.generateInterface({
           }
 
           /**
-           * Clean and decode response to handle hex escapes and encoding issues
-           * @param {string} response - Raw response that may contain hex escapes
-           * @returns {string} Cleaned response
-           */
-          cleanEncodedResponse(response) {
-            debugLog("🧹 [ProtocolParser] Cleaning encoded response...");
-            
-            let cleaned = response;
-            
-            // Handle hex escape sequences that are corrupting dollar signs and other characters
-            // Common patterns: \x3C for <, \x24 for $, etc.
-            cleaned = cleaned.replace(/\\x([0-9A-Fa-f]{2})/g, (match, hex) => {
-              const charCode = parseInt(hex, 16);
-              const char = String.fromCharCode(charCode);
-              debugLog(`🔧 [ProtocolParser] Decoded hex escape ${match} → ${char}`);
-              return char;
-            });
-            
-            // Handle Unicode escape sequences like \u0024 for $
-            cleaned = cleaned.replace(/\\u([0-9A-Fa-f]{4})/g, (match, hex) => {
-              const charCode = parseInt(hex, 16);
-              const char = String.fromCharCode(charCode);
-              debugLog(`🔧 [ProtocolParser] Decoded unicode escape ${match} → ${char}`);
-              return char;
-            });
-            
-            // Handle double-escaped quotes and other common issues
-            cleaned = cleaned.replace(/\\"/g, '"');
-            cleaned = cleaned.replace(/\\\\/g, '\\');
-            
-            if (cleaned !== response) {
-              debugLog("🧹 [ProtocolParser] Response was cleaned and decoded");
-              debugLog("📄 [ProtocolParser] Cleaned response preview:", cleaned.substring(0, 200) + "...");
-            }
-            
-            return cleaned;
-          }
-
-          /**
            * Extract JSON from response with multiple strategies
            * @param {string} response - Raw response
            * @returns {Object|null} Parsed JSON or null
            */
           extractJSON(response) {
             debugLog("🔍 [ProtocolParser] Attempting JSON extraction...");
-            
-            // Clean the response first to handle encoding issues
-            const cleanedResponse = this.cleanEncodedResponse(response);
 
             // Strategy 1: Look for first complete JSON object
             let braceCount = 0;
             let jsonStart = -1;
             let jsonEnd = -1;
 
-            for (let i = 0; i < cleanedResponse.length; i++) {
-              const char = cleanedResponse[i];
+            for (let i = 0; i < response.length; i++) {
+              const char = response[i];
 
               if (char === "{") {
                 if (braceCount === 0) {
@@ -922,7 +877,7 @@ Fliplet.Widget.generateInterface({
 
             if (jsonStart !== -1 && jsonEnd !== -1) {
               try {
-                const jsonStr = cleanedResponse.substring(jsonStart, jsonEnd);
+                const jsonStr = response.substring(jsonStart, jsonEnd);
                 debugLog(
                   "🎯 [ProtocolParser] Found JSON block:",
                   jsonStr.substring(0, 100) + "..."
@@ -937,7 +892,7 @@ Fliplet.Widget.generateInterface({
             }
 
             // Strategy 2: Look for JSON between code blocks
-            const beforeCodeBlock = cleanedResponse.split("```")[0];
+            const beforeCodeBlock = response.split("```")[0];
             if (beforeCodeBlock.includes("{")) {
               try {
                 const jsonMatch = beforeCodeBlock.match(/\{[\s\S]*\}/);
@@ -955,14 +910,14 @@ Fliplet.Widget.generateInterface({
 
             // Strategy 3: Clean common issues and try again
             try {
-              let furtherCleaned = cleanedResponse
+              let cleanedResponse = response
                 .replace(/```json\n?/g, "")
                 .replace(/\n?```/g, "")
                 .replace(/^\s*[^{]*/, "") // Remove leading non-JSON text
                 .replace(/[^}]*$/, "}"); // Keep only up to last }
 
               // Try to find a valid JSON object
-              const jsonMatch = furtherCleaned.match(/\{[\s\S]*?\}/);
+              const jsonMatch = cleanedResponse.match(/\{[\s\S]*?\}/);
               if (jsonMatch) {
                 debugLog(
                   "🎯 [ProtocolParser] Found JSON with cleaning strategy"
@@ -5006,7 +4961,7 @@ function saveGeneratedCode(parsedContent) {
 
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    // toggleLoaderCodeGeneration(false);this
+    // toggleLoaderCodeGeneration(false);
     setTimeout(function () {
       Fliplet.Helper.field("regenerateCode").set(false);
       data.fields.regenerateCode = false;

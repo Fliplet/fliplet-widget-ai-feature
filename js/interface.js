@@ -1456,7 +1456,10 @@ Fliplet.Widget.generateInterface({
            * @returns {string} Escaped string
            */
           escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            // return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            return string.replace(/[.*+?^${}()|[\]\\]/g, function(match) {
+              return "\\" + match;
+            });
           }
         }
 

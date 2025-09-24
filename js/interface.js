@@ -14,11 +14,19 @@ Fliplet.Widget.generateInterface({
   fields: [
     {
       type: "html",
-      html: `Use this component to generate features within a screen using AI. The code created will be available in the developer tools.
-            <br>
-            <br>
-            Select a data source if you want your feature to use a data source.
-            <br><br>`,
+      html: `<div class="alert alert-info">
+              <div>
+                <i class="fa fa-info-circle"></i>
+                <strong>New Version Available!</strong>
+              </div>
+              <p>
+                There is a new version of the AI Feature component available. Your existing feature won't be affected.
+                To try the new version, drag and drop the new AI Feature component to your screen. You can copy your prompt over to rebuild the feature.
+                <a href="https://help.fliplet.com/ai-feature-component/" target="_blank">View support article</a> for more information.
+              </p>
+            </div>
+            <p>Use this component to generate features within a screen using AI. The code created will be available in the developer tools.</p>
+            <p>Select a data source if you want your feature to use a data source.</p>`,
     },
     {
       type: "provider",
@@ -72,7 +80,7 @@ Fliplet.Widget.generateInterface({
               What features are available?
             </h4>
             <div class="panel-collapse collapse" id="collapse-3543664">
-              <div class="panel-body"> 
+              <div class="panel-body">
                 The following features are available via your prompt:
                 <br>
                 1. Read, insert, update, delete, join data source names (ensure you configure the security rules)
@@ -218,7 +226,7 @@ Define visual hierarchy, interaction patterns, navigation flow, micro-interactio
 Define ARIA roles, keyboard navigation, contrast ratios, and any screen-reader support needed.
 
 Important:
-  - Do not mention anything related to frontend frameworks or data sources, the system prompt that generates the code has all the technical requirements listed. 
+  - Do not mention anything related to frontend frameworks or data sources, the system prompt that generates the code has all the technical requirements listed.
   - Only return the enhanced prompt as a plain string.
   - Do not introduce it with any sentence like "Here's the result" or "You can use this prompt."
   - Do not add quotation marks or formatting around the result.
@@ -288,7 +296,7 @@ function queryAI(prompt) {
   let systemPrompt = `
 You are to only return the HTML, CSS, JS for the following user request. In the JS make sure that any selectors are using .ai-feature-${widgetId}
 
-The format of the response should be as follows: 
+The format of the response should be as follows:
 
 {
   html: "<div><h1>Hello World</h1></div>",
@@ -296,23 +304,23 @@ The format of the response should be as follows:
   javascript: "document.addEventListener('DOMContentLoaded', function() { const div = document.querySelector('.ai-feature-${widgetId} div'); div.style.color = 'blue'; });"
 }
 
-For the HTML do not include any head tags, just return the html for the body. 
+For the HTML do not include any head tags, just return the html for the body.
 Use bootstrap v3.4.1 for css and styling.
 Do not include any backticks in the response.
 Ensure there are no syntax errors in the code and that column names with spaced in them are wrapped with square brackets.
-Add inline comments for the code so technical users can make edits to the code. 
+Add inline comments for the code so technical users can make edits to the code.
 Add try catch blocks in the code to catch any errors and log the errors to the console and show them to the user user via Fliplet.UI.Toast(message).
 Ensure you chain all the promises correctly with return statements.
 You must only return code in the format specified. Do not return any text.
-If the user provides any links to dependencies/libraries please include them via script tags in the html. 
+If the user provides any links to dependencies/libraries please include them via script tags in the html.
 
-If you get asked to use datasource js api for e.g. if you need to save data from a form to a datasource or need to read data dynamic data to show it on the screen you need to use the following API: 
+If you get asked to use datasource js api for e.g. if you need to save data from a form to a datasource or need to read data dynamic data to show it on the screen you need to use the following API:
 
-If the user has provided a selected data source then use that in your data source requests. If not do not assume any data source name. 
+If the user has provided a selected data source then use that in your data source requests. If not do not assume any data source name.
 
 User provided data source name: ${selectedDataSourceName}
 
-These are the list of columns in the data source selected by the user: ${dataSourceColumns}, you must one of these when referencing data from a data source. 
+These are the list of columns in the data source selected by the user: ${dataSourceColumns}, you must one of these when referencing data from a data source.
 
 
 # Data Sources JS APIs
@@ -372,12 +380,12 @@ Fliplet.DataSources.connectByName("Attendees").then(function (connection) {
 
 #### Fetch all records
 
- 
+
 // use"find" with no options to get all entries
 connection.find().then(function (records) {
   // records is an array
 });
- 
+
 
 #### Fetch records with a query
 
@@ -394,7 +402,7 @@ Fliplet also supports a custom "$filters" operator with some unique conditional 
 
 A few examples to get you started:
 
- 
+
 // Find records where column"sum" is greater than 10 and column"name"
 // is either"Nick" or"Tony"
 connection.find({
@@ -557,52 +565,52 @@ connection.find({
     ]
   }
 });
- 
+
 
 #### Filter the columns returned when finding records
 
 Use the "attributes" array to optionally define a list of the columns that should be returned for the records.
 
- 
+
 // use"find" with"attributes" to filter the columns returned
 connection.find({ attributes: ['Foo', 'Bar'] }).then(function (records) {
   // records is an array
 });
- 
+
 
 You can also use this by passing an empty array as an efficient method to count the number of entries without requesting much data from the server:
 
- 
+
 connection.find({ attributes: [] }).then(function (records) {
   // use records.length as the number of records
 });
- 
+
 
 #### Fetch records with pagination
 
 You can use the "limit" and "offset" parameters to filter down the returned entries to a specific chunk (page) of the Data Source.
 
- 
+
 // use limit and offset for pagination
 connection.find({
   limit: 50,
   offset: 10
 });
- 
+
 
 Full example:
 
- 
+
 Fliplet.DataSources.connect(123).then(function (connection) {
   return connection.find({ limit: 1000 }).then(function (results) {
 
   });
 });
- 
+
 
 Moreover, the "includePagination" parameter enables the response to return the count of total entries in the Data Source:
 
- 
+
 connection.find({
   limit: 50,
   offset: 10,
@@ -611,7 +619,7 @@ connection.find({
   // response.entries []
   // response.pagination = { total, limit, offset }
 });
- 
+
 
 Note that when using the above parameter, the returned object from the "find()" method changes from an array of records to an object with the following structure:
 
@@ -631,7 +639,7 @@ Note that when using the above parameter, the returned object from the "find()" 
 
 You can use the built-in [Mingo](https://github.com/kofrasa/mingo) library to run complex aggregation queries or projections on top of Data Sources. Mingo operations can be provided to the "find" method via the "aggregate" attribute:
 
- 
+
 // This example groups records by values found on a sample column"myColumnName"
 // and counts the matches for each value
 connection.find({
@@ -649,7 +657,7 @@ connection.find({
     }
   ]
 });
- 
+
 The version of Mingo we have used does not automatically typecast strings to numbers. Therefore, we have added our own custom operator ($convertToNumber) to type cast to a number before performing aggregation. To use this custom operator, please refer to above snippet.
 
 
@@ -665,7 +673,7 @@ The order direction is either "ASC" for ascending ordering or "DESC" for descend
 
 The "order" array accepts a list of arrays, where each includes the column and sorting order:
 
- 
+
 // Sort records by their created time (first records are newer)
 connection.find({
   where: { Office: 'London' },
@@ -686,19 +694,19 @@ connection.find({
 }).then(function (records) {
   // ...
 });
- 
+
 
 ### Find a specific record
 
 The "findOne" method allows you to look for up to one record, limiting the amount of entries returned if you're only looking for one specific entry.
 
- 
+
 connection.findOne({
   where: { name: 'John' }
 }).then(function (record) {
   // record is either the found entry"object" or"undefined"
 });
- 
+
 
 ### Find a record by its ID
 
@@ -706,11 +714,11 @@ This is a code snippet for finding a record in a specific Data Source by its ID.
 
 The "findById()" method accepts a single parameter, which is the ID of the entry to search for in the Data Source. Once the entry has been found, it will be returned as a record object in the response, and the code inside the promise callback function will be executed.
 
- 
+
 connection.findById(1).then(function (record) {
   // records is the found object
 });
- 
+
 
 ### Commit changes at once to a data source
 
@@ -729,7 +737,7 @@ The following sample request applies the following changes to the data source:
   - updates the entry with ID 123 merging its data with the new added column(s)
   - deletes the entry with ID 456
 
- 
+
 connection.commit({
   entries: [
     // Insert a new entry
@@ -753,7 +761,7 @@ connection.commit({
   // Keep this as"false" to speed up the response.
   returnEntries: false
 });
- 
+
 
 ---
 
@@ -761,7 +769,7 @@ connection.commit({
 
 To insert a record into a data source, use the "connection.insert" method by passing the data to be inserted as a **JSON** object or a **FormData** object.
 
- 
+
 // Using a JSON object
 connection.insert({
   id: 3,
@@ -770,7 +778,7 @@ connection.insert({
 
 // Using a FormData object
 connection.insert(FormData);
- 
+
 
 **Note**: the "dataSourceId" and "dataSourceEntryId" are **reserved keys** and should not be used in the input JSON.
 
@@ -783,23 +791,23 @@ The second parameter of the "connection.insert" function accepts various options
 
 When "FormData" is used as first parameter, your record gets uploaded using a multipart request. If your FormData contains files, you can specify the **MediaFolder** where files should be stored to using the "folderId" parameter:
 
- 
+
 connection.insert(FormData, {
   folderId: 123
 });
- 
+
 
 #### **Options: ack**
 
 If you want to make sure the local (offline) database on the device also gets updated as soon as the server receives your record you can use the "ack" (which abbreviates the word **acknowledge**) parameter:
 
- 
+
 connection.insert({ foo: 'bar' }, {
   // this ensure the local database gets updated straight away, without
   // waiting for silent updates (which can take up to 30 seconds to be received).
   ack: true
 });
- 
+
 
 ---
 
@@ -807,64 +815,64 @@ connection.insert({ foo: 'bar' }, {
 
 Updating a data source entry is done via the "connection.insert" method by providing its ID and the update to be applied.
 
- 
+
 connection.update(123, {
   name: 'Bill'
 });
- 
+
 
 You can also pass a "FormData" object to upload files using a multipart request. When uploading files, you can also specify the MediaFolder where files should be stored to:
 
- 
+
 connection.update(123, FormData, {
   mediaFolderId: 456
 });
- 
+
 
 
 ### Remove a record by its ID
 
 Use the "removeById" method to remove a entry from a data source given its ID.
 
- 
+
 connection.removeById(1).then(function onRemove() {});
- 
+
 ### Remove entries matching a query
 
 Set "type" to "delete" and specify a where clause. This will query the data source and delete any matching entries.
 
- 
+
 connection.query({
   type: 'delete',
   where: { Email: 'test@fliplet.com' }
 });
- 
+
 
 ### Get unique values for a column
 
 Use the "getIndex" method to get unique values for a given column of the Data Source:
 
- 
+
 connection.getIndex('name').then(function onSuccess(values) {
   // array of unique values
 });
- 
+
 
 ### Get unique values for multiple columns at once
 
 Use the "getIndexes" method to get unique values for a given array of columns of the Data Source:
 
- 
+
 connection.getIndexes(['name','email']).then(function onSuccess(values) {
   // an object having key representing each index and the value being the array of values
   // e.g. { name: ['a', 'b'], email: ['c', 'd'] }
 });
- 
+
 
 
 ### Format of data returned from JS API
 
-If referencing data from a data source, the entry will be found under the"data" object as shown below. 
+If referencing data from a data source, the entry will be found under the"data" object as shown below.
 
 {
 "id": 404811749,
@@ -885,13 +893,13 @@ If referencing data from a data source, the entry will be found under the"data" 
 }
 
 
-If you are asked to build a feature that requires navigating the user to another screen use the navigate JS API to do this: 
+If you are asked to build a feature that requires navigating the user to another screen use the navigate JS API to do this:
 
-Fliplet.Navigate.screen('Menu') where it accepts the screen name as a parameter. 
+Fliplet.Navigate.screen('Menu') where it accepts the screen name as a parameter.
 
-If you want to show a message to the end user do not use alerts but use our toast message library; The JS API is Fliplet.UI.Toast(message) where message is the text you want to show the user. 
+If you want to show a message to the end user do not use alerts but use our toast message library; The JS API is Fliplet.UI.Toast(message) where message is the text you want to show the user.
 
-If you want to get the logged-in user's details, you can use the following endpoint: 
+If you want to get the logged-in user's details, you can use the following endpoint:
 Fliplet.User.getCachedSession().then(function (session) {
   var user = _.get(session, 'entries.dataSource.data');
 
@@ -1259,7 +1267,7 @@ var options = {
 // Returns a promise
 Fliplet.Communicate.sendEmail(options);
 
-Use the following endpoint to query OpenAI. 
+Use the following endpoint to query OpenAI.
 
 ### Fliplet.AI.createCompletion()
 
@@ -1284,7 +1292,7 @@ You can use most parameters available in the OpenAI Completions API reference (f
 
 **Returns:**
 
-A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends on whether it's a chat completion or a standard completion, generally following OpenAI's response format. Refer to the OpenAI documentation for the detailed structure of the completion object. 
+A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends on whether it's a chat completion or a standard completion, generally following OpenAI's response format. Refer to the OpenAI documentation for the detailed structure of the completion object.
 
 
 **Example (Chat Completion):**

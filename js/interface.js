@@ -1456,10 +1456,18 @@ Fliplet.Widget.generateInterface({
            * @returns {string} Escaped string
            */
           escapeRegExp(string) {
-            // return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             return string.replace(/[.*+?^${}()|[\]\\]/g, function(match) {
               return "\\" + match;
             });
+          }
+
+          /**
+           * Escape dollar signs in replacement strings to prevent regex replacement issues
+           * @param {string} string - String to escape
+           * @returns {string} Escaped string
+           */
+          escapeReplacementString(string) {
+            return string.replace(/\$/g, '$$$$');
           }
         }
 
@@ -3456,6 +3464,15 @@ Fliplet.Widget.generateInterface({
         }
 
         /**
+         * Escape dollar signs in replacement strings to prevent regex replacement issues
+         * @param {string} string - String to escape
+         * @returns {string} Escaped string
+         */
+        function escapeReplacementString(string) {
+          return string.replace(/\$/g, '$$$$');
+        }
+
+        /**
          * Apply HTML diff to existing HTML
          * @param {string} currentHTML - Current HTML code
          * @param {Object} diff - HTML diff object
@@ -3543,7 +3560,7 @@ Fliplet.Widget.generateInterface({
                       if (targetRegex.test(modifiedHTML)) {
                         modifiedHTML = modifiedHTML.replace(
                           targetRegex,
-                          `$1${diff.content}`
+                          `$1${escapeReplacementString(diff.content)}`
                         );
                         debugLog(
                           "✅ Added content to element with class:",
@@ -3564,7 +3581,7 @@ Fliplet.Widget.generateInterface({
                   if (targetRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       targetRegex,
-                      `$1${diff.content}`
+                      `$1${escapeReplacementString(diff.content)}`
                     );
                     debugLog("✅ Added content to element with ID:", targetId);
                   } else {
@@ -3579,7 +3596,7 @@ Fliplet.Widget.generateInterface({
                   if (targetRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       targetRegex,
-                      `$1${diff.content}`
+                      `$1${escapeReplacementString(diff.content)}`
                     );
                     debugLog("✅ Added content to element:", diff.target);
                   } else {
@@ -3598,7 +3615,7 @@ Fliplet.Widget.generateInterface({
                   );
                   modifiedHTML = modifiedHTML.replace(
                     referenceRegex,
-                    `${diff.content}$1`
+                    `${escapeReplacementString(diff.content)}$1`
                   );
                   debugLog("✅ Added content before reference");
                 } else if (diff.position === "after" && diff.reference) {
@@ -3611,7 +3628,7 @@ Fliplet.Widget.generateInterface({
                   );
                   modifiedHTML = modifiedHTML.replace(
                     referenceRegex,
-                    `$1${diff.content}`
+                    `$1${escapeReplacementString(diff.content)}`
                   );
                   debugLog("✅ Added content after reference");
                 }
@@ -3619,10 +3636,10 @@ Fliplet.Widget.generateInterface({
                 // Simple append to end of body
                 const bodyRegex = /<\/body>/i;
                 if (bodyRegex.test(modifiedHTML)) {
-                  modifiedHTML = modifiedHTML.replace(
-                    bodyRegex,
-                    `${diff.content}</body>`
-                  );
+                modifiedHTML = modifiedHTML.replace(
+                  bodyRegex,
+                  `${escapeReplacementString(diff.content)}</body>`
+                );
                   debugLog("✅ Added content to end of body");
                 } else {
                   modifiedHTML += diff.content;
@@ -3673,7 +3690,7 @@ Fliplet.Widget.generateInterface({
                   if (modifyRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       modifyRegex,
-                      `$1${diff.content}$2`
+                      `$1${escapeReplacementString(diff.content)}$2`
                     );
                     debugLog("✅ Modified element with class:", className);
                   } else {
@@ -3691,7 +3708,7 @@ Fliplet.Widget.generateInterface({
                   if (modifyRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       modifyRegex,
-                      `$1${diff.content}$2`
+                      `$1${escapeReplacementString(diff.content)}$2`
                     );
                     debugLog("✅ Modified element with ID:", targetId);
                   } else {
@@ -3708,7 +3725,7 @@ Fliplet.Widget.generateInterface({
                   if (modifyRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       modifyRegex,
-                      `$1${diff.content}$2`
+                      `$1${escapeReplacementString(diff.content)}$2`
                     );
                     debugLog("✅ Modified element:", diff.target);
                   } else {
@@ -3764,10 +3781,7 @@ Fliplet.Widget.generateInterface({
             // Create a more flexible regex that handles multi-line selectors
             // Escape special regex characters in the selector
             const escapedSelector = normalizedSelector
-              // .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special chars
-              .replace(/[.*+?^${}()|[\]\\]/g, function(match) {
-                return "\\" + match;
-              }) // Escape special chars
+              .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special chars
               .replace(/,\s*/g, ",\\s*") // Allow flexible spacing around commas
               .replace(/\s+/g, "\\s+"); // Allow flexible whitespace
 
@@ -3801,10 +3815,7 @@ Fliplet.Widget.generateInterface({
                     const propertyRegex = new RegExp(
                       `${property.replace(
                         /[.*+?^${}()|[\]\\]/g,
-                        // "\\$&"
-                        function(match) {
-                          return "\\" + match;
-                        }
+                        "\\$&"
                       )}\\s*:[^;]*;?`,
                       "gi"
                     );
@@ -3813,13 +3824,10 @@ Fliplet.Widget.generateInterface({
                     debugLog("🔄 Applying CSS change:", { property, value });
 
                     if (propertyRegex.test(newProperties)) {
-                      // Replace existing property using function to avoid $ issues
+                      // Replace existing property
                       newProperties = newProperties.replace(
                         propertyRegex,
-                        // newRule
-                        function() {
-                          return newRule;
-                        }
+                        newRule
                       );
                       debugLog("✅ Replaced existing property");
                     } else {
@@ -3899,7 +3907,7 @@ Fliplet.Widget.generateInterface({
                   );
                   modifiedJS = modifiedJS.replace(
                     referenceRegex,
-                    `${diff.content}\n\n$1`
+                    `${escapeReplacementString(diff.content)}\n\n$1`
                   );
                   debugLog("✅ Added JS content before reference");
                 } else if (diff.position === "after" && diff.reference) {
@@ -3913,7 +3921,7 @@ Fliplet.Widget.generateInterface({
                   );
                   modifiedJS = modifiedJS.replace(
                     referenceRegex,
-                    `$1\n\n${diff.content}`
+                    `$1\n\n${escapeReplacementString(diff.content)}`
                   );
                   debugLog("✅ Added JS content after reference");
                 } else {
@@ -3998,7 +4006,7 @@ Fliplet.Widget.generateInterface({
                       );
                     } else {
                       // Replace entire function content
-                      modifiedJS = modifiedJS.replace(pattern, diff.content);
+                      modifiedJS = modifiedJS.replace(pattern, escapeReplacementString(diff.content));
                     }
                     debugLog("✅ Modified JS function:", diff.functionName);
                     replaced = true;
@@ -4019,18 +4027,11 @@ Fliplet.Widget.generateInterface({
               } else if (diff.target && diff.content) {
                 // Modify specific code block by content matching
                 const targetRegex = new RegExp(
-                  // diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, function(match) {
-                    return "\\" + match;
-                  }),
+                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
                   "gi"
                 );
                 if (targetRegex.test(modifiedJS)) {
-                  // modifiedJS = modifiedJS.replace(targetRegex, diff.content);
-                  // Use function replacement to avoid issues with $ in replacement string
-                  modifiedJS = modifiedJS.replace(targetRegex, function() {
-                    return diff.content;
-                  });
+                  modifiedJS = modifiedJS.replace(targetRegex, escapeReplacementString(diff.content));
                   debugLog("✅ Modified JS target content");
                 } else {
                   console.warn("⚠️ JS target content not found:", diff.target);
@@ -4087,10 +4088,7 @@ Fliplet.Widget.generateInterface({
               } else if (diff.target) {
                 // Remove specific code block
                 const targetRegex = new RegExp(
-                  // diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
-                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, function(match) {
-                    return "\\" + match;
-                  }),
+                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
                   "gi"
                 );
                 modifiedJS = modifiedJS.replace(targetRegex, "");

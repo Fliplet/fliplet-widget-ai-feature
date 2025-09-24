@@ -3764,7 +3764,10 @@ Fliplet.Widget.generateInterface({
             // Create a more flexible regex that handles multi-line selectors
             // Escape special regex characters in the selector
             const escapedSelector = normalizedSelector
-              .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special chars
+              // .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special chars
+              .replace(/[.*+?^${}()|[\]\\]/g, function(match) {
+                return "\\" + match;
+              }) // Escape special chars
               .replace(/,\s*/g, ",\\s*") // Allow flexible spacing around commas
               .replace(/\s+/g, "\\s+"); // Allow flexible whitespace
 
@@ -3798,7 +3801,10 @@ Fliplet.Widget.generateInterface({
                     const propertyRegex = new RegExp(
                       `${property.replace(
                         /[.*+?^${}()|[\]\\]/g,
-                        "\\$&"
+                        // "\\$&"
+                        function(match) {
+                          return "\\" + match;
+                        }
                       )}\\s*:[^;]*;?`,
                       "gi"
                     );
@@ -3807,10 +3813,13 @@ Fliplet.Widget.generateInterface({
                     debugLog("🔄 Applying CSS change:", { property, value });
 
                     if (propertyRegex.test(newProperties)) {
-                      // Replace existing property
+                      // Replace existing property using function to avoid $ issues
                       newProperties = newProperties.replace(
                         propertyRegex,
-                        newRule
+                        // newRule
+                        function() {
+                          return newRule;
+                        }
                       );
                       debugLog("✅ Replaced existing property");
                     } else {
@@ -4010,11 +4019,18 @@ Fliplet.Widget.generateInterface({
               } else if (diff.target && diff.content) {
                 // Modify specific code block by content matching
                 const targetRegex = new RegExp(
-                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                  // diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, function(match) {
+                    return "\\" + match;
+                  }),
                   "gi"
                 );
                 if (targetRegex.test(modifiedJS)) {
-                  modifiedJS = modifiedJS.replace(targetRegex, diff.content);
+                  // modifiedJS = modifiedJS.replace(targetRegex, diff.content);
+                  // Use function replacement to avoid issues with $ in replacement string
+                  modifiedJS = modifiedJS.replace(targetRegex, function() {
+                    return diff.content;
+                  });
                   debugLog("✅ Modified JS target content");
                 } else {
                   console.warn("⚠️ JS target content not found:", diff.target);
@@ -4071,7 +4087,10 @@ Fliplet.Widget.generateInterface({
               } else if (diff.target) {
                 // Remove specific code block
                 const targetRegex = new RegExp(
-                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                  // diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, function(match) {
+                    return "\\" + match;
+                  }),
                   "gi"
                 );
                 modifiedJS = modifiedJS.replace(targetRegex, "");

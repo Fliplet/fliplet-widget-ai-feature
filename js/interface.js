@@ -166,7 +166,7 @@ Fliplet.Widget.generateInterface({
         ("use strict");
 
         // Debug mode configuration - set to true to show console logs
-        const debugMode = true;
+        const debugMode = false;
 
         // Debug utility function to conditionally log console messages
         function debugLog(...args) {

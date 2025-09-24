@@ -1456,18 +1456,7 @@ Fliplet.Widget.generateInterface({
            * @returns {string} Escaped string
            */
           escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, function(match) {
-              return "\\" + match;
-            });
-          }
-
-          /**
-           * Escape dollar signs in replacement strings to prevent regex replacement issues
-           * @param {string} string - String to escape
-           * @returns {string} Escaped string
-           */
-          escapeReplacementString(string) {
-            return string.replace(/\$/g, '$$$$');
+            return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
           }
         }
 
@@ -3464,15 +3453,6 @@ Fliplet.Widget.generateInterface({
         }
 
         /**
-         * Escape dollar signs in replacement strings to prevent regex replacement issues
-         * @param {string} string - String to escape
-         * @returns {string} Escaped string
-         */
-        function escapeReplacementString(string) {
-          return string.replace(/\$/g, '$$$$');
-        }
-
-        /**
          * Apply HTML diff to existing HTML
          * @param {string} currentHTML - Current HTML code
          * @param {Object} diff - HTML diff object
@@ -3560,7 +3540,7 @@ Fliplet.Widget.generateInterface({
                       if (targetRegex.test(modifiedHTML)) {
                         modifiedHTML = modifiedHTML.replace(
                           targetRegex,
-                          `$1${escapeReplacementString(diff.content)}`
+                          `$1${diff.content}`
                         );
                         debugLog(
                           "✅ Added content to element with class:",
@@ -3581,7 +3561,7 @@ Fliplet.Widget.generateInterface({
                   if (targetRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       targetRegex,
-                      `$1${escapeReplacementString(diff.content)}`
+                      `$1${diff.content}`
                     );
                     debugLog("✅ Added content to element with ID:", targetId);
                   } else {
@@ -3596,7 +3576,7 @@ Fliplet.Widget.generateInterface({
                   if (targetRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       targetRegex,
-                      `$1${escapeReplacementString(diff.content)}`
+                      `$1${diff.content}`
                     );
                     debugLog("✅ Added content to element:", diff.target);
                   } else {
@@ -3615,7 +3595,7 @@ Fliplet.Widget.generateInterface({
                   );
                   modifiedHTML = modifiedHTML.replace(
                     referenceRegex,
-                    `${escapeReplacementString(diff.content)}$1`
+                    `${diff.content}$1`
                   );
                   debugLog("✅ Added content before reference");
                 } else if (diff.position === "after" && diff.reference) {
@@ -3628,7 +3608,7 @@ Fliplet.Widget.generateInterface({
                   );
                   modifiedHTML = modifiedHTML.replace(
                     referenceRegex,
-                    `$1${escapeReplacementString(diff.content)}`
+                    `$1${diff.content}`
                   );
                   debugLog("✅ Added content after reference");
                 }
@@ -3636,10 +3616,10 @@ Fliplet.Widget.generateInterface({
                 // Simple append to end of body
                 const bodyRegex = /<\/body>/i;
                 if (bodyRegex.test(modifiedHTML)) {
-                modifiedHTML = modifiedHTML.replace(
-                  bodyRegex,
-                  `${escapeReplacementString(diff.content)}</body>`
-                );
+                  modifiedHTML = modifiedHTML.replace(
+                    bodyRegex,
+                    `${diff.content}</body>`
+                  );
                   debugLog("✅ Added content to end of body");
                 } else {
                   modifiedHTML += diff.content;
@@ -3690,7 +3670,7 @@ Fliplet.Widget.generateInterface({
                   if (modifyRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       modifyRegex,
-                      `$1${escapeReplacementString(diff.content)}$2`
+                      `$1${diff.content}$2`
                     );
                     debugLog("✅ Modified element with class:", className);
                   } else {
@@ -3708,7 +3688,7 @@ Fliplet.Widget.generateInterface({
                   if (modifyRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       modifyRegex,
-                      `$1${escapeReplacementString(diff.content)}$2`
+                      `$1${diff.content}$2`
                     );
                     debugLog("✅ Modified element with ID:", targetId);
                   } else {
@@ -3725,7 +3705,7 @@ Fliplet.Widget.generateInterface({
                   if (modifyRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       modifyRegex,
-                      `$1${escapeReplacementString(diff.content)}$2`
+                      `$1${diff.content}$2`
                     );
                     debugLog("✅ Modified element:", diff.target);
                   } else {
@@ -3907,7 +3887,7 @@ Fliplet.Widget.generateInterface({
                   );
                   modifiedJS = modifiedJS.replace(
                     referenceRegex,
-                    `${escapeReplacementString(diff.content)}\n\n$1`
+                    `${diff.content}\n\n$1`
                   );
                   debugLog("✅ Added JS content before reference");
                 } else if (diff.position === "after" && diff.reference) {
@@ -3921,7 +3901,7 @@ Fliplet.Widget.generateInterface({
                   );
                   modifiedJS = modifiedJS.replace(
                     referenceRegex,
-                    `$1\n\n${escapeReplacementString(diff.content)}`
+                    `$1\n\n${diff.content}`
                   );
                   debugLog("✅ Added JS content after reference");
                 } else {
@@ -4006,7 +3986,7 @@ Fliplet.Widget.generateInterface({
                       );
                     } else {
                       // Replace entire function content
-                      modifiedJS = modifiedJS.replace(pattern, escapeReplacementString(diff.content));
+                      modifiedJS = modifiedJS.replace(pattern, diff.content);
                     }
                     debugLog("✅ Modified JS function:", diff.functionName);
                     replaced = true;
@@ -4031,7 +4011,7 @@ Fliplet.Widget.generateInterface({
                   "gi"
                 );
                 if (targetRegex.test(modifiedJS)) {
-                  modifiedJS = modifiedJS.replace(targetRegex, escapeReplacementString(diff.content));
+                  modifiedJS = modifiedJS.replace(targetRegex, diff.content);
                   debugLog("✅ Modified JS target content");
                 } else {
                   console.warn("⚠️ JS target content not found:", diff.target);

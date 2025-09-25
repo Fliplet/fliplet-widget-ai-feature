@@ -194,7 +194,7 @@ Fliplet.Widget.instance({
           }
           
           return oldCode.replace(
-            new RegExp(patternStart + "[\\s\\S]*?" + patternEnd, "g"),
+            new RegExp(patternStart.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }) + "[\\s\\S]*?" + patternEnd.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }), "g"),
             start + "\n" + newCode + "\n" + end
           );
         } else {
@@ -216,7 +216,7 @@ Fliplet.Widget.instance({
         }
 
         // Create the pattern and escape the string properly
-        const pattern = new RegExp(`${start}[\\s\\S]*?${end}`, "g");
+        const pattern = new RegExp(`${start.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; })}[\\s\\S]*?${end.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; })}`, "g");
 
         // Remove the delimited code and clean up whitespace
         return oldCode

@@ -1456,7 +1456,9 @@ Fliplet.Widget.generateInterface({
            * @returns {string} Escaped string
            */
           escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            return string.replace(/[.*+?^${}()|[\]\\]/g, function(match) {
+              return "\\" + match;
+            });
           }
         }
 
@@ -3804,7 +3806,7 @@ Fliplet.Widget.generateInterface({
             // Create a more flexible regex that handles multi-line selectors
             // Escape special regex characters in the selector
             const escapedSelector = normalizedSelector
-              .replace(/[.*+?^${}()|[\]\\]/g, "\\$&") // Escape special chars
+              .replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }) // Escape special chars
               .replace(/,\s*/g, ",\\s*") // Allow flexible spacing around commas
               .replace(/\s+/g, "\\s+"); // Allow flexible whitespace
 
@@ -4050,7 +4052,7 @@ Fliplet.Widget.generateInterface({
               } else if (diff.target && diff.content) {
                 // Modify specific code block by content matching
                 const targetRegex = new RegExp(
-                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }),
                   "gi"
                 );
                 if (targetRegex.test(modifiedJS)) {
@@ -4111,7 +4113,7 @@ Fliplet.Widget.generateInterface({
               } else if (diff.target) {
                 // Remove specific code block
                 const targetRegex = new RegExp(
-                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }),
                   "gi"
                 );
                 modifiedJS = modifiedJS.replace(targetRegex, "");

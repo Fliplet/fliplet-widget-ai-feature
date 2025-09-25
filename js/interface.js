@@ -2519,6 +2519,15 @@ Fliplet.Widget.generateInterface({
          * Handle sending a message to the AI
          */
         function handleSendMessage() {
+          // Check if send button is disabled and return early if so
+          if (DOM.sendBtn && DOM.sendBtn.disabled) {
+            debugLog("🚫 Send button is disabled, ignoring click");
+            return;
+          }
+
+          // Disable user controls while AI is processing
+          disableUserControls();
+
           const userMessage = DOM.userInput.value.trim();
 
           // IMPORTANT: Always get the current state of images at the moment of sending
@@ -2534,14 +2543,12 @@ Fliplet.Widget.generateInterface({
           // Input validation
           if (!userMessage && currentImages.length === 0) {
             debugLog("⚠️ Empty message and no images ignored");
+            enableUserControls();
             return;
           }
 
           debugLog("📤 User message:", userMessage);
           debugLog("🖼️ Current valid images:", currentImages.length);
-
-          // Disable user controls while AI is processing
-          disableUserControls();
 
           // Add user message to chat (show original message + image count if applicable)
           const displayMessage =

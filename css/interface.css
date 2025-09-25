@@ -922,6 +922,11 @@
   float: right;
 }
 
+.interface #send-btn:disabled {
+  pointer-events: none;
+  cursor: not-allowed !important;
+}
+
 /* Textarea Auto-resize Styles */
 .interface #user-input {
   resize: none;

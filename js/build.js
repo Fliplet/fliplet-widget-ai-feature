@@ -195,7 +195,9 @@ Fliplet.Widget.instance({
           
           return oldCode.replace(
             new RegExp(patternStart.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }) + "[\\s\\S]*?" + patternEnd.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }), "g"),
-            start + "\n" + newCode + "\n" + end
+            function() {
+              return start + "\n" + newCode + "\n" + end;
+            }
           );
         } else {
           // Append new code with delimiters at the end

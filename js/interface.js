@@ -2480,6 +2480,40 @@ Fliplet.Widget.generateInterface({
         }
 
         /**
+         * Disable user input controls while AI is processing
+         */
+        function disableUserControls() {
+          if (DOM.userInput) {
+            DOM.userInput.disabled = true;
+            DOM.userInput.style.opacity = '0.6';
+            DOM.userInput.style.cursor = 'not-allowed';
+          }
+          if (DOM.sendBtn) {
+            DOM.sendBtn.disabled = true;
+            DOM.sendBtn.style.opacity = '0.6';
+            DOM.sendBtn.style.cursor = 'not-allowed';
+          }
+          debugLog("🔒 User controls disabled - AI is thinking");
+        }
+
+        /**
+         * Re-enable user input controls after AI processing
+         */
+        function enableUserControls() {
+          if (DOM.userInput) {
+            DOM.userInput.disabled = false;
+            DOM.userInput.style.opacity = '1';
+            DOM.userInput.style.cursor = 'text';
+          }
+          if (DOM.sendBtn) {
+            DOM.sendBtn.disabled = false;
+            DOM.sendBtn.style.opacity = '1';
+            DOM.sendBtn.style.cursor = 'pointer';
+          }
+          debugLog("🔓 User controls re-enabled - AI finished thinking");
+        }
+
+        /**
          * Handle sending a message to the AI
          */
         function handleSendMessage() {
@@ -2503,6 +2537,9 @@ Fliplet.Widget.generateInterface({
 
           debugLog("📤 User message:", userMessage);
           debugLog("🖼️ Current valid images:", currentImages.length);
+
+          // Disable user controls while AI is processing
+          disableUserControls();
 
           // Add user message to chat (show original message + image count if applicable)
           const displayMessage =
@@ -2828,6 +2865,9 @@ Fliplet.Widget.generateInterface({
             // Clear pasted images after successful processing (preserve chat history)
             clearPastedImages(true, DOM, AppState);
 
+            // Re-enable user controls after successful AI response
+            enableUserControls();
+
             debugLog(
               `✅ [Main] Request #${AppState.requestCount} completed successfully`
             );
@@ -2851,6 +2891,9 @@ Fliplet.Widget.generateInterface({
 
             // Clear pasted images even on error to prevent stale state (preserve chat history)
             clearPastedImages(true, DOM, AppState);
+
+            // Re-enable user controls even on error
+            enableUserControls();
           }
         }
 

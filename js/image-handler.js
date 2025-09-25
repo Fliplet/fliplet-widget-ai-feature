@@ -315,7 +315,7 @@ function showImageFormatHelp() {
   helpMessage.innerHTML = `
       <div style="text-align: center; padding: 10px;">
         <strong>📁 Supported Image Formats:</strong><br>
-        JPEG, PNG, GIF, WebP, BMP<br>
+        JPEG, PNG, GIF, WebP<br>
         <small>Maximum file size: 5MB</small>
       </div>
     `;

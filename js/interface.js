@@ -4031,7 +4031,9 @@ Fliplet.Widget.generateInterface({
                       );
                     } else {
                       // Replace entire function content
-                      modifiedJS = modifiedJS.replace(pattern, diff.content);
+                      modifiedJS = modifiedJS.replace(pattern, function() {
+                        return diff.content;
+                      });
                     }
                     debugLog("✅ Modified JS function:", diff.functionName);
                     replaced = true;
@@ -4056,7 +4058,9 @@ Fliplet.Widget.generateInterface({
                   "gi"
                 );
                 if (targetRegex.test(modifiedJS)) {
-                  modifiedJS = modifiedJS.replace(targetRegex, diff.content);
+                  modifiedJS = modifiedJS.replace(targetRegex, function() {
+                    return diff.content;
+                  });
                   debugLog("✅ Modified JS target content");
                 } else {
                   console.warn("⚠️ JS target content not found:", diff.target);

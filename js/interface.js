@@ -20,8 +20,15 @@ Fliplet.Widget.generateInterface({
                 <strong>New Version Available!</strong>
               </div>
               <p>
-                There is a new version of the AI Feature component available. Your existing feature won't be affected.
-                To try the new version, drag and drop the new AI Feature component to your screen. You can copy your prompt over to rebuild the feature.
+                There is a new version of the AI Feature component available. Your existing component won't be affected.
+              </p>
+              <p>To try the new version:<br></p>
+              <ol style="margin-top: 5px">
+                <li>Add a new <strong>AI Feature</strong> component from the <strong>Add Components</strong> panel to your screen.</li>
+                <li>Copy your prompt text from this component and paste it into the new one.</li>
+                <li>Generate your feature in the new component.</li>
+              </ol>
+              <p>
                 <a href="https://help.fliplet.com/ai-feature-component/" target="_blank">View support article</a> for more information.
               </p>
             </div>

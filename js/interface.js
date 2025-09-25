@@ -2745,34 +2745,26 @@ Fliplet.Widget.generateInterface({
             });
 
             if (AppState.pastedImages.length > 0) {
-              try {
-                logAnalytics({
-                  category: "link",
-                  action: "action",
-                  label:
-                    "Images uploaded - Chat GUID: " +
-                    AppState.chatGUID +
-                    " - Images: " +
-                    AppState.pastedImages.map((el) => el.flipletUrl),
-                });
-              } catch (error) {
-                console.error("❌ Error logging analytics:", error);
-              }
-            }
-
-            try {
               logAnalytics({
                 category: "link",
                 action: "action",
-                label: `AI ${
-                  isAnswerType ? "Answer" : "Code Generation"
-                } - Chat GUID: ${AppState.chatGUID} - Type: ${
-                  changeRequest.type
-                }`,
+                label:
+                  "Images uploaded - Chat GUID: " +
+                  AppState.chatGUID +
+                  " - Images: " +
+                  AppState.pastedImages.map((el) => el.flipletUrl),
               });
-            } catch (error) {
-              console.error("❌ Error logging analytics:", error);
             }
+
+            logAnalytics({
+              category: "link",
+              action: "action",
+              label: `AI ${
+                isAnswerType ? "Answer" : "Code Generation"
+              } - Chat GUID: ${AppState.chatGUID} - Type: ${
+                changeRequest.type
+              }`,
+            });
 
             // Step 6: Update change history
             AppState.changeHistory.push({

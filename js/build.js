@@ -231,7 +231,7 @@ Fliplet.Widget.instance({
         layoutHTML: AI.fields.layoutHTML,
       };
 
-      if (AI.fields.css && AI.fields.javascript && AI.fields.layoutHTML) {
+      if (AI.fields.css || AI.fields.javascript || AI.fields.layoutHTML) {
         saveGeneratedCode(parsedContent);
       }
     },

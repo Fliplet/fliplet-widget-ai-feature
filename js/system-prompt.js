@@ -84,7 +84,6 @@ Font line height: $bodyLineHeight
 Font weight: $bodyFontWeight
 Text link color: $linkColor
 Text link color when clicked: $linkHoverColor
-Text link decoration when clicked: $linkHoverDecor
 
 Ask the user if you need clarification on the requirements, do not start creating code if you are not clear on the requirements.
 

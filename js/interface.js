@@ -166,7 +166,7 @@ Fliplet.Widget.generateInterface({
         ("use strict");
 
         // Debug mode configuration - set to true to show console logs
-        const debugMode = true;
+        const debugMode = false;
 
         // Debug utility function to conditionally log console messages
         function debugLog(...args) {
@@ -3287,7 +3287,7 @@ Fliplet.Widget.generateInterface({
             model: AIConfig.model,
             messages: messages,
             temperature: AIConfig.temperature,
-            max_tokens: CONFIG.MAX_TOKENS,
+            // max_tokens: CONFIG.MAX_TOKENS,
             // reasoning_effort: "low",
             response_format: {
               type: "json_schema",

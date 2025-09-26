@@ -1267,7 +1267,7 @@ Fliplet.Widget.generateInterface({
                     `✅ [StringReplacement] Applied: ${instruction.description}`
                   );
                 } else {
-                  console.error(
+                  debugError(
                     `❌ [StringReplacement] Failed: ${result.error}`
                   );
                   changeLog[instruction.target_type].push({
@@ -1279,7 +1279,7 @@ Fliplet.Widget.generateInterface({
                   });
                 }
               } catch (error) {
-                console.error(
+                debugError(
                   `❌ [StringReplacement] Error processing instruction:`,
                   error
                 );
@@ -1523,7 +1523,7 @@ Fliplet.Widget.generateInterface({
               );
               return results;
             } catch (error) {
-              console.error("❌ [ValidationEngine] Validation error:", error);
+              debugError("❌ [ValidationEngine] Validation error:", error);
               return {
                 valid: false,
                 errors: [`Validation system error: ${error.message}`],
@@ -1851,7 +1851,7 @@ Fliplet.Widget.generateInterface({
                 snapshot,
               };
             } catch (error) {
-              console.error("❌ [ChangeApplicator] Application failed:", error);
+              debugError("❌ [ChangeApplicator] Application failed:", error);
               this.restoreSnapshot(snapshot);
               throw error;
             }
@@ -1925,7 +1925,7 @@ Fliplet.Widget.generateInterface({
                   break;
 
                 default:
-                  console.warn(
+                  debugWarn(
                     "⚠️ [ChangeApplicator] Unknown HTML change type:",
                     change.type
                   );
@@ -2117,7 +2117,7 @@ Fliplet.Widget.generateInterface({
                   break;
 
                 default:
-                  console.warn(
+                  debugWarn(
                     "⚠️ [ChangeApplicator] Unknown CSS change type:",
                     change.type
                   );
@@ -2170,7 +2170,7 @@ Fliplet.Widget.generateInterface({
                   break;
 
                 default:
-                  console.warn(
+                  debugWarn(
                     "⚠️ [ChangeApplicator] Unknown JS change type:",
                     change.type
                   );
@@ -2290,7 +2290,7 @@ Fliplet.Widget.generateInterface({
                 DOM.userInput.style.height
               );
             } else {
-              console.error(
+              debugError(
                 "❌ Textarea element not found during initialization"
               );
             }
@@ -2465,9 +2465,9 @@ Fliplet.Widget.generateInterface({
               debugLog("🗑️ Remove button clicked for image ID:", imageId);
               handleImageRemove(imageId, DOM, AppState);
             } else {
-              console.error("❌ No image ID found in remove button dataset");
-              console.error("❌ Button HTML:", this.outerHTML);
-              console.error(
+              debugError("❌ No image ID found in remove button dataset");
+              debugError("❌ Button HTML:", this.outerHTML);
+              debugError(
                 "❌ Parent container:",
                 this.closest(".pasted-image-container")
               );
@@ -2669,7 +2669,7 @@ Fliplet.Widget.generateInterface({
 
             // Additional safety check: log any discrepancies
             if (pastedImages.length !== currentImages.length) {
-              console.warn("⚠️ [Main] Image count mismatch detected:", {
+              debugWarn("⚠️ [Main] Image count mismatch detected:", {
                 passedImages: pastedImages.map((img) => ({
                   id: img.id,
                   name: img.name,
@@ -2884,7 +2884,7 @@ Fliplet.Widget.generateInterface({
             // Remove loading indicator
             DOM.chatMessages.removeChild(loadingDiv);
 
-            console.error(
+            debugError(
               `❌ [Main] Request #${AppState.requestCount} failed:`,
               error
             );
@@ -2932,17 +2932,17 @@ Fliplet.Widget.generateInterface({
 
           // IMMEDIATE SAFETY CHECK: If passed images don't match current state, log warning
           if (pastedImages.length !== currentImages.length) {
-            console.warn(
+            debugWarn(
               "⚠️ [AI] WARNING: Passed images count (",
               pastedImages.length,
               ") does not match current state count (",
               currentImages.length,
               ")"
             );
-            console.warn(
+            debugWarn(
               "⚠️ [AI] This indicates images were removed after the initial filtering"
             );
-            console.warn(
+            debugWarn(
               "⚠️ [AI] Using current state images instead of passed parameter"
             );
           }
@@ -3048,7 +3048,7 @@ Fliplet.Widget.generateInterface({
                       image_url: { url: img.flipletUrl },
                     });
                   } else {
-                    console.warn(
+                    debugWarn(
                       "⚠️ [AI] Historical image missing flipletUrl, skipping:",
                       { id: img.id, name: img.name }
                     );
@@ -3093,7 +3093,7 @@ Fliplet.Widget.generateInterface({
                   image_url: { url: img.flipletUrl },
                 });
               } else {
-                console.warn(
+                debugWarn(
                   "⚠️ [AI] Current image missing flipletUrl, skipping:",
                   { id: img.id, name: img.name }
                 );
@@ -3264,10 +3264,10 @@ Fliplet.Widget.generateInterface({
                 img.flipletFileId
             ).length === 0
           ) {
-            console.error(
+            debugError(
               "❌ [AI] CRITICAL ERROR: Request contains images but AppState has no valid images!"
             );
-            console.error(
+            debugError(
               "❌ [AI] This should never happen - images were removed after filtering"
             );
 
@@ -3383,7 +3383,28 @@ Fliplet.Widget.generateInterface({
             )?.content,
           });
 
-          const response = await Fliplet.AI.createCompletion(requestBody);
+          let response;
+          try {
+            response = await Fliplet.AI.createCompletion(requestBody);
+          } catch (error) {
+            // Check for timeout errors (AbortError is the standard for timeout)
+            if (error.name === "AbortError") {
+              debugError("⚠️ Timeout!");
+              throw new Error('AI error occurred, please try again.');
+            }
+            // Also check for other common timeout patterns as fallback
+            if (error.message && (
+              error.message.toLowerCase().includes('timeout') ||
+              error.message.toLowerCase().includes('timed out') ||
+              error.message.toLowerCase().includes('request timeout') ||
+              error.code === 'ETIMEDOUT' ||
+              error.code === 'TIMEOUT'
+            )) {
+              throw new Error('AI error occurred, please try again.');
+            }
+            // Re-throw other errors as-is
+            throw error;
+          }
 
           if (!response || !response.choices || !response.choices[0]) {
             throw new Error(`AI API error: No valid response received`);
@@ -3506,7 +3527,7 @@ Fliplet.Widget.generateInterface({
                             position
                           );
                         } else {
-                          console.warn(
+                          debugWarn(
                             "⚠️ nth-child position out of range:",
                             position,
                             "of",
@@ -3530,7 +3551,7 @@ Fliplet.Widget.generateInterface({
                           className
                         );
                       } else {
-                        console.warn("⚠️ Target class not found:", className);
+                        debugWarn("⚠️ Target class not found:", className);
                       }
                     }
                   }
@@ -3548,7 +3569,7 @@ Fliplet.Widget.generateInterface({
                     );
                     debugLog("✅ Added content to element with ID:", targetId);
                   } else {
-                    console.warn("⚠️ Target ID not found:", targetId);
+                    debugWarn("⚠️ Target ID not found:", targetId);
                   }
                 } else {
                   // Element-based targeting
@@ -3563,7 +3584,7 @@ Fliplet.Widget.generateInterface({
                     );
                     debugLog("✅ Added content to element:", diff.target);
                   } else {
-                    console.warn("⚠️ Target element not found:", diff.target);
+                    debugWarn("⚠️ Target element not found:", diff.target);
                   }
                 }
               } else if (diff.position && diff.content) {
@@ -3657,7 +3678,7 @@ Fliplet.Widget.generateInterface({
                     );
                     debugLog("✅ Modified element with class:", className);
                   } else {
-                    console.warn(
+                    debugWarn(
                       "⚠️ Target class not found for modification:",
                       className
                     );
@@ -3675,7 +3696,7 @@ Fliplet.Widget.generateInterface({
                     );
                     debugLog("✅ Modified element with ID:", targetId);
                   } else {
-                    console.warn(
+                    debugWarn(
                       "⚠️ Target ID not found for modification:",
                       targetId
                     );
@@ -3692,7 +3713,7 @@ Fliplet.Widget.generateInterface({
                     );
                     debugLog("✅ Modified element:", diff.target);
                   } else {
-                    console.warn(
+                    debugWarn(
                       "⚠️ Target element not found for modification:",
                       diff.target
                     );
@@ -3702,7 +3723,7 @@ Fliplet.Widget.generateInterface({
               break;
 
             default:
-              console.warn(
+              debugWarn(
                 "⚠️ Unsupported HTML diff operation:",
                 diff.operation
               );
@@ -3811,7 +3832,7 @@ Fliplet.Widget.generateInterface({
                 }
               );
             } else {
-              console.warn("⚠️ CSS selector not found:", normalizedSelector);
+              debugWarn("⚠️ CSS selector not found:", normalizedSelector);
               debugLog(
                 "🔍 Available CSS content preview:",
                 currentCSS.substring(0, 200) + "..."
@@ -3822,7 +3843,7 @@ Fliplet.Widget.generateInterface({
             modifiedCSS += "\n\n" + diff.content;
             debugLog("➕ Added new CSS content");
           } else {
-            console.warn(
+            debugWarn(
               "⚠️ CSS diff operation not supported or missing required fields:",
               diff
             );
@@ -3980,7 +4001,7 @@ Fliplet.Widget.generateInterface({
                 }
 
                 if (!replaced) {
-                  console.warn(
+                  debugWarn(
                     "⚠️ JS function not found for modification:",
                     diff.functionName
                   );
@@ -4001,7 +4022,7 @@ Fliplet.Widget.generateInterface({
                   });
                   debugLog("✅ Modified JS target content");
                 } else {
-                  console.warn("⚠️ JS target content not found:", diff.target);
+                  debugWarn("⚠️ JS target content not found:", diff.target);
                 }
               }
               break;
@@ -4047,7 +4068,7 @@ Fliplet.Widget.generateInterface({
                 }
 
                 if (!removed) {
-                  console.warn(
+                  debugWarn(
                     "⚠️ JS function not found for removal:",
                     diff.functionName
                   );
@@ -4064,7 +4085,7 @@ Fliplet.Widget.generateInterface({
               break;
 
             default:
-              console.warn("⚠️ Unsupported JS diff operation:", diff.operation);
+              debugWarn("⚠️ Unsupported JS diff operation:", diff.operation);
           }
 
           debugLog("🔚 JS diff application completed");
@@ -4149,7 +4170,7 @@ Fliplet.Widget.generateInterface({
             });
             debugLog("✅ Updated successfully");
           } catch (error) {
-            console.error("❌ Update failed:", error);
+            debugError("❌ Update failed:", error);
           }
         }
 
@@ -4186,7 +4207,7 @@ Fliplet.Widget.generateInterface({
 
             debugLog("✅ Chat history saved to Fliplet field successfully");
           } catch (error) {
-            console.error(
+            debugError(
               "Failed to save chat history to Fliplet field:",
               error
             );
@@ -4269,7 +4290,7 @@ Fliplet.Widget.generateInterface({
                         // Use flipletUrl for permanent image storage
                         const imageSrc = img.flipletUrl;
                         if (!imageSrc) {
-                          console.warn("⚠️ Image missing flipletUrl:", img);
+                          debugWarn("⚠️ Image missing flipletUrl:", img);
                           return "";
                         }
 
@@ -4309,7 +4330,7 @@ Fliplet.Widget.generateInterface({
               debugLog("⚠️ No chat history found in Fliplet field");
             }
           } catch (error) {
-            console.error(
+            debugError(
               "Failed to load chat history from Fliplet field:",
               error
             );
@@ -4326,7 +4347,7 @@ Fliplet.Widget.generateInterface({
             Fliplet.Helper.field("chatHistory").set("");
             debugLog("✅ Chat history cleared from Fliplet field");
           } catch (error) {
-            console.error(
+            debugError(
               "Failed to clear chat history from Fliplet field:",
               error
             );
@@ -4371,7 +4392,7 @@ Fliplet.Widget.generateInterface({
                 // Use flipletUrl for permanent image storage
                 const imageSrc = img.flipletUrl;
                 if (!imageSrc) {
-                  console.warn("⚠️ Image missing flipletUrl:", img);
+                  debugWarn("⚠️ Image missing flipletUrl:", img);
                   return "";
                 }
 
@@ -4887,7 +4908,7 @@ async function populateCurrentPageContent() {
       Fliplet.Helper.field("javascript").set(jsContent);
     }
   } catch (error) {
-    console.error("Error populating current page content:", error);
+    debugError("Error populating current page content:", error);
     Fliplet.UI.Toast("Error loading current page content: " + error);
   }
 }

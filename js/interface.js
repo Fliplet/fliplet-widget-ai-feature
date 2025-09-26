@@ -3105,79 +3105,10 @@ Fliplet.Widget.generateInterface({
             );
           }
 
-          // Then, check if we need to add images from chat history for context
-          // This ensures that if the current message has no new images, we still include
-          // the images from previous user messages for complete context
-          const allHistoricalImages = [];
-          recentHistory.forEach((historyItem) => {
-            if (
-              historyItem.type === "user" &&
-              historyItem.images &&
-              historyItem.images.length > 0
-            ) {
-              allHistoricalImages.push(...historyItem.images);
-              debugLog(
-                `🖼️ [AI] Found ${
-                  historyItem.images.length
-                } images in historical user message: "${historyItem.message.substring(
-                  0,
-                  30
-                )}..."`
-              );
-            }
-          });
-
-          // Remove duplicates and add historical images that aren't already included
-          const uniqueHistoricalImages = allHistoricalImages.filter(
-            (img, index, self) =>
-              index === self.findIndex((t) => String(t.id) === String(img.id))
-          );
-
-          debugLog("🔍 [AI] Historical image analysis:", {
-            totalHistoricalImages: allHistoricalImages.length,
-            uniqueHistoricalImages: uniqueHistoricalImages.length,
-            historicalImages: uniqueHistoricalImages.map((img) => ({
-              id: img.id,
-              name: img.name,
-              flipletUrl: !!img.flipletUrl,
-            })),
-          });
-
-          // Add historical images that aren't already in current images
-          let addedHistoricalImages = 0;
-          uniqueHistoricalImages.forEach((img) => {
-            const alreadyIncluded =
-              finalCurrentImages &&
-              finalCurrentImages.some(
-                (currentImg) => String(currentImg.id) === String(img.id)
-              );
-
-            if (!alreadyIncluded && img.flipletUrl) {
-              content.push({
-                type: "image_url",
-                image_url: { url: img.flipletUrl },
-              });
-              addedHistoricalImages++;
-              debugLog("📤 [AI] Added historical image for context:", {
-                id: img.id,
-                name: img.name,
-              });
-            } else if (alreadyIncluded) {
-              debugLog(
-                "📤 [AI] Historical image already included via current images:",
-                { id: img.id, name: img.name }
-              );
-            } else if (!img.flipletUrl) {
-              console.warn("⚠️ [AI] Historical image missing flipletUrl:", {
-                id: img.id,
-                name: img.name,
-              });
-            }
-          });
-
-          debugLog(
-            `📤 [AI] Added ${addedHistoricalImages} historical images for context`
-          );
+          // Note: Historical images are NOT added to current user messages
+          // Each user message should only contain its own text and images
+          // Historical context is maintained through the separate history messages above
+          debugLog("📤 [AI] Current user message will only contain current images, not historical ones");
 
           // Always send the user message with content array (even if no images)
           messages.push({ role: "user", content: content });

@@ -25,7 +25,6 @@ Fliplet.Widget.instance({
       AI.fields = _.assign(
         {
           dataSourceId: "",
-          prompt: "",
           css: "",
           javascript: "",
           layoutHTML: "",
@@ -63,10 +62,7 @@ Fliplet.Widget.instance({
         }
       });
 
-      if (!AI.fields.prompt) {
-        Fliplet.UI.Toast("Please enter a prompt");
-        return;
-      } else if (!AI.fields.regenerateCode) {
+      if (!AI.fields.regenerateCode) {
         return;
       }
 
@@ -125,7 +121,6 @@ Fliplet.Widget.instance({
 
           // save logs
           const logAiCallResponse = await logAiCall({
-            prompt: AI.fields.prompt,
             aiCssResponse: AI.fields.css,
             aiJsResponse: AI.fields.javascript,
             aiLayoutResponse: AI.fields.layoutHTML,
@@ -188,9 +183,21 @@ Fliplet.Widget.instance({
         // Check if delimiters exist in the old code
         if (oldCode.includes(start) && oldCode.includes(end)) {
           // Replace content between delimiters
+          // For CSS, we need to escape the special characters properly
+          let patternStart, patternEnd;
+          if (type == "js") {
+            patternStart = start;
+            patternEnd = end;
+          } else {
+            patternStart = `/\\* start-ai-feature ${widgetId} \\*/`;
+            patternEnd = `/\\* end-ai-feature ${widgetId} \\*/`;
+          }
+          
           return oldCode.replace(
-            new RegExp(start + "[\\s\\S]*?" + end, "g"),
-            start + "\n" + newCode + "\n" + end
+            new RegExp(patternStart.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }) + "[\\s\\S]*?" + patternEnd.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }), "g"),
+            function() {
+              return start + "\n" + newCode + "\n" + end;
+            }
           );
         } else {
           // Append new code with delimiters at the end
@@ -211,7 +218,7 @@ Fliplet.Widget.instance({
         }
 
         // Create the pattern and escape the string properly
-        const pattern = new RegExp(`${start}[\\s\\S]*?${end}`, "g");
+        const pattern = new RegExp(`${start.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; })}[\\s\\S]*?${end.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; })}`, "g");
 
         // Remove the delimited code and clean up whitespace
         return oldCode
@@ -226,7 +233,7 @@ Fliplet.Widget.instance({
         layoutHTML: AI.fields.layoutHTML,
       };
 
-      if (AI.fields.css && AI.fields.javascript && AI.fields.layoutHTML) {
+      if (AI.fields.css || AI.fields.javascript || AI.fields.layoutHTML) {
         saveGeneratedCode(parsedContent);
       }
     },

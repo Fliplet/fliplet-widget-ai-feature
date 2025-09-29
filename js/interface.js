@@ -4918,7 +4918,7 @@ function extractHtmlContent(richLayout) {
   let $wrapper = $("<div>").html(richLayout);
 
   // Find the widget-specific container and extract its content
-  const $widgetContainer = $wrapper.find(`.ai-feature-dev-${widgetId}`);
+  const $widgetContainer = $wrapper.find(`.ai-feature-${widgetId}`);
 
   if ($widgetContainer.length > 0) {
     return $widgetContainer.html() || "";
@@ -4931,11 +4931,11 @@ function extractCodeBetweenDelimiters(type, code) {
   let start, end;
 
   if (type === "js") {
-    start = `// start-ai-feature-dev ${widgetId}`;
-    end = `// end-ai-feature-dev ${widgetId}`;
+    start = `// start-ai-feature ${widgetId}`;
+    end = `// end-ai-feature ${widgetId}`;
   } else if (type === "css") {
-    start = `/* start-ai-feature-dev ${widgetId} */`;
-    end = `/* end-ai-feature-dev ${widgetId} */`;
+    start = `/* start-ai-feature ${widgetId} */`;
+    end = `/* end-ai-feature ${widgetId} */`;
   }
 
   // Find the start and end positions

@@ -3,6 +3,7 @@
   "package": "com.fliplet.ai-feature",
   "version": "2.0.0",
   "icon": "img/icon.png",
+  "supportUrl": "https://help.fliplet.com/ai-feature-component/",
   "tags": ["type:component", "category:text", "beta:true"],
   "provider_only": false,
   "references": [],

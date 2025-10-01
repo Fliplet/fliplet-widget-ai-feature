@@ -58,6 +58,7 @@ Fliplet.Widget.instance({
 
           // reload page preview
           Fliplet.Studio.emit("reload-page-preview");
+          
           return { removedHtml, layoutResponse };
         }
       });

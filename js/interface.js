@@ -4531,9 +4531,6 @@ Fliplet.Widget.generateInterface({
             debugLog("🔄 Resetting session");
 
             // Reset application state
-            AppState.currentHTML = "";
-            AppState.currentCSS = "";
-            AppState.currentJS = "";
             AppState.previousHTML = "";
             AppState.previousCSS = "";
             AppState.previousJS = "";

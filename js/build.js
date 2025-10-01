@@ -206,24 +206,32 @@ Fliplet.Widget.instance({
       }
 
       function removeCodeWithinDelimiters(type, oldCode = "") {
+        // widgetId is assumed to be in scope; add it as a param if needed
+        const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      
         let start, end;
-
-        if (type == "js") {
+      
+        if (type === "js") {
           start = `// start-ai-feature ${widgetId}`;
-          end = `// end-ai-feature ${widgetId}`;
+          end   = `// end-ai-feature ${widgetId}`;
         } else {
-          // For CSS, we need to escape the special characters properly
-          start = `/\\* start-ai-feature ${widgetId} \\*/`;
-          end = `/\\* end-ai-feature ${widgetId} \\*/`;
+          // Keep CSS markers RAW, not pre-escaped; we'll escape them when building the RegExp
+          start = `/* start-ai-feature ${widgetId} */`;
+          end   = `/* end-ai-feature ${widgetId} */`;
         }
-
-        // Create the pattern and escape the string properly
-        const pattern = new RegExp(`${start.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; })}[\\s\\S]*?${end.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; })}`, "g");
-
-        // Remove the delimited code and clean up whitespace
+      
+        // Build a robust pattern:
+        // - Escape start/end so they’re treated literally
+        // - Match everything between them non-greedily, including newlines
+        // - Also consume an optional leading indentation+newline and a trailing newline to avoid blank lines
+        const pattern = new RegExp(
+          `(?:^[ \\t]*\\r?\\n)?${esc(start)}[\\s\\S]*?${esc(end)}\\r?\\n?`,
+          "gm"
+        );
+      
         return oldCode
           .replace(pattern, "")
-          .replace(/\n{3,}/g, "\n\n")
+          .replace(/\r?\n{3,}/g, "\n\n") // collapse excessive blank lines
           .trim();
       }
 

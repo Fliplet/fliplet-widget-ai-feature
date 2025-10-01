@@ -9,7 +9,8 @@
   "settings": {
     "asyncRendering": true,
     "interfaceWidgetPackage": "com.fliplet.helper-configuration",
-    "hideThemeSettings": true
+    "hideThemeSettings": true,
+    "supportUrl": "https://help.fliplet.com/ai-feature-component/"
   },
   "html_tag": "div",
   "interface": {

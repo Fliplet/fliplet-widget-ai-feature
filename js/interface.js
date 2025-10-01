@@ -4865,6 +4865,7 @@ function logAnalytics(data) {
     category: data.category,
     action: data.action,
     label: data.label,
+    pageId: pageId,
   });
 }
 

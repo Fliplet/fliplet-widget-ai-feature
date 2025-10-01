@@ -4864,8 +4864,7 @@ function logAnalytics(data) {
   return Fliplet.App.Analytics.track("event", {
     category: data.category,
     action: data.action,
-    label: data.label,
-    pageId: pageId,
+    label: data.label
   });
 }
 

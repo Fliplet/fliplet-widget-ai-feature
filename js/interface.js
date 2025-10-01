@@ -2775,7 +2775,7 @@ Fliplet.Widget.generateInterface({
               AppState.currentJS = applicationResult.updatedCode.js;
             }
 
-            const logAiCallResponse = await logAiCall({
+            const logAiCallResponse = await logAiComponentUsage({
               "Chat history": AppState.chatHistory,
               "User prompt": userMessage,
               "AI response": aiResponse,
@@ -2783,21 +2783,12 @@ Fliplet.Widget.generateInterface({
               javascript: AppState.currentJS,
               layoutHTML: AppState.currentHTML,
               images: AppState.pastedImages.map((el) => el.flipletUrl),
+              dataSourceId: selectedDataSourceId,
+              dataSourceName: selectedDataSourceName,
               chatGUID: AppState.chatGUID,
-            });
-
-            if (AppState.pastedImages.length > 0) {
-              logAnalytics({
-                category: "link",
-                action: "action",
-                label: "Images uploaded",
-              });
-            }
-
-            logAnalytics({
-              category: "link",
-              action: "action",
-              label: `AI ${isAnswerType ? "Answer" : "Code Generation"}`,
+              type: "response",
+              mode: isAnswerType ? "answer" : "code-generation",
+              hasImages: AppState.pastedImages.length > 0
             });
 
             // Step 6: Update change history
@@ -4534,10 +4525,10 @@ Fliplet.Widget.generateInterface({
             selectedDataSourceId = "";
             Fliplet.Helper.field("dataSourceId").set("");
 
-            logAnalytics({
-              category: "link",
-              action: "action",
-              label: "Chat reset",
+            logAiComponentUsage({
+              "Chat history": AppState.chatHistory,
+              chatGUID: AppState.chatGUID,
+              type: "reset"
             });
 
             AppState.chatGUID = Fliplet.guid();
@@ -4836,27 +4827,17 @@ Fliplet.Widget.generateInterface({
   ],
 });
 
-function logAiCall(data) {
+function logAiComponentUsage(data) {
   return Fliplet.App.Logs.create(
     {
       data: {
-        data: data,
-        userId: userId,
-        appId: appId,
-        organizationId: organizationId,
-        pageId: pageId,
+        ...data,
+        version: "2.0.0",
+        pageId
       },
     },
     "ai.feature.component"
   );
-}
-
-function logAnalytics(data) {
-  return Fliplet.App.Analytics.track("event", {
-    category: data.category,
-    action: data.action,
-    label: data.label,
-  });
 }
 
 async function getCurrentPageSettings() {

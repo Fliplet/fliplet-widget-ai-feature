@@ -58,7 +58,7 @@ Fliplet.Widget.instance({
 
           // reload page preview
           Fliplet.Studio.emit("reload-page-preview");
-          
+
           return { removedHtml, layoutResponse };
         }
       });
@@ -121,20 +121,18 @@ Fliplet.Widget.instance({
           const layoutResponse = await saveLayout(htmlCodeToInject);
 
           // save logs
-          const logAiCallResponse = await logAiCall({
+          const logAiComponentUsageResponse = await logAiComponentUsage({
             aiCssResponse: AI.fields.css,
             aiJsResponse: AI.fields.javascript,
             aiLayoutResponse: AI.fields.layoutHTML,
-            organizationId: organizationId,
-            pageId: pageId,
             widgetId: widgetId,
-            appId: appId,
+            type: "code-save"
           });
 
           // reload page preview
           Fliplet.Studio.emit("reload-page-preview");
 
-          return { settingsResponse, layoutResponse, logAiCallResponse };
+          return { settingsResponse, layoutResponse, logAiComponentUsageResponse };
         } catch (error) {
           throw error;
         }
@@ -161,15 +159,14 @@ Fliplet.Widget.instance({
         return $wrapper.html();
       }
 
-      function logAiCall(data) {
+      function logAiComponentUsage(data) {
         return Fliplet.App.Logs.create(
           {
             data: {
-              data: data,
-              userId: userId,
-              appId: appId,
-              organizationId: organizationId,
-            },
+              ...data,
+              version: "2.0.0",
+              pageId
+            }
           },
           "ai.feature.component"
         );

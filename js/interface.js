@@ -1267,9 +1267,7 @@ Fliplet.Widget.generateInterface({
                     `✅ [StringReplacement] Applied: ${instruction.description}`
                   );
                 } else {
-                  debugError(
-                    `❌ [StringReplacement] Failed: ${result.error}`
-                  );
+                  debugError(`❌ [StringReplacement] Failed: ${result.error}`);
                   changeLog[instruction.target_type].push({
                     type: "string_replacement_failed",
                     description:
@@ -1456,7 +1454,7 @@ Fliplet.Widget.generateInterface({
            * @returns {string} Escaped string
            */
           escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, function(match) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
               return "\\" + match;
             });
           }
@@ -2290,9 +2288,7 @@ Fliplet.Widget.generateInterface({
                 DOM.userInput.style.height
               );
             } else {
-              debugError(
-                "❌ Textarea element not found during initialization"
-              );
+              debugError("❌ Textarea element not found during initialization");
             }
           }, 100);
 
@@ -2487,13 +2483,13 @@ Fliplet.Widget.generateInterface({
         function disableUserControls() {
           if (DOM.userInput) {
             DOM.userInput.disabled = true;
-            DOM.userInput.style.opacity = '0.6';
-            DOM.userInput.style.cursor = 'not-allowed';
+            DOM.userInput.style.opacity = "0.6";
+            DOM.userInput.style.cursor = "not-allowed";
           }
           if (DOM.sendBtn) {
             DOM.sendBtn.disabled = true;
-            DOM.sendBtn.style.opacity = '0.6';
-            DOM.sendBtn.style.cursor = 'not-allowed';
+            DOM.sendBtn.style.opacity = "0.6";
+            DOM.sendBtn.style.cursor = "not-allowed";
           }
           debugLog("🔒 User controls disabled - AI is thinking");
         }
@@ -2504,13 +2500,13 @@ Fliplet.Widget.generateInterface({
         function enableUserControls() {
           if (DOM.userInput) {
             DOM.userInput.disabled = false;
-            DOM.userInput.style.opacity = '1';
-            DOM.userInput.style.cursor = 'text';
+            DOM.userInput.style.opacity = "1";
+            DOM.userInput.style.cursor = "text";
           }
           if (DOM.sendBtn) {
             DOM.sendBtn.disabled = false;
-            DOM.sendBtn.style.opacity = '1';
-            DOM.sendBtn.style.cursor = 'pointer';
+            DOM.sendBtn.style.opacity = "1";
+            DOM.sendBtn.style.cursor = "pointer";
           }
           debugLog("🔓 User controls re-enabled - AI finished thinking");
         }
@@ -2794,22 +2790,14 @@ Fliplet.Widget.generateInterface({
               logAnalytics({
                 category: "link",
                 action: "action",
-                label:
-                  "Images uploaded - Chat GUID: " +
-                  AppState.chatGUID +
-                  " - Images: " +
-                  AppState.pastedImages.map((el) => el.flipletUrl),
+                label: "Images uploaded",
               });
             }
 
             logAnalytics({
               category: "link",
               action: "action",
-              label: `AI ${
-                isAnswerType ? "Answer" : "Code Generation"
-              } - Chat GUID: ${AppState.chatGUID} - Type: ${
-                changeRequest.type
-              }`,
+              label: `AI ${isAnswerType ? "Answer" : "Code Generation"}`,
             });
 
             // Step 6: Update change history
@@ -3108,7 +3096,9 @@ Fliplet.Widget.generateInterface({
           // Note: Historical images are NOT added to current user messages
           // Each user message should only contain its own text and images
           // Historical context is maintained through the separate history messages above
-          debugLog("📤 [AI] Current user message will only contain current images, not historical ones");
+          debugLog(
+            "📤 [AI] Current user message will only contain current images, not historical ones"
+          );
 
           // Always send the user message with content array (even if no images)
           messages.push({ role: "user", content: content });
@@ -3390,17 +3380,18 @@ Fliplet.Widget.generateInterface({
             // Check for timeout errors (AbortError is the standard for timeout)
             if (error.name === "AbortError") {
               debugError("⚠️ Timeout!");
-              throw new Error('AI error occurred, please try again.');
+              throw new Error("AI error occurred, please try again.");
             }
             // Also check for other common timeout patterns as fallback
-            if (error.message && (
-              error.message.toLowerCase().includes('timeout') ||
-              error.message.toLowerCase().includes('timed out') ||
-              error.message.toLowerCase().includes('request timeout') ||
-              error.code === 'ETIMEDOUT' ||
-              error.code === 'TIMEOUT'
-            )) {
-              throw new Error('AI error occurred, please try again.');
+            if (
+              error.message &&
+              (error.message.toLowerCase().includes("timeout") ||
+                error.message.toLowerCase().includes("timed out") ||
+                error.message.toLowerCase().includes("request timeout") ||
+                error.code === "ETIMEDOUT" ||
+                error.code === "TIMEOUT")
+            ) {
+              throw new Error("AI error occurred, please try again.");
             }
             // Re-throw other errors as-is
             throw error;
@@ -3723,10 +3714,7 @@ Fliplet.Widget.generateInterface({
               break;
 
             default:
-              debugWarn(
-                "⚠️ Unsupported HTML diff operation:",
-                diff.operation
-              );
+              debugWarn("⚠️ Unsupported HTML diff operation:", diff.operation);
           }
 
           debugLog("🔚 HTML diff application completed");
@@ -3765,7 +3753,9 @@ Fliplet.Widget.generateInterface({
             // Create a more flexible regex that handles multi-line selectors
             // Escape special regex characters in the selector
             const escapedSelector = normalizedSelector
-              .replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }) // Escape special chars
+              .replace(/[.*+?^${}()|[\]\\]/g, function (match) {
+                return "\\" + match;
+              }) // Escape special chars
               .replace(/,\s*/g, ",\\s*") // Allow flexible spacing around commas
               .replace(/\s+/g, "\\s+"); // Allow flexible whitespace
 
@@ -3990,7 +3980,7 @@ Fliplet.Widget.generateInterface({
                       );
                     } else {
                       // Replace entire function content
-                      modifiedJS = modifiedJS.replace(pattern, function() {
+                      modifiedJS = modifiedJS.replace(pattern, function () {
                         return diff.content;
                       });
                     }
@@ -4013,11 +4003,13 @@ Fliplet.Widget.generateInterface({
               } else if (diff.target && diff.content) {
                 // Modify specific code block by content matching
                 const targetRegex = new RegExp(
-                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }),
+                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
+                    return "\\" + match;
+                  }),
                   "gi"
                 );
                 if (targetRegex.test(modifiedJS)) {
-                  modifiedJS = modifiedJS.replace(targetRegex, function() {
+                  modifiedJS = modifiedJS.replace(targetRegex, function () {
                     return diff.content;
                   });
                   debugLog("✅ Modified JS target content");
@@ -4076,7 +4068,9 @@ Fliplet.Widget.generateInterface({
               } else if (diff.target) {
                 // Remove specific code block
                 const targetRegex = new RegExp(
-                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }),
+                  diff.target.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
+                    return "\\" + match;
+                  }),
                   "gi"
                 );
                 modifiedJS = modifiedJS.replace(targetRegex, "");
@@ -4207,10 +4201,7 @@ Fliplet.Widget.generateInterface({
 
             debugLog("✅ Chat history saved to Fliplet field successfully");
           } catch (error) {
-            debugError(
-              "Failed to save chat history to Fliplet field:",
-              error
-            );
+            debugError("Failed to save chat history to Fliplet field:", error);
           }
         }
 
@@ -4546,7 +4537,7 @@ Fliplet.Widget.generateInterface({
             logAnalytics({
               category: "link",
               action: "action",
-              label: "Chat reset - Chat GUID: " + AppState.chatGUID,
+              label: "Chat reset",
             });
 
             AppState.chatGUID = Fliplet.guid();

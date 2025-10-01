@@ -34,7 +34,7 @@ Fliplet.Widget.instance({
       );
 
       const widgetId = AI.fields.aiFeatureId;
-     
+
       Fliplet.Hooks.on("componentEvent", async function (event) {
         if (
           event?.type == "removed" &&
@@ -127,7 +127,7 @@ Fliplet.Widget.instance({
             organizationId: organizationId,
             pageId: pageId,
             widgetId: widgetId,
-            appId: appId
+            appId: appId,
           });
 
           // reload page preview
@@ -147,7 +147,9 @@ Fliplet.Widget.instance({
         // remove existing ai feature container
         $wrapper.find(`.ai-feature-${widgetId}`).remove();
         // Find `<fl-ai-feature>` and add a sibling after it
-        $wrapper.find(`fl-ai-feature[cid="${widgetId}"]`).after(codeGenContainer);
+        $wrapper
+          .find(`fl-ai-feature[cid="${widgetId}"]`)
+          .after(codeGenContainer);
         return $wrapper.html();
       }
 
@@ -159,14 +161,17 @@ Fliplet.Widget.instance({
       }
 
       function logAiCall(data) {
-        return Fliplet.App.Logs.create({
-          data: {
-            data: data,
-            userId: userId,
-            appId: appId,
-            organizationId: organizationId,
+        return Fliplet.App.Logs.create(
+          {
+            data: {
+              data: data,
+              userId: userId,
+              appId: appId,
+              organizationId: organizationId,
+            },
           },
-        }, "ai.feature.component");
+          "ai.feature.component"
+        );
       }
 
       function updateCodeWithinDelimiters(type, newCode, oldCode = "") {
@@ -192,10 +197,19 @@ Fliplet.Widget.instance({
             patternStart = `/\\* start-ai-feature ${widgetId} \\*/`;
             patternEnd = `/\\* end-ai-feature ${widgetId} \\*/`;
           }
-          
+
           return oldCode.replace(
-            new RegExp(patternStart.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }) + "[\\s\\S]*?" + patternEnd.replace(/[.*+?^${}()|[\]\\]/g, function(match) { return "\\" + match; }), "g"),
-            function() {
+            new RegExp(
+              patternStart.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
+                return "\\" + match;
+              }) +
+                "[\\s\\S]*?" +
+                patternEnd.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
+                  return "\\" + match;
+                }),
+              "g"
+            ),
+            function () {
               return start + "\n" + newCode + "\n" + end;
             }
           );
@@ -208,18 +222,18 @@ Fliplet.Widget.instance({
       function removeCodeWithinDelimiters(type, oldCode = "") {
         // widgetId is assumed to be in scope; add it as a param if needed
         const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-      
+
         let start, end;
-      
+
         if (type === "js") {
           start = `// start-ai-feature ${widgetId}`;
-          end   = `// end-ai-feature ${widgetId}`;
+          end = `// end-ai-feature ${widgetId}`;
         } else {
           // Keep CSS markers RAW, not pre-escaped; we'll escape them when building the RegExp
           start = `/* start-ai-feature ${widgetId} */`;
-          end   = `/* end-ai-feature ${widgetId} */`;
+          end = `/* end-ai-feature ${widgetId} */`;
         }
-      
+
         // Build a robust pattern:
         // - Escape start/end so they’re treated literally
         // - Match everything between them non-greedily, including newlines
@@ -228,7 +242,7 @@ Fliplet.Widget.instance({
           `(?:^[ \\t]*\\r?\\n)?${esc(start)}[\\s\\S]*?${esc(end)}\\r?\\n?`,
           "gm"
         );
-      
+
         return oldCode
           .replace(pattern, "")
           .replace(/\r?\n{3,}/g, "\n\n") // collapse excessive blank lines

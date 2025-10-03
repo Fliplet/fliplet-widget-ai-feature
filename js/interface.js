@@ -2869,11 +2869,36 @@ Fliplet.Widget.generateInterface({
             );
 
             // Add detailed error message
-            const errorMessage = error.message.includes(
-              "API key not configured"
-            )
-              ? "🔑 AI service not available. Please check your configuration and try again."
-              : `❌ Error processing your request: ${error.message}`;
+            var errorMessage = "";
+            switch (error.status) {
+              case 400:
+                errorMessage = "Bad request. Please try again.";
+                break;
+              case 401:
+                errorMessage = "Invalid API key. Please check your configuration and try again.";
+                break;
+              case 403:
+                errorMessage = "Access denied. Please try again.";
+                break;
+              case 404:
+                errorMessage = "Not found. Please try again.";
+                break;
+              case 500:
+                errorMessage = "Internal server error. Please try again.";
+                break;
+              case 502:
+                errorMessage = "Bad gateway. Please try again.";
+                break;
+              case 503:
+                errorMessage = "Service unavailable. Please try again.";
+                break;
+              case 504:
+                errorMessage = "Gateway timeout. Please try again.";
+                break;
+              default:
+                errorMessage = `Error processing your request: ${error.message}`;
+                break;
+            }
 
             addMessageToChat(errorMessage, "ai");
 

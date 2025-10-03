@@ -2878,7 +2878,7 @@ Fliplet.Widget.generateInterface({
             );
 
             // Add detailed error message
-            var errorMessage = `Error processing your request: ${error.responseText}`;
+            var errorMessage = "";
             switch (error.status) {
               case 400:
                 errorMessage = "Bad request. Please try again.";

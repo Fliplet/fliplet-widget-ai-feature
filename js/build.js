@@ -207,9 +207,7 @@ Fliplet.Widget.instance({
                 }),
               "g"
             ),
-            function () {
-              return start + "\n" + newCode + "\n" + end;
-            }
+            start + "\n" + newCode + "\n" + end
           );
         } else {
           // Append new code with delimiters at the end

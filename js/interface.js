@@ -589,10 +589,18 @@ Fliplet.Widget.generateInterface({
                 jsPatterns:
                   jsAnalysis.functions.length > 0 ? "function-based" : "none",
               },
+              codeState: {
+                htmlEmpty: currentCode.html.trim() === "",
+                cssEmpty: currentCode.css.trim() === "",
+                jsEmpty: currentCode.js.trim() === "",
+                htmlLength: currentCode.html.length,
+                cssLength: currentCode.css.length,
+                jsLength: currentCode.js.length,
+              },
               isFirstGeneration:
-                currentCode.html === "" &&
-                currentCode.css === "" &&
-                currentCode.js === "",
+                currentCode.html.trim() === "" &&
+                currentCode.css.trim() === "" &&
+                currentCode.js.trim() === "",
             };
 
             debugLog("✅ [ContextBuilder] Context built:", context);
@@ -1324,15 +1332,29 @@ Fliplet.Widget.generateInterface({
               js: "// EMPTY",
             };
             const expectedEmptyMarker = emptyMarkers[instruction.target_type];
-            if (oldString === expectedEmptyMarker && targetCode.trim() === "") {
-              debugLog(
-                `🆕 [StringReplacement] Handling empty ${instruction.target_type} code case for new project`
-              );
-              return {
-                success: true,
-                newCode: newString,
-                location: "entire content (new)",
-              };
+            
+            // Check if trying to use empty marker incorrectly
+            if (oldString === expectedEmptyMarker) {
+              if (targetCode.trim() === "") {
+                debugLog(
+                  `🆕 [StringReplacement] Handling empty ${instruction.target_type} code case for new project`
+                );
+                return {
+                  success: true,
+                  newCode: newString,
+                  location: "entire content (new)",
+                };
+              } else {
+                // Empty marker used but code exists - this is an error
+                debugLog(
+                  `❌ [StringReplacement] Empty marker used incorrectly - ${instruction.target_type} code exists`,
+                  { codeLength: targetCode.length, codePreview: targetCode.substring(0, 100) }
+                );
+                return {
+                  success: false,
+                  error: `Cannot use empty marker "${expectedEmptyMarker}" - ${instruction.target_type} code already exists (${targetCode.length} characters). Use existing code content for old_string instead.`
+                };
+              }
             }
 
             // 1) Try exact literal match first (after normalizing EOLs on both sides)

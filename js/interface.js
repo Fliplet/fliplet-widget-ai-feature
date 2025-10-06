@@ -4,8 +4,6 @@ var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 const appId = Fliplet.Env.get("appId");
 const pageId = Fliplet.Env.get("pageId");
-const organizationId = Fliplet.Env.get("organizationId");
-const userId = Fliplet.Env.get("user")?.id || "";
 
 Fliplet.Widget.setSaveButtonLabel(false);
 Fliplet.Widget.setCancelButtonLabel("Close");
@@ -166,7 +164,7 @@ Fliplet.Widget.generateInterface({
         ("use strict");
 
         // Debug mode configuration - set to true to show console logs
-        const debugMode = false;
+        const debugMode = true;
 
         // Debug utility function to conditionally log console messages
         function debugLog(...args) {

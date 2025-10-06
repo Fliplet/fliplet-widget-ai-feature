@@ -1225,13 +1225,10 @@ Rules for String Replacements (CODE GENERATION only):
    - old_string must be a non-empty string that matches EXACTLY (including whitespace and indentation)
    - Be as specific as possible to avoid multiple matches  
    - For adding elements, replace a closing tag with content + closing tag
-   - CRITICAL: Only use empty markers for completely new projects with NO existing code:
-     * HTML: old_string: "<!-- EMPTY -->" (ONLY when HTML is completely empty)
-     * CSS: old_string: "/* EMPTY */" (ONLY when CSS is completely empty)
-     * JS: old_string: "// EMPTY" (ONLY when JavaScript is completely empty)
-   - For existing projects with code: NEVER use empty markers - always find existing content to modify
-   - When adding new CSS rules to existing CSS: append by replacing the end of the CSS
-   - When modifying existing CSS rules: find and replace the specific rule
+   - For new projects with no existing code, use these empty markers:
+     * HTML: old_string: "<!-- EMPTY -->" 
+     * CSS: old_string: "/* EMPTY */"
+     * JS: old_string: "// EMPTY"
    - Always preserve existing functionality
    - NEVER use empty strings or null values for old_string or new_string
 
@@ -1273,13 +1270,6 @@ Use "string_replacement" format for requests like:
       }  
 - CSS Organization: ${context.codeStructure.cssOrganization}
 - JS Patterns: ${context.codeStructure.jsPatterns}
-
-CODE STATE:
-- HTML: ${context.codeState.htmlEmpty ? "EMPTY" : `EXISTS (${context.codeState.htmlLength} chars)`}
-- CSS: ${context.codeState.cssEmpty ? "EMPTY" : `EXISTS (${context.codeState.cssLength} chars)`}
-- JavaScript: ${context.codeState.jsEmpty ? "EMPTY" : `EXISTS (${context.codeState.jsLength} chars)`}
-
-IMPORTANT: Only use empty markers (/* EMPTY */, <!-- EMPTY -->, // EMPTY) when the corresponding code section is actually EMPTY!
 `;
 
       // For modifications, always include the COMPLETE current code
@@ -1301,9 +1291,8 @@ IMPORTANT: Only use empty markers (/* EMPTY */, <!-- EMPTY -->, // EMPTY) when t
         prompt += `\nCURRENT COMPLETE JAVASCRIPT:\n\`\`\`javascript\n${currentCode.js}\n\`\`\`\n`;
       }
 
-      prompt += `\nEXAMPLES FOR EXISTING CODE MODIFICATIONS:
+      prompt += `\nEXAMPLE - To add a phone field to an existing form:
 
-EXAMPLE 1 - To add a phone field to an existing form:
 REPLACE html:
 OLD: </form>
 NEW:     <div class="form-group">
@@ -1313,32 +1302,7 @@ NEW:     <div class="form-group">
 </form>
 DESC: Added phone number field to form
 
-EXAMPLE 2 - To add new CSS rule to existing CSS:
-REPLACE css:
-OLD: #no-users-message {
-  margin-top: 16px;
-}
-NEW: #no-users-message {
-  margin-top: 16px;
-}
-
-.user-email {
-  color: blue;
-  font-weight: bold;
-}
-DESC: Added styling for user email addresses
-
-EXAMPLE 3 - To modify existing CSS rule:
-REPLACE css:
-OLD: .user-email {
-  color: red;
-}
-NEW: .user-email {
-  color: blue;
-}
-DESC: Changed email color from red to blue
-
-This is much more reliable than using empty markers or regenerating entire code blocks!`;
+This is much more reliable than generating the entire form again!`;
     } else {
       prompt += `\nThis is a new project. Create complete, functional code.`;
     }

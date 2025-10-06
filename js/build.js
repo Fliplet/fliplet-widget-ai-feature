@@ -177,7 +177,7 @@ Fliplet.Widget.instance({
       }
 
       function updateCodeWithinDelimiters(type, newCode, oldCode = "") {
-        let start, end;
+        let start, end, patternStart, patternEnd;
 
         if (type == "js") {
           start = `// start-ai-feature ${widgetId}`;
@@ -187,14 +187,8 @@ Fliplet.Widget.instance({
           if (oldCode.includes(start) && oldCode.includes(end)) {
             // Replace content between delimiters
             // For CSS, we need to escape the special characters properly
-            let patternStart, patternEnd;
-            if (type == "js") {
-              patternStart = start;
-              patternEnd = end;
-            } else {
-              patternStart = `/\\* start-ai-feature ${widgetId} \\*/`;
-              patternEnd = `/\\* end-ai-feature ${widgetId} \\*/`;
-            }
+            patternStart = start;
+            patternEnd = end;
 
             return oldCode.replace(
               new RegExp(
@@ -222,14 +216,8 @@ Fliplet.Widget.instance({
           if (oldCode.includes(start) && oldCode.includes(end)) {
             // Replace content between delimiters
             // For CSS, we need to escape the special characters properly
-            let patternStart, patternEnd;
-            if (type == "js") {
-              patternStart = start;
-              patternEnd = end;
-            } else {
-              patternStart = `/\\* start-ai-feature ${widgetId} \\*/`;
-              patternEnd = `/\\* end-ai-feature ${widgetId} \\*/`;
-            }
+            patternStart = `/\\* start-ai-feature ${widgetId} \\*/`;
+            patternEnd = `/\\* end-ai-feature ${widgetId} \\*/`;
 
             return oldCode.replace(
               new RegExp(
@@ -242,7 +230,9 @@ Fliplet.Widget.instance({
                   }),
                 "g"
               ),
-              start + "\n" + newCode + "\n" + end
+              function () {
+                return start + "\n" + newCode + "\n" + end;
+              }
             );
           } else {
             // Append new code with delimiters at the end

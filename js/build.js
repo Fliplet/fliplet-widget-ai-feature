@@ -220,19 +220,8 @@ Fliplet.Widget.instance({
             patternEnd = `/\\* end-ai-feature ${widgetId} \\*/`;
 
             return oldCode.replace(
-              new RegExp(
-                patternStart.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
-                  return "\\" + match;
-                }) +
-                  "[\\s\\S]*?" +
-                  patternEnd.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
-                    return "\\" + match;
-                  }),
-                "g"
-              ),
-              function () {
-                return start + "\n" + newCode + "\n" + end;
-              }
+              new RegExp(patternStart + "[\\s\\S]*?" + patternEnd, "g"),
+              start + "\n" + newCode + "\n" + end
             );
           } else {
             // Append new code with delimiters at the end

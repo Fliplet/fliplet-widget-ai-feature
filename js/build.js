@@ -126,13 +126,17 @@ Fliplet.Widget.instance({
             aiJsResponse: AI.fields.javascript,
             aiLayoutResponse: AI.fields.layoutHTML,
             widgetId: widgetId,
-            type: "code-save"
+            type: "code-save",
           });
 
           // reload page preview
           Fliplet.Studio.emit("reload-page-preview");
 
-          return { settingsResponse, layoutResponse, logAiComponentUsageResponse };
+          return {
+            settingsResponse,
+            layoutResponse,
+            logAiComponentUsageResponse,
+          };
         } catch (error) {
           throw error;
         }
@@ -165,55 +169,64 @@ Fliplet.Widget.instance({
             data: {
               ...data,
               version: "2.0.0",
-              pageId
-            }
+              pageId,
+            },
           },
           "ai.feature.component"
         );
       }
 
       function updateCodeWithinDelimiters(type, newCode, oldCode = "") {
-        let start, end;
+        let start, end, patternStart, patternEnd;
 
         if (type == "js") {
           start = `// start-ai-feature ${widgetId}`;
           end = `// end-ai-feature ${widgetId}`;
+
+          // Check if delimiters exist in the old code
+          if (oldCode.includes(start) && oldCode.includes(end)) {
+            // Replace content between delimiters
+            // For CSS, we need to escape the special characters properly
+            patternStart = start;
+            patternEnd = end;
+
+            return oldCode.replace(
+              new RegExp(
+                patternStart.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
+                  return "\\" + match;
+                }) +
+                  "[\\s\\S]*?" +
+                  patternEnd.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
+                    return "\\" + match;
+                  }),
+                "g"
+              ),
+              function () {
+                return start + "\n" + newCode + "\n" + end;
+              }
+            );
+          } else {
+            // Append new code with delimiters at the end
+            return oldCode + "\n\n" + start + "\n" + newCode + "\n" + end;
+          }
         } else {
           start = `/* start-ai-feature ${widgetId} */`;
           end = `/* end-ai-feature ${widgetId} */`;
-        }
 
-        // Check if delimiters exist in the old code
-        if (oldCode.includes(start) && oldCode.includes(end)) {
-          // Replace content between delimiters
-          // For CSS, we need to escape the special characters properly
-          let patternStart, patternEnd;
-          if (type == "js") {
-            patternStart = start;
-            patternEnd = end;
-          } else {
+          if (oldCode.includes(start) && oldCode.includes(end)) {
+            // Replace content between delimiters
+            // For CSS, we need to escape the special characters properly
             patternStart = `/\\* start-ai-feature ${widgetId} \\*/`;
             patternEnd = `/\\* end-ai-feature ${widgetId} \\*/`;
-          }
 
-          return oldCode.replace(
-            new RegExp(
-              patternStart.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
-                return "\\" + match;
-              }) +
-                "[\\s\\S]*?" +
-                patternEnd.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
-                  return "\\" + match;
-                }),
-              "g"
-            ),
-            function () {
-              return start + "\n" + newCode + "\n" + end;
-            }
-          );
-        } else {
-          // Append new code with delimiters at the end
-          return oldCode + "\n\n" + start + "\n" + newCode + "\n" + end;
+            return oldCode.replace(
+              new RegExp(patternStart + "[\\s\\S]*?" + patternEnd, "g"),
+              start + "\n" + newCode + "\n" + end
+            );
+          } else {
+            // Append new code with delimiters at the end
+            return oldCode + "\n\n" + start + "\n" + newCode + "\n" + end;
+          }
         }
       }
 

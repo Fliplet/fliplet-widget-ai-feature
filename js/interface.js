@@ -4,8 +4,6 @@ var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 const appId = Fliplet.Env.get("appId");
 const pageId = Fliplet.Env.get("pageId");
-const organizationId = Fliplet.Env.get("organizationId");
-const userId = Fliplet.Env.get("user")?.id || "";
 
 Fliplet.Widget.setSaveButtonLabel(false);
 Fliplet.Widget.setCancelButtonLabel("Close");
@@ -1303,31 +1301,28 @@ Fliplet.Widget.generateInterface({
            * @param {Object} currentCode - Current code state
            * @returns {Object} Application result
            */
+
           async applyInstruction(instruction, currentCode) {
             debugLog(
               "🎯 [StringReplacement] Applying instruction:",
               instruction
             );
 
-            // Validate instruction format
             const validation = this.validateInstruction(instruction);
             if (!validation.valid) {
               return { success: false, error: validation.error };
             }
 
-            const targetCode = currentCode[instruction.target_type];
+            const targetCode = currentCode[instruction.target_type] ?? "";
+            const oldString = instruction.old_string ?? "";
+            const newString = instruction.new_string ?? "";
 
-            // Find the old string
-            const oldString = instruction.old_string;
-            const newString = instruction.new_string;
-
-            // Special case: Handle empty code for new projects
+            // Special case: new/empty files
             const emptyMarkers = {
               html: "<!-- EMPTY -->",
               css: "/* EMPTY */",
               js: "// EMPTY",
             };
-
             const expectedEmptyMarker = emptyMarkers[instruction.target_type];
             if (oldString === expectedEmptyMarker && targetCode.trim() === "") {
               debugLog(
@@ -1340,7 +1335,59 @@ Fliplet.Widget.generateInterface({
               };
             }
 
-            if (!targetCode.includes(oldString)) {
+            // 1) Try exact literal match first (after normalizing EOLs on both sides)
+            const tNorm = normalizeEols(targetCode);
+            const oNorm = normalizeEols(oldString);
+
+            let occurrences = 0;
+            let newCode;
+            let location;
+
+            if (tNorm.includes(oNorm)) {
+              // exact literal branch
+              const literalPattern = new RegExp(escapeRegExp(oNorm), "gms");
+              occurrences = (tNorm.match(literalPattern) || []).length;
+
+              if (occurrences > 1 && !instruction.replace_all) {
+                return {
+                  success: false,
+                  error: `Multiple occurrences found (${occurrences}). Use replace_all: true or provide more specific old_string`,
+                };
+              }
+
+              if (instruction.replace_all) {
+                // Do replacement on original (not normalized) to preserve original EOLs
+                newCode = targetCode.split(oldString).join(newString);
+                location = `${occurrences} locations`;
+              } else {
+                const idx = tNorm.indexOf(oNorm);
+                // translate index back to original by re-finding in original
+                const originalIdx = targetCode.indexOf(oldString);
+                const start = originalIdx > -1 ? originalIdx : idx; // fallback if EOLs differ
+                newCode =
+                  targetCode.slice(0, start) +
+                  newString +
+                  targetCode.slice(start + oldString.length);
+                location = `character ${start}`;
+              }
+
+              return {
+                success: true,
+                newCode,
+                location,
+                oldLength: targetCode.length,
+                newLength: newCode.length,
+              };
+            }
+
+            // 2) Fallback: whitespace-tolerant regex (handles different indentation / trailing newline / CRLF)
+            const flexRe = buildFlexibleRegexFromLiteral(oldString);
+            const matches =
+              targetCode.match(new RegExp(flexRe.source, flexRe.flags + "g")) ||
+              [];
+            occurrences = matches.length;
+
+            if (occurrences === 0) {
               return {
                 success: false,
                 error: `Old string not found in ${
@@ -1349,12 +1396,6 @@ Fliplet.Widget.generateInterface({
               };
             }
 
-            // Count occurrences
-            const occurrences = (
-              targetCode.match(new RegExp(this.escapeRegExp(oldString), "g")) ||
-              []
-            ).length;
-
             if (occurrences > 1 && !instruction.replace_all) {
               return {
                 success: false,
@@ -1362,20 +1403,18 @@ Fliplet.Widget.generateInterface({
               };
             }
 
-            // Apply replacement
-            let newCode;
-            let location;
-
             if (instruction.replace_all) {
-              newCode = targetCode.split(oldString).join(newString);
+              newCode = targetCode.replace(
+                new RegExp(flexRe.source, flexRe.flags + "g"),
+                newString
+              );
               location = `${occurrences} locations`;
             } else {
-              const index = targetCode.indexOf(oldString);
-              newCode =
-                targetCode.substring(0, index) +
-                newString +
-                targetCode.substring(index + oldString.length);
-              location = `character ${index}`;
+              // single replacement (no /g/, only first hit)
+              newCode = targetCode.replace(flexRe, newString);
+              // best-effort index for reporting (post-replace index inaccurate otherwise)
+              const firstMatch = targetCode.search(flexRe);
+              location = `character ${firstMatch}`;
             }
 
             return {
@@ -2788,7 +2827,7 @@ Fliplet.Widget.generateInterface({
               chatGUID: AppState.chatGUID,
               type: "response",
               mode: isAnswerType ? "answer" : "code-generation",
-              hasImages: AppState.pastedImages.length > 0
+              hasImages: AppState.pastedImages.length > 0,
             });
 
             // Step 6: Update change history
@@ -2875,7 +2914,8 @@ Fliplet.Widget.generateInterface({
                 errorMessage = "Bad request. Please try again.";
                 break;
               case 401:
-                errorMessage = "Invalid API key. Please check your configuration and try again.";
+                errorMessage =
+                  "Invalid API key. Please check your configuration and try again.";
                 break;
               case 403:
                 errorMessage = "Access denied. Please try again.";
@@ -4553,7 +4593,7 @@ Fliplet.Widget.generateInterface({
             logAiComponentUsage({
               "Chat history": AppState.chatHistory,
               chatGUID: AppState.chatGUID,
-              type: "reset"
+              type: "reset",
             });
 
             AppState.chatGUID = Fliplet.guid();
@@ -4858,7 +4898,7 @@ function logAiComponentUsage(data) {
       data: {
         ...data,
         version: "2.0.0",
-        pageId
+        pageId,
       },
     },
     "ai.feature.component"
@@ -4944,6 +4984,27 @@ function extractCodeBetweenDelimiters(type, code) {
   }
 
   return "";
+}
+
+// helper: normalize \r\n and \r to \n
+function normalizeEols(s) {
+  return s.replace(/\r\n?/g, "\n");
+}
+
+// helper: escape literal for regex
+function escapeRegExp(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+// helper: build a whitespace-tolerant regex from a literal string
+// turns any run of whitespace in the literal into \s+
+// and allows optional leading/trailing whitespace
+function buildFlexibleRegexFromLiteral(literal) {
+  // keep original literal’s *semantic* tokens, ignore exact spacing
+  const tokens = literal.split(/\s+/).map(escapeRegExp).filter(Boolean);
+  const body = tokens.join("\\s+");
+  // allow optional surrounding whitespace and dotAll/multiline
+  return new RegExp(`\\s*${body}\\s*`, "ms");
 }
 
 function saveGeneratedCode(parsedContent) {

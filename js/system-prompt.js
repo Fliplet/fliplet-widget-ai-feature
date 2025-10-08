@@ -1231,6 +1231,10 @@ Rules for String Replacements (CODE GENERATION only):
      * JS: old_string: "// EMPTY"
    - Always preserve existing functionality
    - NEVER use empty strings or null values for old_string or new_string
+   - CRITICAL: NEVER use placeholder comments like "// ... (rest of code follows)" in new_string
+   - CRITICAL: old_string must be a complete, exact match - no partial matches with placeholders
+   - If you need to insert code in the middle of a function, find a complete line or block to replace
+   - For complex JavaScript changes, break into multiple smaller, complete replacements
 
 Rules for Informational Responses (ANSWER format):
    - Use "type": "answer" when the user is asking questions or needs explanations
@@ -1301,6 +1305,22 @@ NEW:     <div class="form-group">
 </div>
 </form>
 DESC: Added phone number field to form
+
+EXAMPLE - For JavaScript function modifications:
+WRONG WAY (incomplete):
+OLD: function loadData() {
+NEW: function loadData() {
+  console.log('Loading...');
+  // ... (rest of function follows)
+
+RIGHT WAY (complete):
+OLD: function loadData() {
+  return fetch('/api/data');
+}
+NEW: function loadData() {
+  console.log('Loading...');
+  return fetch('/api/data');
+}
 
 This is much more reliable than generating the entire form again!`;
     } else {

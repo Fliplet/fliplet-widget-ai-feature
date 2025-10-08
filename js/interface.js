@@ -1484,6 +1484,25 @@ Fliplet.Widget.generateInterface({
               };
             }
 
+            // Check for incomplete replacements with placeholder comments
+            const placeholderPatterns = [
+              /\/\/\s*\.\.\.\s*\(/,  // // ... (
+              /\/\*\s*\.\.\.\s*\*/,  // /* ... */
+              /<!--\s*\.\.\.\s*-->/,  // <!-- ... -->
+              /\/\/\s*rest\s+of.*follows/i,  // // rest of code follows
+              /\/\*\s*rest\s+of.*follows/i,  // /* rest of code follows */
+            ];
+
+            for (const pattern of placeholderPatterns) {
+              if (pattern.test(instruction.new_string)) {
+                debugLog("❌ [StringReplacement] Placeholder detected in new_string:", instruction.new_string);
+                return {
+                  valid: false,
+                  error: `Invalid replacement: new_string contains placeholder comment. Provide complete, exact code without placeholders like "// ..." or "// rest of code follows".`
+                };
+              }
+            }
+
             return { valid: true };
           }
 

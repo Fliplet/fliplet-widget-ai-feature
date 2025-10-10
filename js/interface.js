@@ -195,8 +195,8 @@ Fliplet.Widget.generateInterface({
          * @type {Object}
          */
         const CONFIG = {
-          /** @type {string} AI Model - Options: gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
-          OPENAI_MODEL: "gpt-4.1",
+          /** @type {string} AI Model - Options: gpt-5, gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
+          OPENAI_MODEL: "gpt-5",
           TEMPERATURE: 0.7,
           MAX_TOKENS: 10000,
         };
@@ -2284,6 +2284,227 @@ Fliplet.Widget.generateInterface({
           temperature: CONFIG.TEMPERATURE,
           max_tokens: CONFIG.MAX_TOKENS,
         };
+
+        /**
+         * Autopilot Run Controller for multi-turn tool execution
+         * Runs entirely in-browser, iterating until a finalize tool is called or budgets are exceeded.
+         */
+        const RunController = (() => {
+          /**
+           * @typedef {Object} RunBudgets
+           * @property {number} steps
+           * @property {number} wallMs
+           * @property {number} consecutiveErrors
+           */
+
+          /**
+           * @typedef {Object} RunState
+           * @property {string} goal
+           * @property {Array} messages
+           * @property {number} steps
+           * @property {number} startTime
+           * @property {"idle"|"running"|"paused"|"stopping"|"done"|"error"} status
+           * @property {RunBudgets} budgets
+           * @property {number} errorCount
+           * @property {any} lastToolResult
+           * @property {string} finalSummary
+           */
+
+          /** @type {RunState|null} */
+          let state = null;
+
+          /** Pause/Stop flags controlled by UI */
+          let userPaused = false;
+          let userStopped = false;
+
+          function createRunState(goal, initialMessages) {
+            console.log("[Autopilot] createRunState", { goal });
+            return {
+              goal,
+              messages: initialMessages.slice(),
+              steps: 0,
+              startTime: Date.now(),
+              status: "running",
+              budgets: { steps: 20, wallMs: 5 * 60 * 1000, consecutiveErrors: 3 },
+              errorCount: 0,
+              lastToolResult: null,
+              finalSummary: ""
+            };
+          }
+
+          function exceededBudgets(s) {
+            const overSteps = s.steps >= s.budgets.steps;
+            const overTime = Date.now() - s.startTime >= s.budgets.wallMs;
+            const overErrors = s.errorCount >= s.budgets.consecutiveErrors;
+            if (overSteps || overTime || overErrors) {
+              console.log("[Autopilot] Budget exceeded", { overSteps, overTime, overErrors });
+            }
+            return overSteps || overTime || overErrors;
+          }
+
+          function userRequestedStop() { return userStopped; }
+          function userRequestedPause() { return userPaused; }
+
+          async function callOpenAI(req) {
+            console.log("[Autopilot] callOpenAI", { model: req.model, messages: req.messages.length });
+            const requestBody = req;
+            const result = await Fliplet.AI.createCompletion(requestBody);
+            return result;
+          }
+
+          function extractToolCalls(res) {
+            try {
+              const choice = res && res.choices && res.choices[0];
+              const msg = choice && choice.message && choice.message.content;
+              if (!msg) return [];
+              const parsed = protocolParser.parseResponse(msg);
+              if (!parsed) return [];
+              if (parsed.type === "string_replacement") {
+                return [{ name: "apply_code", args: { instructions: parsed.instructions, explanation: parsed.explanation } }];
+              }
+              if (parsed.type === "answer") {
+                return [{ name: "answer", args: { text: parsed.answer || parsed.explanation } }];
+              }
+              if (parsed.type === "finalize") {
+                return [{ name: "finalize", args: { summary: parsed.summary || parsed.explanation || "Task complete" } }];
+              }
+              return [];
+            } catch (e) {
+              console.log("[Autopilot] extractToolCalls error", e);
+              return [];
+            }
+          }
+
+          function extractAssistantText(res) {
+            const choice = res && res.choices && res.choices[0];
+            return (choice && choice.message && choice.message.content) || "";
+          }
+
+          const ToolRegistry = {
+            async invoke(call) {
+              console.log("[Autopilot] Tool invoke", call.name);
+              if (call.name === "apply_code") {
+                const currentCode = {
+                  html: AppState.currentHTML,
+                  css: AppState.currentCSS,
+                  js: AppState.currentJS
+                };
+                const applicationResult = await stringReplacementEngine.applyReplacements(
+                  call.args.instructions || [],
+                  currentCode
+                );
+                AppState.previousHTML = AppState.currentHTML;
+                AppState.previousCSS = AppState.currentCSS;
+                AppState.previousJS = AppState.currentJS;
+                AppState.currentHTML = applicationResult.updatedCode.html;
+                AppState.currentCSS = applicationResult.updatedCode.css;
+                AppState.currentJS = applicationResult.updatedCode.js;
+                updateCode();
+                return { ok: true, changeLog: applicationResult.changeLog };
+              }
+              if (call.name === "finalize") {
+                state.finalSummary = call.args && call.args.summary ? call.args.summary : "";
+                state.status = "done";
+                return { ok: true };
+              }
+              if (call.name === "answer") {
+                return { ok: true };
+              }
+              return { ok: false, error: "Unknown tool" };
+            }
+          };
+
+          function buildOpenAIRequest(s) {
+            return {
+              model: AIConfig.model,
+              messages: s.messages,
+              temperature: AIConfig.temperature,
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "ai_response",
+                  strict: true,
+                  schema: {
+                    type: "object",
+                    properties: {
+                      type: { type: "string", enum: ["string_replacement", "answer", "finalize"] },
+                      explanation: { type: "string" },
+                      answer: { type: "string" },
+                      summary: { type: "string" },
+                      instructions: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            target_type: { type: "string", enum: ["html", "css", "js"] },
+                            old_string: { type: "string" },
+                            new_string: { type: "string" },
+                            description: { type: "string" },
+                            replace_all: { type: "boolean" }
+                          },
+                          required: ["target_type", "old_string", "new_string", "description", "replace_all"],
+                          additionalProperties: false
+                        }
+                      }
+                    },
+                    required: ["type"],
+                    additionalProperties: false
+                  }
+                }
+              }
+            };
+          }
+
+          function appendAssistantMessage(s, text) {
+            s.messages.push({ role: "assistant", content: text });
+          }
+
+          function appendToolResult(s, call, result) {
+            s.messages.push({ role: "tool", name: call.name, content: JSON.stringify(result) });
+          }
+
+          async function start(goal, initialMessages) {
+            if (!goal || typeof goal !== "string") throw new TypeError("goal must be a non-empty string");
+            if (!Array.isArray(initialMessages)) throw new TypeError("initialMessages must be an array");
+            userPaused = false; userStopped = false;
+            state = createRunState(goal, initialMessages);
+            console.log("[Autopilot] start", { goal });
+
+            while (state.status === "running") {
+              if (userRequestedPause()) { await new Promise((r) => setTimeout(r, 200)); continue; }
+              const req = buildOpenAIRequest(state);
+              let res;
+              try {
+                res = await callOpenAI(req);
+              } catch (e) {
+                console.error("[Autopilot] OpenAI error", e);
+                state.errorCount += 1;
+                if (exceededBudgets(state)) { state.status = "done"; }
+                continue;
+              }
+              const toolCalls = extractToolCalls(res);
+              const assistantText = extractAssistantText(res);
+              appendAssistantMessage(state, assistantText);
+              if (typeof window !== 'undefined' && typeof window.onAutopilotUpdate === 'function') {
+                try { window.onAutopilotUpdate({ step: state.steps + 1, assistantText }); } catch (e) {}
+              }
+              for (const call of toolCalls) {
+                const toolResult = await ToolRegistry.invoke(call);
+                appendToolResult(state, call, toolResult);
+                if (call.name === "finalize") { break; }
+              }
+              if (exceededBudgets(state) || userRequestedStop()) { state.status = "done"; }
+              state.steps += 1;
+            }
+            return state;
+          }
+
+          function pause() { userPaused = true; }
+          function resume() { userPaused = false; }
+          function stop() { userStopped = true; }
+
+          return { start, pause, resume, stop };
+        })();
 
         /**
          * DOM element references

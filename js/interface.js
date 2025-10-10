@@ -199,6 +199,7 @@ Fliplet.Widget.generateInterface({
           OPENAI_MODEL: "gpt-5",
           TEMPERATURE: 1,
           MAX_TOKENS: 10000,
+          reasoning_effort: 'low'
         };
 
         /**
@@ -2283,6 +2284,8 @@ Fliplet.Widget.generateInterface({
           /** @type {number} Temperature for response randomness */
           temperature: CONFIG.TEMPERATURE,
           max_tokens: CONFIG.MAX_TOKENS,
+          reasoning_effort: CONFIG.REASONING_EFFORT
+
         };
 
         /**
@@ -2419,6 +2422,7 @@ Fliplet.Widget.generateInterface({
               model: AIConfig.model,
               messages: s.messages,
               temperature: AIConfig.temperature,
+              reasoning_effort: AIConfig.reasoning_effort,
               response_format: {
                 type: "json_schema",
                 json_schema: {

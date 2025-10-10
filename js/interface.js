@@ -2448,7 +2448,7 @@ Fliplet.Widget.generateInterface({
                         }
                       }
                     },
-                    required: ["type"],
+                    required: ["type", "explanation", "answer", "summary", "instructions"],
                     additionalProperties: false
                   }
                 }

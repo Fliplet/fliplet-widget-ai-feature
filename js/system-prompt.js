@@ -1076,7 +1076,7 @@ Use the following endpoint to query OpenAI.
 
 ### Fliplet.AI.createCompletion()
 
-This low-level method provides direct access to OpenAI's completion capabilities, supporting both traditional prompt-based completions (e.g., with text-davinci-003) and chat-based completions (e.g., with 'gpt-4o').
+This low-level method provides direct access to OpenAI's completion capabilities, supporting chat-based completions (e.g., with 'gpt-4.1').
 
 **'CompletionOptions' Object Properties:**
 
@@ -1093,7 +1093,7 @@ You can use most parameters available in the OpenAI Completions API reference (f
 
 **Important:**
 *   You must provide *either* 'messages'
-*   If 'model is not provided when using 'messages', it defaults to 'gpt-3.5-turbo' but try to use at least gpt-4o
+*   If 'model is not provided when using 'messages', it defaults to 'gpt-3.5-turbo'. Use 'gpt-4.1' in this app.
 
 **Returns:**
 
@@ -1109,7 +1109,7 @@ A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends
 
 /**
  * @typedef {Object} CompletionOptionsChat
- * @property {string} [model='gpt-4o'] - Model ID.
+ * @property {string} [model='gpt-4.1'] - Model ID.
  * @property {MessageObject[]} messages - Array of message objects.
  * @property {number} [temperature=1]
  * @property {boolean} [stream=false]
@@ -1128,7 +1128,7 @@ A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends
 async function runChatCompletion() {
   try {
     const params = {
-       model: 'gpt-4o' // Use gpt-4o unless specified by the user
+       model: 'gpt-4.1',
       messages: [{ role: 'user', content: 'Hello, AI!' }]
     };
     console.log('Input for createCompletion (chat):', params);

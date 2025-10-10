@@ -1,6 +1,6 @@
 {
   "name": "AI feature infinite",
-  "package": "com.fliplet.ai-feature-infinite",
+  "package": "com.fliplet.ai-feature",
   "version": "2.0.0",
   "icon": "img/icon.png",
   "tags": ["type:component", "category:text", "beta:true"],

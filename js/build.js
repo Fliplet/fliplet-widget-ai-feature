@@ -144,7 +144,20 @@ Fliplet.Widget.instance({
 
       function injectHtmlCode(currentSettings) {
         // code from AI
-        var codeGenContainer = `<div class="ai-feature-${widgetId}">${parsedContent.layoutHTML}</div>`;
+        var html = parsedContent.layoutHTML || '';
+        // Normalize if a full document came through: take only body content
+        try {
+          var bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+          if (bodyMatch && bodyMatch[1]) {
+            html = bodyMatch[1];
+          } else {
+            html = html.replace(/<head[\s\S]*?<\/head>/gi, '');
+            html = html.replace(/<\/?html[^>]*>/gi, '');
+            html = html.replace(/<\/?body[^>]*>/gi, '');
+          }
+        } catch (e) { /* noop */ }
+
+        var codeGenContainer = `<div class="ai-feature-${widgetId}">${html}</div>`;
         // Wrap response inside a temporary container
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container

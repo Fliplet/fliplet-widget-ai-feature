@@ -196,10 +196,9 @@ Fliplet.Widget.generateInterface({
          */
         const CONFIG = {
           /** @type {string} AI Model - Options: gpt-5, gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
-          OPENAI_MODEL: "gpt-5",
+          OPENAI_MODEL: "gpt-4.1",
           TEMPERATURE: 1,
           MAX_TOKENS: 10000,
-          REASONING_EFFORT: 'low'
         };
 
         /**
@@ -2284,8 +2283,6 @@ Fliplet.Widget.generateInterface({
           /** @type {number} Temperature for response randomness */
           temperature: CONFIG.TEMPERATURE,
           max_tokens: CONFIG.MAX_TOKENS,
-          reasoning_effort: CONFIG.REASONING_EFFORT
-
         };
 
         /**
@@ -2422,7 +2419,6 @@ Fliplet.Widget.generateInterface({
               model: AIConfig.model,
               messages: s.messages,
               temperature: AIConfig.temperature,
-              reasoning_effort: AIConfig.reasoning_effort,
               response_format: {
                 type: "json_schema",
                 json_schema: {
@@ -3560,7 +3556,6 @@ Fliplet.Widget.generateInterface({
             messages: messages,
             temperature: AIConfig.temperature,
             // max_tokens: CONFIG.MAX_TOKENS,
-            reasoning_effort: AIConfig.reasoning_effort,
             response_format: {
               type: "json_schema",
               json_schema: {
@@ -4379,6 +4374,23 @@ Fliplet.Widget.generateInterface({
           debugLog("🧹 Sanitizing HTML for preview");
 
           let sanitizedHTML = html;
+
+          // If a full document was returned, extract only the body inner HTML
+          try {
+            const bodyMatch = sanitizedHTML.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+            if (bodyMatch && bodyMatch[1]) {
+              sanitizedHTML = bodyMatch[1];
+              debugLog("🫙 Extracted <body> inner HTML for injection");
+            } else {
+              // Remove <head>...</head> if present
+              sanitizedHTML = sanitizedHTML.replace(/<head[\s\S]*?<\/head>/gi, "");
+              // Remove outer <html> and <body> tags if present (keeping their inner content)
+              sanitizedHTML = sanitizedHTML.replace(/<\/?html[^>]*>/gi, "");
+              sanitizedHTML = sanitizedHTML.replace(/<\/?body[^>]*>/gi, "");
+            }
+          } catch (e) {
+            debugWarn("⚠️ Failed to normalize full-document HTML, proceeding with raw content");
+          }
 
           // Remove external script references that would cause 404 errors
           sanitizedHTML = sanitizedHTML.replace(

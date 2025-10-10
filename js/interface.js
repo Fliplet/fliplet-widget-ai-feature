@@ -199,6 +199,7 @@ Fliplet.Widget.generateInterface({
           OPENAI_MODEL: "gpt-4.1",
           TEMPERATURE: 1,
           MAX_TOKENS: 10000,
+          AUTOPILOT_ENABLED: true
         };
 
         /**
@@ -2922,6 +2923,22 @@ Fliplet.Widget.generateInterface({
                 flipletFileId: !!img.flipletFileId,
               })),
             });
+
+            // If Autopilot is enabled, run the iterative loop; otherwise single-turn
+            if (CONFIG.AUTOPILOT_ENABLED) {
+              const initialMessages = [{ role: "system", content: systemPrompt }];
+              const resultState = await RunController.start(userMessage, initialMessages);
+              // Remove loading indicator, add summary, clear images, re-enable UI
+              DOM.chatMessages.removeChild(loadingDiv);
+              if (resultState && resultState.finalSummary) {
+                addMessageToChat(resultState.finalSummary, "ai");
+              } else {
+                addMessageToChat("Autopilot finished.", "ai");
+              }
+              clearPastedImages(true, DOM, AppState);
+              enableUserControls();
+              return;
+            }
 
             // Additional safety check: log any discrepancies
             if (pastedImages.length !== currentImages.length) {

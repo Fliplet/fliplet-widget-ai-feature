@@ -2826,6 +2826,7 @@ Fliplet.Widget.generateInterface({
               dataSourceName: selectedDataSourceName,
               chatGUID: AppState.chatGUID,
               type: "response",
+              widgetId: widgetId,
               mode: isAnswerType ? "answer" : "code-generation",
               hasImages: AppState.pastedImages.length > 0,
             });
@@ -4593,6 +4594,7 @@ Fliplet.Widget.generateInterface({
             logAiComponentUsage({
               "Chat history": AppState.chatHistory,
               chatGUID: AppState.chatGUID,
+              widgetId: widgetId,
               type: "reset",
             });
 

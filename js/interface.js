@@ -2926,6 +2926,21 @@ Fliplet.Widget.generateInterface({
 
             // If Autopilot is enabled, run the iterative loop; otherwise single-turn
             if (CONFIG.AUTOPILOT_ENABLED) {
+              // Build the most current images and system prompt now (used by autopilot)
+              const finalCurrentImages = AppState.pastedImages.filter(
+                (img) =>
+                  img &&
+                  img.status === "uploaded" &&
+                  img.flipletUrl &&
+                  img.flipletFileId
+              );
+              const systemPrompt = buildSystemPromptWithContext(
+                context,
+                finalCurrentImages,
+                AppState,
+                dataSourceColumns,
+                selectedDataSourceName
+              );
               const initialMessages = [{ role: "system", content: systemPrompt }];
               const resultState = await RunController.start(userMessage, initialMessages);
               // Remove loading indicator, add summary, clear images, re-enable UI
@@ -5208,7 +5223,7 @@ function extractHtmlContent(richLayout) {
   let $wrapper = $("<div>").html(richLayout);
 
   // Find the widget-specific container and extract its content
-  const $widgetContainer = $wrapper.find(`.ai-feature-infinte-${widgetId}`);
+  const $widgetContainer = $wrapper.find(`.ai-feature-${widgetId}`);
 
   if ($widgetContainer.length > 0) {
     return $widgetContainer.html() || "";

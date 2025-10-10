@@ -199,7 +199,7 @@ Fliplet.Widget.generateInterface({
           OPENAI_MODEL: "gpt-5",
           TEMPERATURE: 1,
           MAX_TOKENS: 10000,
-          reasoning_effort: 'low'
+          REASONING_EFFORT: 'low'
         };
 
         /**

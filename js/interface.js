@@ -2461,7 +2461,8 @@ Fliplet.Widget.generateInterface({
           }
 
           function appendToolResult(s, call, result) {
-            s.messages.push({ role: "tool", name: call.name, content: JSON.stringify(result) });
+            const summary = typeof result === "object" ? JSON.stringify(result) : String(result);
+            s.messages.push({ role: "assistant", content: `[tool:${call.name}] ${summary}` });
           }
 
           async function start(goal, initialMessages) {

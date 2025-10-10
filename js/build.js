@@ -157,10 +157,12 @@ Fliplet.Widget.instance({
           }
         } catch (e) { /* noop */ }
 
-        var codeGenContainer = `<div class="ai-feature-${widgetId}">${html}</div>`;
+        // Use the new infinite variant class to avoid conflicts
+        var codeGenContainer = `<div class="ai-feature-infinite-${widgetId}">${html}</div>`;
         // Wrap response inside a temporary container
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
-        // remove existing ai feature container
+        // remove existing ai feature container (both legacy and new)
+        $wrapper.find(`.ai-feature-infinite-${widgetId}`).remove();
         $wrapper.find(`.ai-feature-${widgetId}`).remove();
         // Find `<fl-ai-feature>` and add a sibling after it
         $wrapper

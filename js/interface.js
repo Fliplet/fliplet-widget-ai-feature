@@ -5224,7 +5224,11 @@ function extractHtmlContent(richLayout) {
   let $wrapper = $("<div>").html(richLayout);
 
   // Find the widget-specific container and extract its content
-  const $widgetContainer = $wrapper.find(`.ai-feature-${widgetId}`);
+  // Prefer the new infinite variant, fallback to legacy class for backward compatibility
+  let $widgetContainer = $wrapper.find(`.ai-feature-infinite-${widgetId}`);
+  if ($widgetContainer.length === 0) {
+    $widgetContainer = $wrapper.find(`.ai-feature-${widgetId}`);
+  }
 
   if ($widgetContainer.length > 0) {
     return $widgetContainer.html() || "";

@@ -12,7 +12,7 @@
     "hideThemeSettings": true,
     "supportUrl": "https://help.fliplet.com/ai-feature-component/"
   },
-  "html_tag": "div",
+  "html_tag": "fl-ai-feature-infinite",
   "interface": {
     "dependencies": ["fliplet-core", "fliplet-studio-ui", "fliplet-datasources", "fliplet-media"],
     "assets": ["js/interface.js", "css/interface.css", "js/system-prompt.js", "js/image-handler.js"]

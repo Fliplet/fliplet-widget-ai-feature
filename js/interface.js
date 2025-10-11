@@ -2322,7 +2322,10 @@ Fliplet.Widget.generateInterface({
             console.log("[Autopilot] createRunState", { goal });
             return {
               goal,
-              messages: initialMessages.slice(),
+              messages: [
+                ...initialMessages,
+                { role: "user", content: goal }
+              ],
               steps: 0,
               startTime: Date.now(),
               status: "running",

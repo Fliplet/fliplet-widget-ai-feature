@@ -1,7 +1,7 @@
 // Register this widget instance
 Fliplet.Widget.instance({
-  name: "ai-feature",
-  displayName: "AI feature",
+  name: "ai-feature-infinite",
+  displayName: "AI feature infinite",
   render: {
     template: `<div class="ai-feature-content">
                 <div class="well text-center">AI feature</div>
@@ -164,9 +164,9 @@ Fliplet.Widget.instance({
         // remove existing ai feature container (both legacy and new)
         $wrapper.find(`.ai-feature-infinite-${widgetId}`).remove();
         $wrapper.find(`.ai-feature-${widgetId}`).remove();
-        // Find `<fl-ai-feature>` and add a sibling after it
+        // Find `<fl-ai-feature-infinite>` and add a sibling after it
         $wrapper
-          .find(`fl-ai-feature[cid="${widgetId}"]`)
+          .find(`fl-ai-feature-infinite[cid="${widgetId}"]`)
           .after(codeGenContainer);
         return $wrapper.html();
       }

@@ -1,12 +1,19 @@
+// ============================================
+// AI FEATURE INFINITE - BUILD.JS LOADED
+// ============================================
+console.log('🚀 [AI Feature] build.js file loaded!');
+
 // Register this widget instance
 Fliplet.Widget.instance({
   name: "ai-feature-infinite",
   displayName: "AI feature infinite",
   render: {
-    template: `<div class="ai-feature-content" data-ai-feature-widget="true">
+    template: `<div class="ai-feature-content">
                 <div class="well text-center">AI feature</div>
               </div>`,
     ready: function () {
+      console.log('🎯 [AI Feature Build] Widget instance ready() function called!');
+      
       // Initialize children components when this widget is ready
       Fliplet.Widget.initializeChildren(this.$el, this);
 
@@ -154,64 +161,24 @@ Fliplet.Widget.instance({
       }
 
       function injectHtmlCode(currentSettings) {
-        console.log('[AI Feature] injectHtmlCode called with widgetId:', widgetId);
         // code from AI
-        var html = parsedContent.layoutHTML || '';
-        console.log('[AI Feature] HTML to inject length:', html.length);
-        // Normalize if a full document came through: take only body content
-        try {
-          var bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-          if (bodyMatch && bodyMatch[1]) {
-            html = bodyMatch[1];
-          } else {
-            html = html.replace(/<head[\s\S]*?<\/head>/gi, '');
-            html = html.replace(/<\/?html[^>]*>/gi, '');
-            html = html.replace(/<\/?body[^>]*>/gi, '');
-          }
-        } catch (e) { /* noop */ }
-
-        // Use the new infinite variant class to avoid conflicts
-        var codeGenContainer = `<div class="ai-feature-infinite-${widgetId}">${html}</div>`;
+        var codeGenContainer = `<div class="ai-feature-infinite-${widgetId}">${parsedContent.layoutHTML}</div>`;
         // Wrap response inside a temporary container
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container (both legacy and new)
         $wrapper.find(`.ai-feature-infinite-${widgetId}`).remove();
         $wrapper.find(`.ai-feature-${widgetId}`).remove();
-        
-        // Find the widget container by multiple possible selectors
-        var $widgetContainer = $wrapper.find(`fl-ai-feature-infinite[cid="${widgetId}"]`);
-        if (!$widgetContainer.length) {
-          // Fallback: try finding by data attribute
-          $widgetContainer = $wrapper.find(`[data-ai-feature-widget="true"]`).filter(function() {
-            // Make sure we find the right instance by checking nearby widget markers
-            return $(this).closest('[data-widget-package="com.fliplet.ai-feature-infinite"]').length > 0 ||
-                   $(this).parent().attr('data-widget-id') == widgetId ||
-                   $(this).parent().attr('cid') == widgetId;
-          }).first();
-        }
-        if (!$widgetContainer.length) {
-          // Last fallback: find any div with our template content
-          $widgetContainer = $wrapper.find('.ai-feature-content[data-ai-feature-widget="true"]').first();
-        }
-        
-        if ($widgetContainer.length) {
-          console.log('[AI Feature] Found widget container, injecting code');
-          $widgetContainer.after(codeGenContainer);
-        } else {
-          console.warn('[AI Feature] Could not find widget container to inject code. Widget ID:', widgetId);
-          console.warn('[AI Feature] Available elements:', {
-            customTags: $wrapper.find('fl-ai-feature-infinite').length,
-            dataAttr: $wrapper.find('[data-ai-feature-widget]').length,
-            aiFeatureContent: $wrapper.find('.ai-feature-content').length
-          });
-        }
-        
+        // Find `<fl-ai-feature-infinite>` and add a sibling after it
+        $wrapper
+          .find(`fl-ai-feature-infinite[cid="${widgetId}"]`)
+          .after(codeGenContainer);
         return $wrapper.html();
       }
 
       function removeHtmlCode(currentSettings) {
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
-        // remove existing ai feature container
+        // remove existing ai feature container (both legacy and new)
+        $wrapper.find(`.ai-feature-infinite-${widgetId}`).remove();
         $wrapper.find(`.ai-feature-${widgetId}`).remove();
         return $wrapper.html();
       }

@@ -5304,6 +5304,13 @@ function buildFlexibleRegexFromLiteral(literal) {
 }
 
 function saveGeneratedCode(parsedContent) {
+  console.log('[SaveCode] Saving generated code to Fliplet fields...', {
+    widgetId: widgetId,
+    htmlLength: parsedContent.html?.length || 0,
+    cssLength: parsedContent.css?.length || 0,
+    jsLength: parsedContent.javascript?.length || 0
+  });
+  
   Fliplet.Helper.field("layoutHTML").set(parsedContent.html);
   Fliplet.Helper.field("css").set(parsedContent.css);
   Fliplet.Helper.field("javascript").set(parsedContent.javascript);
@@ -5319,12 +5326,19 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("dataSourceId").set("");
 
   return Fliplet.Widget.save(data.fields).then(function () {
+    console.log('[SaveCode] Widget data saved, triggering reload...');
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
+    
+    // Also reload the entire page preview to ensure build.js runs
+    console.log('[SaveCode] Reloading page preview...');
+    Fliplet.Studio.emit("reload-page-preview");
+    
     // toggleLoaderCodeGeneration(false);
     setTimeout(function () {
+      console.log('[SaveCode] Cleaning up regenerateCode flag...');
       Fliplet.Helper.field("regenerateCode").set(false);
       data.fields.regenerateCode = false;
       Fliplet.Widget.save(data.fields);
-    }, 1000);
+    }, 2000); // Increased timeout to ensure build.js has time to run
   });
 }

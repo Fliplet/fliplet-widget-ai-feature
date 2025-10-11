@@ -34,6 +34,14 @@ Fliplet.Widget.instance({
       );
 
       const widgetId = AI.fields.aiFeatureId;
+      
+      console.log('[AI Feature Build] Widget ready() called', {
+        widgetId: widgetId,
+        regenerateCode: AI.fields.regenerateCode,
+        hasHTML: !!AI.fields.layoutHTML,
+        hasCSS: !!AI.fields.css,
+        hasJS: !!AI.fields.javascript
+      });
 
       Fliplet.Hooks.on("componentEvent", async function (event) {
         if (
@@ -64,8 +72,11 @@ Fliplet.Widget.instance({
       });
 
       if (!AI.fields.regenerateCode) {
+        console.log('[AI Feature Build] regenerateCode is false, skipping code injection');
         return;
       }
+      
+      console.log('[AI Feature Build] regenerateCode is true, proceeding with code injection...');
 
       async function getCurrentPageSettings() {
         return await Fliplet.API.request({

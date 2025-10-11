@@ -3,7 +3,7 @@ Fliplet.Widget.instance({
   name: "ai-feature-infinite",
   displayName: "AI feature infinite",
   render: {
-    template: `<div class="ai-feature-content">
+    template: `<div class="ai-feature-content" data-ai-feature-widget="true">
                 <div class="well text-center">AI feature</div>
               </div>`,
     ready: function () {
@@ -143,8 +143,10 @@ Fliplet.Widget.instance({
       }
 
       function injectHtmlCode(currentSettings) {
+        console.log('[AI Feature] injectHtmlCode called with widgetId:', widgetId);
         // code from AI
         var html = parsedContent.layoutHTML || '';
+        console.log('[AI Feature] HTML to inject length:', html.length);
         // Normalize if a full document came through: take only body content
         try {
           var bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -164,10 +166,35 @@ Fliplet.Widget.instance({
         // remove existing ai feature container (both legacy and new)
         $wrapper.find(`.ai-feature-infinite-${widgetId}`).remove();
         $wrapper.find(`.ai-feature-${widgetId}`).remove();
-        // Find `<fl-ai-feature-infinite>` and add a sibling after it
-        $wrapper
-          .find(`fl-ai-feature-infinite[cid="${widgetId}"]`)
-          .after(codeGenContainer);
+        
+        // Find the widget container by multiple possible selectors
+        var $widgetContainer = $wrapper.find(`fl-ai-feature-infinite[cid="${widgetId}"]`);
+        if (!$widgetContainer.length) {
+          // Fallback: try finding by data attribute
+          $widgetContainer = $wrapper.find(`[data-ai-feature-widget="true"]`).filter(function() {
+            // Make sure we find the right instance by checking nearby widget markers
+            return $(this).closest('[data-widget-package="com.fliplet.ai-feature-infinite"]').length > 0 ||
+                   $(this).parent().attr('data-widget-id') == widgetId ||
+                   $(this).parent().attr('cid') == widgetId;
+          }).first();
+        }
+        if (!$widgetContainer.length) {
+          // Last fallback: find any div with our template content
+          $widgetContainer = $wrapper.find('.ai-feature-content[data-ai-feature-widget="true"]').first();
+        }
+        
+        if ($widgetContainer.length) {
+          console.log('[AI Feature] Found widget container, injecting code');
+          $widgetContainer.after(codeGenContainer);
+        } else {
+          console.warn('[AI Feature] Could not find widget container to inject code. Widget ID:', widgetId);
+          console.warn('[AI Feature] Available elements:', {
+            customTags: $wrapper.find('fl-ai-feature-infinite').length,
+            dataAttr: $wrapper.find('[data-ai-feature-widget]').length,
+            aiFeatureContent: $wrapper.find('.ai-feature-content').length
+          });
+        }
+        
         return $wrapper.html();
       }
 
@@ -281,8 +308,19 @@ Fliplet.Widget.instance({
         layoutHTML: AI.fields.layoutHTML,
       };
 
+      console.log('[AI Feature] Checking if should save code:', {
+        hasCSS: !!AI.fields.css,
+        hasJS: !!AI.fields.javascript,
+        hasHTML: !!AI.fields.layoutHTML,
+        regenerateCode: AI.fields.regenerateCode,
+        widgetId: widgetId
+      });
+
       if (AI.fields.css || AI.fields.javascript || AI.fields.layoutHTML) {
+        console.log('[AI Feature] Saving generated code...');
         saveGeneratedCode(parsedContent);
+      } else {
+        console.log('[AI Feature] No code to save');
       }
     },
   },

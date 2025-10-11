@@ -207,6 +207,7 @@ Fliplet.Widget.generateInterface({
          * @type {Object}
          */
         const AppState = {
+          isAutopilotRunning: false,
           /** @type {string} Unique identifier for this AppState instance */
           instanceId: Date.now() + "_" + Math.random(),
           /** @type {string} Current HTML code */
@@ -2930,6 +2931,9 @@ Fliplet.Widget.generateInterface({
 
             // If Autopilot is enabled, run the iterative loop; otherwise single-turn
             if (CONFIG.AUTOPILOT_ENABLED) {
+              // Set autopilot flag to prevent individual saves during the loop
+              AppState.isAutopilotRunning = true;
+              
               // Build the most current images and system prompt now (used by autopilot)
               const finalCurrentImages = AppState.pastedImages.filter(
                 (img) =>
@@ -2947,6 +2951,22 @@ Fliplet.Widget.generateInterface({
               );
               const initialMessages = [{ role: "system", content: systemPrompt }];
               const resultState = await RunController.start(userMessage, initialMessages);
+              
+              // Clear autopilot flag
+              AppState.isAutopilotRunning = false;
+              
+              // Final save to ensure all code is committed to the screen
+              console.log('[Autopilot] Completed. Performing final code save...');
+              if (AppState.currentHTML || AppState.currentCSS || AppState.currentJS) {
+                const htmlContent = sanitizeHTML(AppState.currentHTML || "");
+                await saveGeneratedCode({
+                  html: htmlContent,
+                  css: AppState.currentCSS || "",
+                  javascript: AppState.currentJS || "",
+                });
+                console.log('[Autopilot] Final code saved successfully');
+              }
+              
               // Remove loading indicator, add summary, clear images, re-enable UI
               DOM.chatMessages.removeChild(loadingDiv);
               if (resultState && resultState.finalSummary) {
@@ -4471,14 +4491,11 @@ Fliplet.Widget.generateInterface({
           debugLog("🖼️ Updating code");
 
           try {
-            // Check if we have any code to update
-            // if (
-            //   !AppState.currentHTML &&
-            //   !AppState.currentCSS &&
-            //   !AppState.currentJS
-            // ) {
-            //   return;
-            // }
+            // During autopilot, skip individual saves - we'll do a final save at the end
+            if (AppState.isAutopilotRunning) {
+              debugLog("⏭️ Skipping save during autopilot (will save at completion)");
+              return;
+            }
 
             // Build complete HTML document
             const rawHTMLContent =

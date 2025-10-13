@@ -5261,11 +5261,11 @@ function extractCodeBetweenDelimiters(type, code) {
   let start, end;
 
   if (type === "js") {
-    start = `// start-ai-feature ${widgetId}`;
-    end = `// end-ai-feature ${widgetId}`;
+    start = `// start-ai-feature-infinite ${widgetId}`;
+    end = `// end-ai-feature-infinite ${widgetId}`;
   } else if (type === "css") {
-    start = `/* start-ai-feature ${widgetId} */`;
-    end = `/* end-ai-feature ${widgetId} */`;
+    start = `/* start-ai-feature-infinite ${widgetId} */`;
+    end = `/* end-ai-feature-infinite ${widgetId} */`;
   }
 
   // Find the start and end positions

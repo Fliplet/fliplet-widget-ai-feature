@@ -3334,8 +3334,9 @@ Fliplet.Widget.generateInterface({
             model: AIConfig.model,
             messages: messages,
             temperature: AIConfig.temperature,
+            stream: true,
             // max_tokens: CONFIG.MAX_TOKENS,
-            // reasoning_effort: "low",
+            //reasoning_effort: "low",
             response_format: {
               type: "json_schema",
               json_schema: {
@@ -3431,9 +3432,65 @@ Fliplet.Widget.generateInterface({
           });
 
           let response;
+          let streamedContent = '';
+          let chunkCount = 0;
+          const streamStartTime = Date.now();
+
           try {
-            response = await Fliplet.AI.createCompletion(requestBody);
+            debugLog("🌊 [AI] Starting streaming request...");
+
+            response = await Fliplet.AI.createCompletion(requestBody)
+              .stream(function onChunk(chunk) {
+                // Accumulate content silently in background
+                chunkCount++;
+                if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta && chunk.choices[0].delta.content) {
+                  streamedContent += chunk.choices[0].delta.content;
+
+                  // Log every 10th chunk to avoid excessive logging
+                  if (chunkCount % 10 === 0) {
+                    debugLog(`🌊 [AI] Streaming progress: ${chunkCount} chunks received, ${streamedContent.length} characters accumulated`);
+                  }
+                }
+              })
+              .then(function onComplete(finalResponse) {
+                const streamDuration = Date.now() - streamStartTime;
+                debugLog("✅ [AI] Streaming completed:", {
+                  totalChunks: chunkCount,
+                  totalCharacters: streamedContent.length,
+                  durationMs: streamDuration,
+                  avgChunkSize: streamedContent.length / chunkCount,
+                  hasFinalResponse: !!finalResponse,
+                  finalResponseStructure: finalResponse ? Object.keys(finalResponse) : null
+                });
+
+                // For streaming, we need to construct the response object ourselves
+                // using the accumulated streamedContent
+                if (!finalResponse || !finalResponse.choices) {
+                  debugLog("🔧 [AI] Constructing response from streamed content");
+                  return {
+                    choices: [{
+                      message: {
+                        content: streamedContent,
+                        role: 'assistant'
+                      },
+                      finish_reason: 'stop',
+                      index: 0
+                    }]
+                  };
+                }
+
+                // Return the final response object if it exists
+                return finalResponse;
+              });
           } catch (error) {
+            const streamDuration = Date.now() - streamStartTime;
+            debugError("❌ [AI] Streaming error:", {
+              error: error.message,
+              chunksReceived: chunkCount,
+              charactersReceived: streamedContent.length,
+              durationMs: streamDuration
+            });
+
             // Check for timeout errors (AbortError is the standard for timeout)
             if (error.name === "AbortError") {
               debugError("⚠️ Timeout!");

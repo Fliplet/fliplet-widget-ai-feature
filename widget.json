@@ -14,7 +14,7 @@
   },
   "html_tag": "div",
   "interface": {
-    "dependencies": ["fliplet-core", "fliplet-studio-ui", "fliplet-datasources", "fliplet-media"],
+    "dependencies": ["fliplet-core", "fliplet-studio-ui", "fliplet-datasources", "fliplet-media", "fliplet-socket"],
     "assets": ["js/interface.js", "css/interface.css", "js/system-prompt.js", "js/image-handler.js"]
   },
   "build": {

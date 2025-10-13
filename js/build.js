@@ -1,7 +1,7 @@
 // ============================================
 // AI FEATURE INFINITE - BUILD.JS LOADED
 // ============================================
-console.log('🚀 [AI Feature] build.js file loaded!');
+// console.log('🚀 [AI Feature] build.js file loaded!');
 
 // Register this widget instance
 Fliplet.Widget.instance({

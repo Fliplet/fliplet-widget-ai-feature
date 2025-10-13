@@ -230,14 +230,14 @@ Fliplet.Widget.instance({
             return oldCode + "\n\n" + start + "\n" + newCode + "\n" + end;
           }
         } else {
-          start = `/* start-ai-feature ${widgetId} */`;
-          end = `/* end-ai-feature ${widgetId} */`;
+          start = `/* start-ai-feature-infinite ${widgetId} */`;
+          end = `/* end-ai-feature-infinite ${widgetId} */`;
 
           if (oldCode.includes(start) && oldCode.includes(end)) {
             // Replace content between delimiters
             // For CSS, we need to escape the special characters properly
-            patternStart = `/\\* start-ai-feature ${widgetId} \\*/`;
-            patternEnd = `/\\* end-ai-feature ${widgetId} \\*/`;
+            patternStart = `/\\* start-ai-feature-infinite ${widgetId} \\*/`;
+            patternEnd = `/\\* end-ai-feature-infinite ${widgetId} \\*/`;
 
             return oldCode.replace(
               new RegExp(patternStart + "[\\s\\S]*?" + patternEnd, "g"),
@@ -257,12 +257,12 @@ Fliplet.Widget.instance({
         let start, end;
 
         if (type === "js") {
-          start = `// start-ai-feature ${widgetId}`;
-          end = `// end-ai-feature ${widgetId}`;
+          start = `// start-ai-feature-infinite ${widgetId}`;
+          end = `// end-ai-feature-infinite ${widgetId}`;
         } else {
           // Keep CSS markers RAW, not pre-escaped; we'll escape them when building the RegExp
-          start = `/* start-ai-feature ${widgetId} */`;
-          end = `/* end-ai-feature ${widgetId} */`;
+          start = `/* start-ai-feature-infinite ${widgetId} */`;
+          end = `/* end-ai-feature-infinite ${widgetId} */`;
         }
 
         // Build a robust pattern:

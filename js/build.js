@@ -9,7 +9,7 @@ Fliplet.Widget.instance({
   displayName: "AI feature infinite",
   render: {
     template: `<div class="ai-feature-content">
-                <div class="well text-center">AI feature</div>
+                <div class="well text-center">AI feature infinite</div>
               </div>`,
     ready: function () {
       console.log('🎯 [AI Feature Build] Widget instance ready() function called!');
@@ -28,7 +28,7 @@ Fliplet.Widget.instance({
       } else {
         $(".ai-feature-content").hide();
       }
-
+      
       AI.fields = _.assign(
         {
           dataSourceId: "",
@@ -40,7 +40,7 @@ Fliplet.Widget.instance({
         AI.fields
       );
 
-      const widgetId = AI.fields.aiFeatureId;
+      const widgetId = AI.fields.aiFeatureInfinteId;
       
       console.log('[AI Feature Build] Widget ready() called', {
         widgetId: widgetId,

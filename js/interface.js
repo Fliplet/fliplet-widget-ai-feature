@@ -196,8 +196,8 @@ Fliplet.Widget.generateInterface({
          */
         const CONFIG = {
           /** @type {string} AI Model - Options: gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
-          OPENAI_MODEL: "gpt-4.1",
-          TEMPERATURE: 0.7,
+          OPENAI_MODEL: "gpt-5",
+          TEMPERATURE: 1,
           MAX_TOKENS: 10000,
         };
 
@@ -3336,7 +3336,7 @@ Fliplet.Widget.generateInterface({
             temperature: AIConfig.temperature,
             stream: true,
             // max_tokens: CONFIG.MAX_TOKENS,
-            // reasoning_effort: "low",
+            reasoning_effort: "low",
             response_format: {
               type: "json_schema",
               json_schema: {

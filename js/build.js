@@ -40,7 +40,7 @@ Fliplet.Widget.instance({
         AI.fields
       );
 
-      const widgetId = AI.fields.aiFeatureInfinteId;
+      const widgetId = AI.fields.aiFeatureInfiniteId;
       
       console.log('[AI Feature Build] Widget ready() called', {
         widgetId: widgetId,

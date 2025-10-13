@@ -3459,10 +3459,27 @@ Fliplet.Widget.generateInterface({
                   totalCharacters: streamedContent.length,
                   durationMs: streamDuration,
                   avgChunkSize: streamedContent.length / chunkCount,
-                  hasFinalResponse: !!finalResponse
+                  hasFinalResponse: !!finalResponse,
+                  finalResponseStructure: finalResponse ? Object.keys(finalResponse) : null
                 });
 
-                // Return the final response object
+                // For streaming, we need to construct the response object ourselves
+                // using the accumulated streamedContent
+                if (!finalResponse || !finalResponse.choices) {
+                  debugLog("🔧 [AI] Constructing response from streamed content");
+                  return {
+                    choices: [{
+                      message: {
+                        content: streamedContent,
+                        role: 'assistant'
+                      },
+                      finish_reason: 'stop',
+                      index: 0
+                    }]
+                  };
+                }
+
+                // Return the final response object if it exists
                 return finalResponse;
               });
           } catch (error) {

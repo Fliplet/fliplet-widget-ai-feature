@@ -1,12 +1,19 @@
+// ============================================
+// AI FEATURE INFINITE - BUILD.JS LOADED
+// ============================================
+console.log('🚀 [AI Feature] build.js file loaded!');
+
 // Register this widget instance
 Fliplet.Widget.instance({
-  name: "ai-feature",
-  displayName: "AI feature",
+  name: "ai-feature-infinite",
+  displayName: "AI feature infinite",
   render: {
     template: `<div class="ai-feature-content">
-                <div class="well text-center">AI feature</div>
+                <div class="well text-center">AI feature infinite</div>
               </div>`,
     ready: function () {
+      console.log('🎯 [AI Feature Build] Widget instance ready() function called!');
+      
       // Initialize children components when this widget is ready
       Fliplet.Widget.initializeChildren(this.$el, this);
 
@@ -21,7 +28,7 @@ Fliplet.Widget.instance({
       } else {
         $(".ai-feature-content").hide();
       }
-
+      
       AI.fields = _.assign(
         {
           dataSourceId: "",
@@ -33,7 +40,15 @@ Fliplet.Widget.instance({
         AI.fields
       );
 
-      const widgetId = AI.fields.aiFeatureId;
+      const widgetId = AI.fields.aiFeatureInfinteId;
+      
+      console.log('[AI Feature Build] Widget ready() called', {
+        widgetId: widgetId,
+        regenerateCode: AI.fields.regenerateCode,
+        hasHTML: !!AI.fields.layoutHTML,
+        hasCSS: !!AI.fields.css,
+        hasJS: !!AI.fields.javascript
+      });
 
       Fliplet.Hooks.on("componentEvent", async function (event) {
         if (
@@ -64,8 +79,11 @@ Fliplet.Widget.instance({
       });
 
       if (!AI.fields.regenerateCode) {
+        console.log('[AI Feature Build] regenerateCode is false, skipping code injection');
         return;
       }
+      
+      console.log('[AI Feature Build] regenerateCode is true, proceeding with code injection...');
 
       async function getCurrentPageSettings() {
         return await Fliplet.API.request({
@@ -144,21 +162,23 @@ Fliplet.Widget.instance({
 
       function injectHtmlCode(currentSettings) {
         // code from AI
-        var codeGenContainer = `<div class="ai-feature-${widgetId}">${parsedContent.layoutHTML}</div>`;
+        var codeGenContainer = `<div class="ai-feature-infinite-${widgetId}">${parsedContent.layoutHTML}</div>`;
         // Wrap response inside a temporary container
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
-        // remove existing ai feature container
+        // remove existing ai feature container (both legacy and new)
+        $wrapper.find(`.ai-feature-infinite-${widgetId}`).remove();
         $wrapper.find(`.ai-feature-${widgetId}`).remove();
-        // Find `<fl-ai-feature>` and add a sibling after it
+        // Find `<fl-ai-feature-infinite>` and add a sibling after it
         $wrapper
-          .find(`fl-ai-feature[cid="${widgetId}"]`)
+          .find(`fl-ai-feature-infinite[cid="${widgetId}"]`)
           .after(codeGenContainer);
         return $wrapper.html();
       }
 
       function removeHtmlCode(currentSettings) {
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
-        // remove existing ai feature container
+        // remove existing ai feature container (both legacy and new)
+        $wrapper.find(`.ai-feature-infinite-${widgetId}`).remove();
         $wrapper.find(`.ai-feature-${widgetId}`).remove();
         return $wrapper.html();
       }
@@ -266,8 +286,19 @@ Fliplet.Widget.instance({
         layoutHTML: AI.fields.layoutHTML,
       };
 
+      console.log('[AI Feature] Checking if should save code:', {
+        hasCSS: !!AI.fields.css,
+        hasJS: !!AI.fields.javascript,
+        hasHTML: !!AI.fields.layoutHTML,
+        regenerateCode: AI.fields.regenerateCode,
+        widgetId: widgetId
+      });
+
       if (AI.fields.css || AI.fields.javascript || AI.fields.layoutHTML) {
+        console.log('[AI Feature] Saving generated code...');
         saveGeneratedCode(parsedContent);
+      } else {
+        console.log('[AI Feature] No code to save');
       }
     },
   },

@@ -164,7 +164,7 @@ Fliplet.Widget.generateInterface({
         ("use strict");
 
         // Debug mode configuration - set to true to show console logs
-        const debugMode = false;
+        const debugMode = true;
 
         // Debug utility function to conditionally log console messages
         function debugLog(...args) {
@@ -195,10 +195,11 @@ Fliplet.Widget.generateInterface({
          * @type {Object}
          */
         const CONFIG = {
-          /** @type {string} AI Model - Options: gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
+          /** @type {string} AI Model - Options: gpt-5, gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
           OPENAI_MODEL: "gpt-4.1",
-          TEMPERATURE: 0.7,
+          TEMPERATURE: 1,
           MAX_TOKENS: 10000,
+          AUTOPILOT_ENABLED: true
         };
 
         /**
@@ -206,6 +207,7 @@ Fliplet.Widget.generateInterface({
          * @type {Object}
          */
         const AppState = {
+          isAutopilotRunning: false,
           /** @type {string} Unique identifier for this AppState instance */
           instanceId: Date.now() + "_" + Math.random(),
           /** @type {string} Current HTML code */
@@ -2286,6 +2288,231 @@ Fliplet.Widget.generateInterface({
         };
 
         /**
+         * Autopilot Run Controller for multi-turn tool execution
+         * Runs entirely in-browser, iterating until a finalize tool is called or budgets are exceeded.
+         */
+        const RunController = (() => {
+          /**
+           * @typedef {Object} RunBudgets
+           * @property {number} steps
+           * @property {number} wallMs
+           * @property {number} consecutiveErrors
+           */
+
+          /**
+           * @typedef {Object} RunState
+           * @property {string} goal
+           * @property {Array} messages
+           * @property {number} steps
+           * @property {number} startTime
+           * @property {"idle"|"running"|"paused"|"stopping"|"done"|"error"} status
+           * @property {RunBudgets} budgets
+           * @property {number} errorCount
+           * @property {any} lastToolResult
+           * @property {string} finalSummary
+           */
+
+          /** @type {RunState|null} */
+          let state = null;
+
+          /** Pause/Stop flags controlled by UI */
+          let userPaused = false;
+          let userStopped = false;
+
+          function createRunState(goal, initialMessages) {
+            console.log("[Autopilot] createRunState", { goal });
+            return {
+              goal,
+              messages: [
+                ...initialMessages,
+                { role: "user", content: goal }
+              ],
+              steps: 0,
+              startTime: Date.now(),
+              status: "running",
+              budgets: { steps: 20, wallMs: 5 * 60 * 1000, consecutiveErrors: 3 },
+              errorCount: 0,
+              lastToolResult: null,
+              finalSummary: ""
+            };
+          }
+
+          function exceededBudgets(s) {
+            const overSteps = s.steps >= s.budgets.steps;
+            const overTime = Date.now() - s.startTime >= s.budgets.wallMs;
+            const overErrors = s.errorCount >= s.budgets.consecutiveErrors;
+            if (overSteps || overTime || overErrors) {
+              console.log("[Autopilot] Budget exceeded", { overSteps, overTime, overErrors });
+            }
+            return overSteps || overTime || overErrors;
+          }
+
+          function userRequestedStop() { return userStopped; }
+          function userRequestedPause() { return userPaused; }
+
+          async function callOpenAI(req) {
+            console.log("[Autopilot] callOpenAI", { model: req.model, messages: req.messages.length });
+            const requestBody = req;
+            const result = await Fliplet.AI.createCompletion(requestBody);
+            return result;
+          }
+
+          function extractToolCalls(res) {
+            try {
+              const choice = res && res.choices && res.choices[0];
+              const msg = choice && choice.message && choice.message.content;
+              if (!msg) return [];
+              const parsed = protocolParser.parseResponse(msg);
+              if (!parsed) return [];
+              if (parsed.type === "string_replacement") {
+                return [{ name: "apply_code", args: { instructions: parsed.instructions, explanation: parsed.explanation } }];
+              }
+              if (parsed.type === "answer") {
+                return [{ name: "answer", args: { text: parsed.answer || parsed.explanation } }];
+              }
+              if (parsed.type === "finalize") {
+                return [{ name: "finalize", args: { summary: parsed.summary || parsed.explanation || "Task complete" } }];
+              }
+              return [];
+            } catch (e) {
+              console.log("[Autopilot] extractToolCalls error", e);
+              return [];
+            }
+          }
+
+          function extractAssistantText(res) {
+            const choice = res && res.choices && res.choices[0];
+            return (choice && choice.message && choice.message.content) || "";
+          }
+
+          const ToolRegistry = {
+            async invoke(call) {
+              console.log("[Autopilot] Tool invoke", call.name);
+              if (call.name === "apply_code") {
+                const currentCode = {
+                  html: AppState.currentHTML,
+                  css: AppState.currentCSS,
+                  js: AppState.currentJS
+                };
+                const applicationResult = await stringReplacementEngine.applyReplacements(
+                  call.args.instructions || [],
+                  currentCode
+                );
+                AppState.previousHTML = AppState.currentHTML;
+                AppState.previousCSS = AppState.currentCSS;
+                AppState.previousJS = AppState.currentJS;
+                AppState.currentHTML = applicationResult.updatedCode.html;
+                AppState.currentCSS = applicationResult.updatedCode.css;
+                AppState.currentJS = applicationResult.updatedCode.js;
+                updateCode();
+                return { ok: true, changeLog: applicationResult.changeLog };
+              }
+              if (call.name === "finalize") {
+                state.finalSummary = call.args && call.args.summary ? call.args.summary : "";
+                state.status = "done";
+                return { ok: true };
+              }
+              if (call.name === "answer") {
+                return { ok: true };
+              }
+              return { ok: false, error: "Unknown tool" };
+            }
+          };
+
+          function buildOpenAIRequest(s) {
+            return {
+              model: AIConfig.model,
+              messages: s.messages,
+              temperature: AIConfig.temperature,
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "ai_response",
+                  strict: true,
+                  schema: {
+                    type: "object",
+                    properties: {
+                      type: { type: "string", enum: ["string_replacement", "answer", "finalize"] },
+                      explanation: { type: "string" },
+                      answer: { type: "string" },
+                      summary: { type: "string" },
+                      instructions: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            target_type: { type: "string", enum: ["html", "css", "js"] },
+                            old_string: { type: "string" },
+                            new_string: { type: "string" },
+                            description: { type: "string" },
+                            replace_all: { type: "boolean" }
+                          },
+                          required: ["target_type", "old_string", "new_string", "description", "replace_all"],
+                          additionalProperties: false
+                        }
+                      }
+                    },
+                    required: ["type", "explanation", "answer", "summary", "instructions"],
+                    additionalProperties: false
+                  }
+                }
+              }
+            };
+          }
+
+          function appendAssistantMessage(s, text) {
+            s.messages.push({ role: "assistant", content: text });
+          }
+
+          function appendToolResult(s, call, result) {
+            const summary = typeof result === "object" ? JSON.stringify(result) : String(result);
+            s.messages.push({ role: "assistant", content: `[tool:${call.name}] ${summary}` });
+          }
+
+          async function start(goal, initialMessages) {
+            if (!goal || typeof goal !== "string") throw new TypeError("goal must be a non-empty string");
+            if (!Array.isArray(initialMessages)) throw new TypeError("initialMessages must be an array");
+            userPaused = false; userStopped = false;
+            state = createRunState(goal, initialMessages);
+            console.log("[Autopilot] start", { goal });
+
+            while (state.status === "running") {
+              if (userRequestedPause()) { await new Promise((r) => setTimeout(r, 200)); continue; }
+              const req = buildOpenAIRequest(state);
+              let res;
+              try {
+                res = await callOpenAI(req);
+              } catch (e) {
+                console.error("[Autopilot] OpenAI error", e);
+                state.errorCount += 1;
+                if (exceededBudgets(state)) { state.status = "done"; }
+                continue;
+              }
+              const toolCalls = extractToolCalls(res);
+              const assistantText = extractAssistantText(res);
+              appendAssistantMessage(state, assistantText);
+              if (typeof window !== 'undefined' && typeof window.onAutopilotUpdate === 'function') {
+                try { window.onAutopilotUpdate({ step: state.steps + 1, assistantText }); } catch (e) {}
+              }
+              for (const call of toolCalls) {
+                const toolResult = await ToolRegistry.invoke(call);
+                appendToolResult(state, call, toolResult);
+                if (call.name === "finalize") { break; }
+              }
+              if (exceededBudgets(state) || userRequestedStop()) { state.status = "done"; }
+              state.steps += 1;
+            }
+            return state;
+          }
+
+          function pause() { userPaused = true; }
+          function resume() { userPaused = false; }
+          function stop() { userStopped = true; }
+
+          return { start, pause, resume, stop };
+        })();
+
+        /**
          * DOM element references
          * @type {Object}
          */
@@ -2701,6 +2928,56 @@ Fliplet.Widget.generateInterface({
                 flipletFileId: !!img.flipletFileId,
               })),
             });
+
+            // If Autopilot is enabled, run the iterative loop; otherwise single-turn
+            if (CONFIG.AUTOPILOT_ENABLED) {
+              // Set autopilot flag to prevent individual saves during the loop
+              AppState.isAutopilotRunning = true;
+              
+              // Build the most current images and system prompt now (used by autopilot)
+              const finalCurrentImages = AppState.pastedImages.filter(
+                (img) =>
+                  img &&
+                  img.status === "uploaded" &&
+                  img.flipletUrl &&
+                  img.flipletFileId
+              );
+              const systemPrompt = buildSystemPromptWithContext(
+                context,
+                finalCurrentImages,
+                AppState,
+                dataSourceColumns,
+                selectedDataSourceName
+              );
+              const initialMessages = [{ role: "system", content: systemPrompt }];
+              const resultState = await RunController.start(userMessage, initialMessages);
+              
+              // Clear autopilot flag
+              AppState.isAutopilotRunning = false;
+              
+              // Final save to ensure all code is committed to the screen
+              console.log('[Autopilot] Completed. Performing final code save...');
+              if (AppState.currentHTML || AppState.currentCSS || AppState.currentJS) {
+                const htmlContent = sanitizeHTML(AppState.currentHTML || "");
+                await saveGeneratedCode({
+                  html: htmlContent,
+                  css: AppState.currentCSS || "",
+                  javascript: AppState.currentJS || "",
+                });
+                console.log('[Autopilot] Final code saved successfully');
+              }
+              
+              // Remove loading indicator, add summary, clear images, re-enable UI
+              DOM.chatMessages.removeChild(loadingDiv);
+              if (resultState && resultState.finalSummary) {
+                addMessageToChat(resultState.finalSummary, "ai");
+              } else {
+                addMessageToChat("Autopilot finished.", "ai");
+              }
+              clearPastedImages(true, DOM, AppState);
+              enableUserControls();
+              return;
+            }
 
             // Additional safety check: log any discrepancies
             if (pastedImages.length !== currentImages.length) {
@@ -3335,7 +3612,6 @@ Fliplet.Widget.generateInterface({
             messages: messages,
             temperature: AIConfig.temperature,
             // max_tokens: CONFIG.MAX_TOKENS,
-            // reasoning_effort: "low",
             response_format: {
               type: "json_schema",
               json_schema: {
@@ -4155,6 +4431,23 @@ Fliplet.Widget.generateInterface({
 
           let sanitizedHTML = html;
 
+          // If a full document was returned, extract only the body inner HTML
+          try {
+            const bodyMatch = sanitizedHTML.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+            if (bodyMatch && bodyMatch[1]) {
+              sanitizedHTML = bodyMatch[1];
+              debugLog("🫙 Extracted <body> inner HTML for injection");
+            } else {
+              // Remove <head>...</head> if present
+              sanitizedHTML = sanitizedHTML.replace(/<head[\s\S]*?<\/head>/gi, "");
+              // Remove outer <html> and <body> tags if present (keeping their inner content)
+              sanitizedHTML = sanitizedHTML.replace(/<\/?html[^>]*>/gi, "");
+              sanitizedHTML = sanitizedHTML.replace(/<\/?body[^>]*>/gi, "");
+            }
+          } catch (e) {
+            debugWarn("⚠️ Failed to normalize full-document HTML, proceeding with raw content");
+          }
+
           // Remove external script references that would cause 404 errors
           sanitizedHTML = sanitizedHTML.replace(
             /<script[^>]+src=["'][^"']*["'][^>]*><\/script>/gi,
@@ -4198,14 +4491,11 @@ Fliplet.Widget.generateInterface({
           debugLog("🖼️ Updating code");
 
           try {
-            // Check if we have any code to update
-            // if (
-            //   !AppState.currentHTML &&
-            //   !AppState.currentCSS &&
-            //   !AppState.currentJS
-            // ) {
-            //   return;
-            // }
+            // During autopilot, skip individual saves - we'll do a final save at the end
+            if (AppState.isAutopilotRunning) {
+              debugLog("⏭️ Skipping save during autopilot (will save at completion)");
+              return;
+            }
 
             // Build complete HTML document
             const rawHTMLContent =
@@ -4954,7 +5244,11 @@ function extractHtmlContent(richLayout) {
   let $wrapper = $("<div>").html(richLayout);
 
   // Find the widget-specific container and extract its content
-  const $widgetContainer = $wrapper.find(`.ai-feature-${widgetId}`);
+  // Prefer the new infinite variant, fallback to legacy class for backward compatibility
+  let $widgetContainer = $wrapper.find(`.ai-feature-infinite-${widgetId}`);
+  if ($widgetContainer.length === 0) {
+    $widgetContainer = $wrapper.find(`.ai-feature-${widgetId}`);
+  }
 
   if ($widgetContainer.length > 0) {
     return $widgetContainer.html() || "";
@@ -5010,6 +5304,13 @@ function buildFlexibleRegexFromLiteral(literal) {
 }
 
 function saveGeneratedCode(parsedContent) {
+  console.log('[SaveCode] Saving generated code to Fliplet fields...', {
+    widgetId: widgetId,
+    htmlLength: parsedContent.html?.length || 0,
+    cssLength: parsedContent.css?.length || 0,
+    jsLength: parsedContent.javascript?.length || 0
+  });
+  
   Fliplet.Helper.field("layoutHTML").set(parsedContent.html);
   Fliplet.Helper.field("css").set(parsedContent.css);
   Fliplet.Helper.field("javascript").set(parsedContent.javascript);
@@ -5025,12 +5326,19 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("dataSourceId").set("");
 
   return Fliplet.Widget.save(data.fields).then(function () {
+    console.log('[SaveCode] Widget data saved, triggering reload...');
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
+    
+    // Also reload the entire page preview to ensure build.js runs
+    console.log('[SaveCode] Reloading page preview...');
+    Fliplet.Studio.emit("reload-page-preview");
+    
     // toggleLoaderCodeGeneration(false);
     setTimeout(function () {
+      console.log('[SaveCode] Cleaning up regenerateCode flag...');
       Fliplet.Helper.field("regenerateCode").set(false);
       data.fields.regenerateCode = false;
       Fliplet.Widget.save(data.fields);
-    }, 1000);
+    }, 2000); // Increased timeout to ensure build.js has time to run
   });
 }

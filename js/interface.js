@@ -3336,7 +3336,7 @@ Fliplet.Widget.generateInterface({
             temperature: AIConfig.temperature,
             stream: true,
             // max_tokens: CONFIG.MAX_TOKENS,
-            reasoning_effort: "low",
+            //reasoning_effort: "low",
             response_format: {
               type: "json_schema",
               json_schema: {

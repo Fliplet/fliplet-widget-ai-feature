@@ -3334,6 +3334,7 @@ Fliplet.Widget.generateInterface({
             model: AIConfig.model,
             messages: messages,
             temperature: AIConfig.temperature,
+            stream: true,
             // max_tokens: CONFIG.MAX_TOKENS,
             // reasoning_effort: "low",
             response_format: {

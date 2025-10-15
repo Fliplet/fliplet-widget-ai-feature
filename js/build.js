@@ -11,7 +11,7 @@ Fliplet.Widget.instance({
       Fliplet.Widget.initializeChildren(this.$el, this);
 
       
-      Fliplet.Helper.field("GUID").set(Fliplet.guid());
+      Fliplet.Helper.field("guid").set(Fliplet.guid());
 
       const AI = this;
       const appId = Fliplet.Env.get("appId");

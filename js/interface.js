@@ -4859,9 +4859,9 @@ Fliplet.Widget.generateInterface({
     },
     {
       type: "hidden",
-      name: "GUID",
+      name: "guid",
       label: "GUID",
-      default: "",
+      default: "123",
     },
     {
       type: "hidden",

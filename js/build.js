@@ -10,6 +10,9 @@ Fliplet.Widget.instance({
       // Initialize children components when this widget is ready
       Fliplet.Widget.initializeChildren(this.$el, this);
 
+      
+      Fliplet.Helper.field("GUID").set(Fliplet.guid());
+
       const AI = this;
       const appId = Fliplet.Env.get("appId");
       const pageId = Fliplet.Env.get("pageId");

@@ -4859,6 +4859,12 @@ Fliplet.Widget.generateInterface({
     },
     {
       type: "hidden",
+      name: "GUID",
+      label: "GUID",
+      default: "",
+    },
+    {
+      type: "hidden",
       name: "chatHistory",
       label: "Chat History",
       default: "",

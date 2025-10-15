@@ -11,7 +11,9 @@ Fliplet.Widget.instance({
       Fliplet.Widget.initializeChildren(this.$el, this);
 
       
-      Fliplet.Helper.field("guid").set(Fliplet.guid());
+      // Fliplet.Helper.field("guid").set(Fliplet.guid());
+      debugger
+      Fliplet.Studio.emit("reload-page-preview");
 
       const AI = this;
       const appId = Fliplet.Env.get("appId");

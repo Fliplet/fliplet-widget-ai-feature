@@ -4861,7 +4861,7 @@ Fliplet.Widget.generateInterface({
       type: "hidden",
       name: "guid",
       label: "GUID",
-      default: "123",
+      default: Fliplet.guid(),
     },
     {
       type: "hidden",
@@ -5029,6 +5029,8 @@ function saveGeneratedCode(parsedContent) {
   data.fields.javascript = parsedContent.javascript;
   data.fields.regenerateCode = true;
   Fliplet.Helper.field("dataSourceId").set("");
+  data.guid = Fliplet.Helper.field("guid").get();
+  data.fields.guid = Fliplet.Helper.field("guid").get();
 
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);

@@ -10,10 +10,201 @@ Fliplet.Widget.instance({
       // Initialize children components when this widget is ready
       Fliplet.Widget.initializeChildren(this.$el, this);
 
-      
+      // Handle component GUID logic
+      // handleComponentGuid(this);
+
+      // Helper function to get GUID from component
+      // function getGuidFromComponent(component) {
+      //   return component?.fields?.guid || Fliplet.Helper.field("guid").get();
+      // }
+
+      // // Helper function to generate a new GUID
+      // function generateGuid() {
+      //   return Fliplet.guid();
+      // }
+
+      // // Helper function to find components with the same GUID
+      // async function findComponentsWithSameGuid(currentGuid) {
+      //   if (!currentGuid) return [];
+
+      //   try {
+      //     const components = await Fliplet.Widget.find({
+      //       where: {
+      //         guid: currentGuid,
+      //         version: "2.0.0",
+      //       },
+      //     });
+      //     return components || [];
+      //   } catch (error) {
+      //     console.error("Error finding components with same GUID:", error);
+      //     return [];
+      //   }
+      // }
+
+      // // Helper function to get developer options code
+      // async function getDeveloperOptionsCode() {
+      //   var screenCode = await getCodeFromScreen();
+      //   return {
+      //     guid: Fliplet.Helper.field("guid").get() || "",
+      //     html: screenCode.html || "",
+      //     css: screenCode.css || "",
+      //     js: screenCode.js || "",
+      //   };
+      // }
+
+      // // Helper function to get hidden fields code
+      // function getHiddenFieldsCode() {
+      //   return {
+      //     html: Fliplet.Helper.field("layoutHTML").get() || "",
+      //     css: Fliplet.Helper.field("css").get() || "",
+      //     js: Fliplet.Helper.field("javascript").get() || "",
+      //   };
+      // }
+
+      // // Helper function to get code from screen
+      // async function getCodeFromScreen() {
+      //   try {
+      //     const currentSettings = await getCurrentPageSettings();
+      //     return {
+      //       html: currentSettings.page.richLayout || "",
+      //       css: currentSettings.page.settings.customSCSS || "",
+      //       js: currentSettings.page.settings.customJS || "",
+      //     };
+      //   } catch (error) {
+      //     console.error("Error getting code from screen:", error);
+      //     return { html: "", css: "", js: "" };
+      //   }
+      // }
+
+      // // Helper function to save to hidden fields
+      // function saveToHiddenFields(code) {
+      //   if (code.html) Fliplet.Helper.field("layoutHTML").set(code.html);
+      //   if (code.css) Fliplet.Helper.field("css").set(code.css);
+      //   if (code.js) Fliplet.Helper.field("javascript").set(code.js);
+      // }
+
+      // // Helper function to remove code from screen
+      // async function removeCodeFromScreen(guid) {
+      //   try {
+      //     const currentSettings = await getCurrentPageSettings();
+      //     const removedHtml = removeHtmlCode(currentSettings);
+      //     const removedCss = removeCodeWithinDelimiters(
+      //       "css",
+      //       currentSettings.page.settings.customSCSS
+      //     );
+      //     const removedJs = removeCodeWithinDelimiters(
+      //       "js",
+      //       currentSettings.page.settings.customJS
+      //     );
+
+      //     await saveLayout(removedHtml);
+      //     await saveCssAndJs(removedCss, removedJs);
+      //   } catch (error) {
+      //     console.error("Error removing code from screen:", error);
+      //   }
+      // }
+
+      // // Helper function to add code to screen
+      // async function addCodeToScreen(code, guid) {
+      //   try {
+      //     if (guid) {
+      //       Fliplet.Helper.field("guid").set(guid);
+      //     }
+
+      //     const parsedContent = {
+      //       css: code.css,
+      //       javascript: code.js,
+      //       layoutHTML: code.html,
+      //     };
+
+      //     await saveGeneratedCode(parsedContent);
+      //   } catch (error) {
+      //     console.error("Error adding code to screen:", error);
+      //   }
+      // }
+
+      // // Helper function to rerender component
+      // function rerenderComponent() {
+      //   Fliplet.Studio.emit("reload-page-preview");
+      // }
+
+      // // Helper function to compare code objects
+      // function compareCode(code1, code2) {
+      //   return (
+      //     code1.html === code2.html &&
+      //     code1.css === code2.css &&
+      //     code1.js === code2.js
+      //   );
+      // }
+
+      // // Helper function to check if code is empty
+      // function isCodeEmpty(code) {
+      //   return (
+      //     (!code.html || code.html.trim() === "") &&
+      //     (!code.css || code.css.trim() === "") &&
+      //     (!code.js || code.js.trim() === "")
+      //   );
+      // }
+
+      // // Main function to handle component GUID logic
+      // async function handleComponentGuid(component) {
+      //   try {
+      //     const currentGuid = getGuidFromComponent(component);
+
+      //     // 1️⃣ NEW COMPONENT CASE
+      //     if (!currentGuid) {
+      //       // By default interface will create guid - do nothing
+      //       return;
+      //     }
+
+      //     // 2️⃣ EXISTING COMPONENT CASE
+      //     const duplicates = await findComponentsWithSameGuid(currentGuid);
+
+      //     if (duplicates.length > 1) {
+      //       // Duplicated GUIDs exist
+      //       const developerOptionsCode = getDeveloperOptionsCode();
+      //       const hiddenFieldsCode = getHiddenFieldsCode();
+
+      //       if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
+      //         const newGuid = generateGuid();
+      //         await removeCodeFromScreen(currentGuid);
+      //         await addCodeToScreen(hiddenFieldsCode, newGuid);
+      //       } else {
+      //         const screenCode = await getCodeFromScreen();
+      //         saveToHiddenFields(screenCode);
+      //         const newGuid = generateGuid();
+      //         await removeCodeFromScreen(currentGuid);
+      //         await addCodeToScreen(hiddenFieldsCode, newGuid);
+      //       }
+      //     } else {
+      //       // No duplicates
+      //       const developerOptionsCode = getDeveloperOptionsCode();
+      //       const hiddenFieldsCode = getHiddenFieldsCode();
+
+      //       if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
+      //         // DO NOTHING
+      //         return;
+      //       } else if (
+      //         isCodeEmpty(developerOptionsCode) &&
+      //         !isCodeEmpty(hiddenFieldsCode)
+      //       ) {
+      //         await addCodeToScreen(hiddenFieldsCode);
+      //         saveToHiddenFields(hiddenFieldsCode);
+      //         rerenderComponent();
+      //       } else if (!compareCode(developerOptionsCode, hiddenFieldsCode)) {
+      //         const screenCode = await getCodeFromScreen();
+      //         saveToHiddenFields(screenCode);
+      //         rerenderComponent();
+      //       }
+      //     }
+      //   } catch (error) {
+      //     console.error("Error in handleComponentGuid:", error);
+      //   }
+      // }
+
       // Fliplet.Helper.field("guid").set(Fliplet.guid());
       //Fliplet.Studio.emit("reload-page-preview");
-      debugger
+      debugger;
 
       const AI = this;
       const appId = Fliplet.Env.get("appId");

@@ -214,8 +214,9 @@ Fliplet.Widget.instance({
 
       if (!AI.fields.guid) {
         AI.fields.guid = Fliplet.guid();
-        Fliplet.Widget.save(AI.fields);
-        Fliplet.Studio.emit("reload-widget-instance", widgetId);
+        Fliplet.Widget.save(AI.fields).then(() => {
+          Fliplet.Studio.emit("reload-widget-instance", widgetId);
+        });
         return;
       }
 

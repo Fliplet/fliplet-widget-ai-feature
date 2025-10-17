@@ -114,11 +114,11 @@ Fliplet.Widget.instance({
       }
 
       // Helper function to compare code objects
-      function compareCode(code1, code2) {
+      function compareCode(developerOptionsCode, hiddenFieldsCode) {
         return (
-          code1.html === code2.html &&
-          code1.css === code2.css &&
-          code1.js === code2.js
+          getHtmlCodeFromScreenWithoutClass(developerOptionsCode.html) === hiddenFieldsCode.html &&
+          getCssCodeFromScreenWithComments(developerOptionsCode.css) === hiddenFieldsCode.css &&
+          getJsCodeFromScreenWithComments(developerOptionsCode.js) === hiddenFieldsCode.js
         );
       }
 
@@ -347,6 +347,38 @@ Fliplet.Widget.instance({
           .find(`fl-ai-feature[cid="${widgetId}"]`)
           .after(codeGenContainer);
         return $wrapper.html();
+      }
+
+      function getCssCodeFromScreen() {
+        let $wrapper = $("<div>").html(currentSettings.page.richLayout);
+        let codeWithComments = $wrapper.find(`.ai-feature-${widgetId}`).css();
+        return codeWithComments;
+      }
+
+      function getCodeFromScreenWithComments(type) {
+        // removeCodeWithinDelimiters
+        if (type === "js") {
+        const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+          let start = `// start-ai-feature ${widgetId}`;
+          let end = `// end-ai-feature ${widgetId}`;
+          let pattern = new RegExp(esc(start) + "([\\s\\S]*?)" + esc(end), "g");
+          let match = pattern.exec(currentSettings.page.settings.customJS);
+          let codeWithComments = match ? match[1] : "";
+          return codeWithComments;
+        } else if (type === "css") {
+          let start = `/* start-ai-feature ${widgetId} */`;
+          let end = `/* end-ai-feature ${widgetId} */`;
+          let pattern = new RegExp(esc(start) + "([\\s\\S]*?)" + esc(end), "g");
+          let match = pattern.exec(currentSettings.page.settings.customSCSS);
+          let codeWithComments = match ? match[1] : "";
+          return codeWithComments;
+        }
+      }
+
+      function getHtmlCodeFromScreen() {
+        let $wrapper = $("<div>").html(currentSettings.page.richLayout);
+        let codeWithClass = $wrapper.find(`.ai-feature-${widgetId}`).html();
+        return codeWithClass;
       }
 
       function removeHtmlCode(currentSettings) {

@@ -146,43 +146,44 @@ Fliplet.Widget.instance({
           const duplicates = await findComponentsWithSameGuid(currentGuid);
 
           debugger
-          // if (duplicates.length > 1) {
-          //   // Duplicated GUIDs exist
-          //   const developerOptionsCode = getDeveloperOptionsCode();
-          //   const hiddenFieldsCode = getHiddenFieldsCode();
+          if (duplicates.length > 1) {
+            // Duplicated GUIDs exist
+            const developerOptionsCode = getDeveloperOptionsCode();
+            const hiddenFieldsCode = getHiddenFieldsCode();
 
-          //   if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
-          //     const newGuid = generateGuid();
-          //     await removeCodeFromScreen(currentGuid);
-          //     await addCodeToScreen(hiddenFieldsCode, newGuid);
-          //   } else {
-          //     const screenCode = await getCodeFromScreen();
-          //     saveToHiddenFields(screenCode);
-          //     const newGuid = generateGuid();
-          //     await removeCodeFromScreen(currentGuid);
-          //     await addCodeToScreen(hiddenFieldsCode, newGuid);
-          //   }
-          // } else {
-          //   // No duplicates
-          //   const developerOptionsCode = getDeveloperOptionsCode();
-          //   const hiddenFieldsCode = getHiddenFieldsCode();
+            if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
+              const newGuid = generateGuid();
+              await removeCodeFromScreen(currentGuid);
+              await addCodeToScreen(hiddenFieldsCode, newGuid);
+            } else {
+              const screenCode = await getCodeFromScreen();
+              saveToHiddenFields(screenCode);
+              const newGuid = generateGuid();
+              await removeCodeFromScreen(currentGuid);
+              await addCodeToScreen(hiddenFieldsCode, newGuid);
+            }
+          } else {
+            debugger
+            // No duplicates
+            const developerOptionsCode = getDeveloperOptionsCode();
+            const hiddenFieldsCode = getHiddenFieldsCode();
 
-          //   if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
-          //     // DO NOTHING
-          //     return;
-          //   } else if (
-          //     isCodeEmpty(developerOptionsCode) &&
-          //     !isCodeEmpty(hiddenFieldsCode)
-          //   ) {
-          //     await addCodeToScreen(hiddenFieldsCode);
-          //     saveToHiddenFields(hiddenFieldsCode);
-          //     rerenderComponent();
-          //   } else if (!compareCode(developerOptionsCode, hiddenFieldsCode)) {
-          //     const screenCode = await getCodeFromScreen();
-          //     saveToHiddenFields(screenCode);
-          //     rerenderComponent();
-          //   }
-          // }
+            if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
+              // DO NOTHING
+              return;
+            } else if (
+              isCodeEmpty(developerOptionsCode) &&
+              !isCodeEmpty(hiddenFieldsCode)
+            ) {
+              await addCodeToScreen(hiddenFieldsCode);
+              saveToHiddenFields(hiddenFieldsCode);
+              rerenderComponent();
+            } else if (!compareCode(developerOptionsCode, hiddenFieldsCode)) {
+              const screenCode = await getCodeFromScreen();
+              saveToHiddenFields(screenCode);
+              rerenderComponent();
+            }
+          }
         } catch (error) {
           debugger
           console.error("Error in handleComponentGuid:", error);

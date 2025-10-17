@@ -23,7 +23,7 @@ Fliplet.Widget.instance({
 
       // Helper function to find components with the same GUID
       async function findComponentsWithSameGuid(currentGuid) {
-        return $(`fl-helper[name="ai-feature"][guid="${currentGuid}"]`);
+        return $(`fl-helper[name="ai-feature"][data-guid="${currentGuid}"]`);
       }
 
       // Helper function to get developer options code

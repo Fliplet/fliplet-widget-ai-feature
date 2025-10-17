@@ -214,7 +214,6 @@ Fliplet.Widget.instance({
 
       if (!AI.fields.guid) {
         AI.fields.guid = Fliplet.guid();
-        Fliplet.Helper.field("guid").set(AI.fields.guid);
         Fliplet.Widget.save(AI.fields);
         Fliplet.Studio.emit("reload-widget-instance", widgetId);
         return;

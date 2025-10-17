@@ -357,8 +357,8 @@ Fliplet.Widget.instance({
 
       function getCodeFromScreenWithoutComments(type) {
         // removeCodeWithinDelimiters
-        if (type === "js") {
         const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        if (type === "js") {
           let start = `// start-ai-feature ${widgetId}`;
           let end = `// end-ai-feature ${widgetId}`;
           let pattern = new RegExp(esc(start) + "([\\s\\S]*?)" + esc(end), "g");

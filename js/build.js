@@ -113,12 +113,18 @@ Fliplet.Widget.instance({
         Fliplet.Studio.emit("reload-page-preview");
       }
 
+      // Normalize whitespace for comparison
+      function normalizeWhitespace(str) {
+        return str ? str.replace(/\s+/g, ' ').trim() : '';
+      }
+
       // Helper function to compare code objects
       function compareCode(developerOptionsCode, hiddenFieldsCode) {
+        
         return (
-          developerOptionsCode.html === hiddenFieldsCode.html &&
-          developerOptionsCode.css === hiddenFieldsCode.css &&
-          developerOptionsCode.js === hiddenFieldsCode.js
+          normalizeWhitespace(developerOptionsCode.html) === normalizeWhitespace(hiddenFieldsCode.html) &&
+          normalizeWhitespace(developerOptionsCode.css) === normalizeWhitespace(hiddenFieldsCode.css) &&
+          normalizeWhitespace(developerOptionsCode.js) === normalizeWhitespace(hiddenFieldsCode.js)
         );
       }
 
@@ -201,6 +207,7 @@ Fliplet.Widget.instance({
       if (!AI.fields.guid) {
         AI.fields.guid = Fliplet.guid();
         return Fliplet.Widget.save(AI.fields).then(() => {
+          // rerenderComponent()
           Fliplet.Studio.emit("reload-widget-instance", AI.id);
           return;
         });

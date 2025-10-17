@@ -374,11 +374,10 @@ Fliplet.Widget.instance({
           return codeWithComments;
         }
       }
-
-      function getHtmlCodeFromScreen() {
-        let $wrapper = $("<div>").html(currentSettings.page.richLayout);
-        let codeWithClass = $wrapper.find(`.ai-feature-${widgetId}`).html();
-        return codeWithClass;
+      function getHtmlCodeFromScreen(html) {
+        let $wrapper = $("<div>").html(html);
+        let codeWithoutClass = $wrapper.find(`.ai-feature-${widgetId}`).html();
+        return codeWithoutClass;
       }
 
       function removeHtmlCode(currentSettings) {

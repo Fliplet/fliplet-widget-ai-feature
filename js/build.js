@@ -31,18 +31,18 @@ Fliplet.Widget.instance({
         var screenCode = await getCodeFromScreen();
         return {
           guid: AI.fields.guid,
-          html: getHtmlCodeFromScreen(screenCode.html) || "",
-          css: getCodeFromScreenWithoutComments("css", screenCode.css) || "",
-          js: getCodeFromScreenWithoutComments("js", screenCode.js) || "",
+          html: (getHtmlCodeFromScreen(screenCode.html) || "").trim(),
+          css: (getCodeFromScreenWithoutComments("css", screenCode.css) || "").trim(),
+          js: (getCodeFromScreenWithoutComments("js", screenCode.js) || "").trim(),
         };
       }
 
       // Helper function to get hidden fields code
       function getHiddenFieldsCode() {
         return {
-          html: AI.fields.layoutHTML || "",
-          css: AI.fields.css || "",
-          js: AI.fields.javascript || "",
+          html: (AI.fields.layoutHTML || "").trim(),
+          css: (AI.fields.css || "").trim(),
+          js: (AI.fields.javascript || "").trim(),
         };
       }
 

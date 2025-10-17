@@ -212,6 +212,14 @@ Fliplet.Widget.instance({
       const organizationId = Fliplet.Env.get("organizationId");
       const userId = Fliplet.Env.get("user")?.id || "";
 
+      if (!AI.fields.guid) {
+        AI.fields.guid = Fliplet.guid();
+        Fliplet.Helper.field("guid").set(AI.fields.guid);
+        Fliplet.Widget.save(AI.fields);
+        Fliplet.Studio.emit("reload-widget-instance", widgetId);
+        return;
+      }
+
       if (Fliplet.Env.get("mode") == "interact") {
         $(".ai-feature-content").show();
       } else {

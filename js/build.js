@@ -30,7 +30,7 @@ Fliplet.Widget.instance({
       async function getDeveloperOptionsCode() {
         var screenCode = await getCodeFromScreen();
         return {
-          guid: Fliplet.Helper.field("guid").get() || "",
+          guid: AI.fields.guid,
           html: screenCode.html || "",
           css: screenCode.css || "",
           js: screenCode.js || "",

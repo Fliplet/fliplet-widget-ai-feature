@@ -31,9 +31,9 @@ Fliplet.Widget.instance({
         var screenCode = await getCodeFromScreen();
         return {
           guid: AI.fields.guid,
-          html: getHtmlCodeFromScreenWithoutClass(screenCode.html) || "",
-          css: getCssCodeFromScreenWithComments(screenCode.css) || "",
-          js: getJsCodeFromScreenWithComments(screenCode.js) || "",
+          html: getHtmlCodeFromScreen(screenCode.html) || "",
+          css: getCodeFromScreenWithoutComments("css", screenCode.css) || "",
+          js: getCodeFromScreenWithoutComments("js", screenCode.js) || "",
         };
       }
 
@@ -355,7 +355,7 @@ Fliplet.Widget.instance({
         return codeWithComments;
       }
 
-      function getCodeFromScreenWithComments(type) {
+      function getCodeFromScreenWithoutComments(type) {
         // removeCodeWithinDelimiters
         if (type === "js") {
         const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

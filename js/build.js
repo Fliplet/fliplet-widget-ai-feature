@@ -40,9 +40,9 @@ Fliplet.Widget.instance({
       // Helper function to get hidden fields code
       function getHiddenFieldsCode() {
         return {
-          html: Fliplet.Helper.field("layoutHTML").get() || "",
-          css: Fliplet.Helper.field("css").get() || "",
-          js: Fliplet.Helper.field("javascript").get() || "",
+          html: AI.fields.layoutHTML || "",
+          css: AI.fields.css || "",
+          js: AI.fields.javascript || "",
         };
       }
 
@@ -148,7 +148,7 @@ Fliplet.Widget.instance({
           debugger
           if (duplicates.length > 1) {
             // Duplicated GUIDs exist
-            const developerOptionsCode = getDeveloperOptionsCode();
+            const developerOptionsCode = await getDeveloperOptionsCode();
             const hiddenFieldsCode = getHiddenFieldsCode();
 
             if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
@@ -165,7 +165,7 @@ Fliplet.Widget.instance({
           } else {
             debugger
             // No duplicates
-            const developerOptionsCode = getDeveloperOptionsCode();
+            const developerOptionsCode = await getDeveloperOptionsCode();
             const hiddenFieldsCode = getHiddenFieldsCode();
 
             if (compareCode(developerOptionsCode, hiddenFieldsCode)) {

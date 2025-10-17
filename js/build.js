@@ -355,21 +355,21 @@ Fliplet.Widget.instance({
         return codeWithComments;
       }
 
-      function getCodeFromScreenWithoutComments(type) {
+      function getCodeFromScreenWithoutComments(type, code) {
         // removeCodeWithinDelimiters
         const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         if (type === "js") {
           let start = `// start-ai-feature ${widgetId}`;
           let end = `// end-ai-feature ${widgetId}`;
           let pattern = new RegExp(esc(start) + "([\\s\\S]*?)" + esc(end), "g");
-          let match = pattern.exec(currentSettings.page.settings.customJS);
+          let match = pattern.exec(code);
           let codeWithComments = match ? match[1] : "";
           return codeWithComments;
         } else if (type === "css") {
           let start = `/* start-ai-feature ${widgetId} */`;
           let end = `/* end-ai-feature ${widgetId} */`;
           let pattern = new RegExp(esc(start) + "([\\s\\S]*?)" + esc(end), "g");
-          let match = pattern.exec(currentSettings.page.settings.customSCSS);
+          let match = pattern.exec(code);
           let codeWithComments = match ? match[1] : "";
           return codeWithComments;
         }

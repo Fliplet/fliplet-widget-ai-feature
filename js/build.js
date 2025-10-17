@@ -31,9 +31,9 @@ Fliplet.Widget.instance({
         var screenCode = await getCodeFromScreen();
         return {
           guid: AI.fields.guid,
-          html: screenCode.html || "",
-          css: screenCode.css || "",
-          js: screenCode.js || "",
+          html: getHtmlCodeFromScreenWithoutClass(screenCode.html) || "",
+          css: getCssCodeFromScreenWithComments(screenCode.css) || "",
+          js: getJsCodeFromScreenWithComments(screenCode.js) || "",
         };
       }
 
@@ -116,9 +116,9 @@ Fliplet.Widget.instance({
       // Helper function to compare code objects
       function compareCode(developerOptionsCode, hiddenFieldsCode) {
         return (
-          getHtmlCodeFromScreenWithoutClass(developerOptionsCode.html) === hiddenFieldsCode.html &&
-          getCssCodeFromScreenWithComments(developerOptionsCode.css) === hiddenFieldsCode.css &&
-          getJsCodeFromScreenWithComments(developerOptionsCode.js) === hiddenFieldsCode.js
+          developerOptionsCode.html === hiddenFieldsCode.html &&
+          developerOptionsCode.css === hiddenFieldsCode.css &&
+          developerOptionsCode.js === hiddenFieldsCode.js
         );
       }
 

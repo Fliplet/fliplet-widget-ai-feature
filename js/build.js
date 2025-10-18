@@ -54,18 +54,21 @@ Fliplet.Widget.instance({
             html: currentSettings.page.richLayout || "",
             css: currentSettings.page.settings.customSCSS || "",
             js: currentSettings.page.settings.customJS || "",
+            guid: AI.fields.guid || "",
           };
         } catch (error) {
           console.error("Error getting code from screen:", error);
-          return { html: "", css: "", js: "" };
+          return { html: "", css: "", js: "", guid: "" };
         }
       }
 
       // Helper function to save to hidden fields
-      function saveToHiddenFields(code) {
-        if (code.html) Fliplet.Helper.field("layoutHTML").set(code.html);
-        if (code.css) Fliplet.Helper.field("css").set(code.css);
-        if (code.js) Fliplet.Helper.field("javascript").set(code.js);
+      async function saveToHiddenFields(code) {
+        if (code.html) AI.fields.layoutHTML = code.html;
+        if (code.css) AI.fields.css = code.css;
+        if (code.js) AI.fields.javascript = code.js;
+        if (code.guid) AI.fields.guid = code.guid;
+        return await Fliplet.Widget.save(AI.fields);
       }
 
       // Helper function to remove code from screen
@@ -90,12 +93,8 @@ Fliplet.Widget.instance({
       }
 
       // Helper function to add code to screen
-      async function addCodeToScreen(code, guid) {
+      async function addCodeToScreen(code) {
         try {
-          if (guid) {
-            Fliplet.Helper.field("guid").set(guid);
-          }
-
           const parsedContent = {
             css: code.css,
             javascript: code.js,
@@ -140,11 +139,12 @@ Fliplet.Widget.instance({
       // Main function to handle component GUID logic
       async function handleComponentGuid(component) {
         try {
-          const currentGuid = getGuidFromComponent(component);
+          const currentGuid = getGuidFromComponent();
 
           // 1️⃣ NEW COMPONENT CASE
           if (!currentGuid) {
-            // By default interface will create guid - do nothing - check build.js
+            // By default build.js will create guid
+            // todo check saving to hidden fields
             return;
           }
 
@@ -158,15 +158,14 @@ Fliplet.Widget.instance({
             const hiddenFieldsCode = getHiddenFieldsCode();
 
             if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
-              const newGuid = generateGuid();
               await removeCodeFromScreen(currentGuid);
-              await addCodeToScreen(hiddenFieldsCode, newGuid);
+              await addCodeToScreen(hiddenFieldsCode);
             } else {
               const screenCode = await getCodeFromScreen();
-              saveToHiddenFields(screenCode);
               const newGuid = generateGuid();
+              await saveToHiddenFields({ ...screenCode, guid: newGuid });
               await removeCodeFromScreen(currentGuid);
-              await addCodeToScreen(hiddenFieldsCode, newGuid);
+              await addCodeToScreen(hiddenFieldsCode);
             }
           } else {
             debugger
@@ -174,20 +173,33 @@ Fliplet.Widget.instance({
             const developerOptionsCode = await getDeveloperOptionsCode();
             const hiddenFieldsCode = getHiddenFieldsCode();
 
+            // remove comment: all good, do nothing
             if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
               // DO NOTHING
+              // var parsedContent = {
+              //   css: AI.fields.css,
+              //   javascript: AI.fields.javascript,
+              //   layoutHTML: AI.fields.layoutHTML,
+              // };
+        
+              // if (AI.fields.css || AI.fields.javascript || AI.fields.layoutHTML) {
+              //   saveGeneratedCode(parsedContent);
+              // }
               return;
-            } else if (
-              isCodeEmpty(developerOptionsCode) &&
-              !isCodeEmpty(hiddenFieldsCode)
-            ) {
-              await addCodeToScreen(hiddenFieldsCode);
-              saveToHiddenFields(hiddenFieldsCode);
-              rerenderComponent();
+            // remove comment: hidden fields are empty, developer options are not empty, save to hidden fields and rerender component
             } else if (!compareCode(developerOptionsCode, hiddenFieldsCode)) {
-              const screenCode = await getCodeFromScreen();
-              saveToHiddenFields(screenCode);
-              rerenderComponent();
+              if (isCodeEmpty(developerOptionsCode)) { // remove comment: developer options are empty take code from hidden fields
+                await saveToHiddenFields({ ...hiddenFieldsCode, guid: currentGuid });
+                await removeCodeFromScreen(currentGuid);
+                await addCodeToScreen(hiddenFieldsCode);
+                return;
+              } else if (isCodeEmpty(hiddenFieldsCode)) {
+                // remove comment: hidden fields are empty, developer options are not empty, save to hidden fields and rerender component
+                await saveToHiddenFields({ ...developerOptionsCode, guid: currentGuid });
+                await removeCodeFromScreen(currentGuid);
+                await addCodeToScreen(developerOptionsCode);
+                return;
+              }
             }
           }
         } catch (error) {

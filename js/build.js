@@ -72,7 +72,7 @@ Fliplet.Widget.instance({
       }
 
       // Helper function to remove code from screen
-      async function removeCodeFromScreen(guid) {
+      async function removeCodeFromScreen() {
         try {
           const currentSettings = await getCurrentPageSettings();
           const removedHtml = removeHtmlCode(currentSettings);
@@ -158,13 +158,13 @@ Fliplet.Widget.instance({
             const hiddenFieldsCode = getHiddenFieldsCode();
 
             if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
-              await removeCodeFromScreen(currentGuid);
+              await removeCodeFromScreen();
               await addCodeToScreen(hiddenFieldsCode);
             } else {
               const screenCode = await getCodeFromScreen();
               const newGuid = generateGuid();
               await saveToHiddenFields({ ...screenCode, guid: newGuid });
-              await removeCodeFromScreen(currentGuid);
+              await removeCodeFromScreen();
               await addCodeToScreen(hiddenFieldsCode);
             }
           } else {
@@ -191,18 +191,18 @@ Fliplet.Widget.instance({
               debugger
               if (isCodeEmpty(developerOptionsCode)) { // remove comment: developer options are empty take code from hidden fields
                 await saveToHiddenFields({ ...hiddenFieldsCode, guid: currentGuid });
-                await removeCodeFromScreen(currentGuid);
+                await removeCodeFromScreen();
                 await addCodeToScreen(hiddenFieldsCode);
                 return;
               } else if (isCodeEmpty(hiddenFieldsCode)) {
                 // remove comment: hidden fields are empty, developer options are not empty, save to hidden fields and rerender component
                 await saveToHiddenFields({ ...developerOptionsCode, guid: currentGuid });
-                await removeCodeFromScreen(currentGuid);
+                await removeCodeFromScreen();
                 await addCodeToScreen(developerOptionsCode);
                 return;
               } else {
                 await saveToHiddenFields({ ...developerOptionsCode, guid: currentGuid });
-                await removeCodeFromScreen(currentGuid);
+                await removeCodeFromScreen();
                 await addCodeToScreen(developerOptionsCode);
                 return;
               }
@@ -334,7 +334,7 @@ Fliplet.Widget.instance({
             )
           );
 
-          const htmlCodeToInject = injectHtmlCode(currentSettings);
+          const htmlCodeToInject = injectHtmlCode(currentSettings, parsedContent);
 
           const layoutResponse = await saveLayout(htmlCodeToInject);
 
@@ -360,7 +360,7 @@ Fliplet.Widget.instance({
         }
       }
 
-      function injectHtmlCode(currentSettings) {
+      function injectHtmlCode(currentSettings, parsedContent) {
         // code from AI
         var codeGenContainer = `<div class="ai-feature-${widgetId}">${parsedContent.layoutHTML}</div>`;
         // Wrap response inside a temporary container

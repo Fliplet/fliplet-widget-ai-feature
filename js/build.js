@@ -187,7 +187,8 @@ Fliplet.Widget.instance({
               // }
               return;
             // remove comment: hidden fields are empty, developer options are not empty, save to hidden fields and rerender component
-            } else if (!compareCode(developerOptionsCode, hiddenFieldsCode)) {
+            } else {
+              debugger
               if (isCodeEmpty(developerOptionsCode)) { // remove comment: developer options are empty take code from hidden fields
                 await saveToHiddenFields({ ...hiddenFieldsCode, guid: currentGuid });
                 await removeCodeFromScreen(currentGuid);
@@ -195,6 +196,11 @@ Fliplet.Widget.instance({
                 return;
               } else if (isCodeEmpty(hiddenFieldsCode)) {
                 // remove comment: hidden fields are empty, developer options are not empty, save to hidden fields and rerender component
+                await saveToHiddenFields({ ...developerOptionsCode, guid: currentGuid });
+                await removeCodeFromScreen(currentGuid);
+                await addCodeToScreen(developerOptionsCode);
+                return;
+              } else {
                 await saveToHiddenFields({ ...developerOptionsCode, guid: currentGuid });
                 await removeCodeFromScreen(currentGuid);
                 await addCodeToScreen(developerOptionsCode);

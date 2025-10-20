@@ -304,8 +304,7 @@ Fliplet.Widget.instance({
           });
 
           // reload page preview
-          // Fliplet.Studio.emit("reload-page-preview");
-          Fliplet.Studio.emit("reload-widget-instance", widgetId);
+          Fliplet.Studio.emit("reload-page-preview");
 
           return {
             settingsResponse,

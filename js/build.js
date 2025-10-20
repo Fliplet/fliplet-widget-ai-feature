@@ -466,6 +466,7 @@ Fliplet.Widget.instance({
       async function handleNewComponent() {
         AI.fields.guid = generateGuid();
         await Fliplet.Widget.save(AI.fields, { id: widgetId });
+        Fliplet.Studio.emit("reload-page-preview");
         Fliplet.Studio.emit("reload-widget-instance", widgetId);
       }
 

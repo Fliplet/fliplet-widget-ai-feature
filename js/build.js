@@ -324,7 +324,7 @@ Fliplet.Widget.instance({
         // Wrap response inside a temporary container
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container
-        $wrapper.find(`.ai-feature-${getGuidFromComponent}`).remove();
+        $wrapper.find(`.ai-feature-${getGuidFromComponent()}`).remove();
         // Find `<fl-ai-feature>` and add a sibling after it
         $wrapper
           .find(`fl-ai-feature[cid="${widgetId}"]`)

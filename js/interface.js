@@ -167,9 +167,9 @@ Fliplet.Widget.generateInterface({
         const debugMode = false;
         debugger
         if (!Fliplet.Helper.field("guid").get()) {
-          debugger
-          Fliplet.Studio.emit("reload-widget-instance", widgetId);
-          return;
+          Fliplet.Helper.field("guid").set(Fliplet.guid());
+          Fliplet.Widget.save(Fliplet.Widget.fields, { id: widgetId });
+          Fliplet.Studio.emit("reload-page-preview");
         }
 
         // Debug utility function to conditionally log console messages
@@ -5035,8 +5035,8 @@ function saveGeneratedCode(parsedContent) {
   data.fields.javascript = parsedContent.javascript;
   data.fields.regenerateCode = true;
   Fliplet.Helper.field("dataSourceId").set("");
-  data.fields.guid = Fliplet.Helper.field("guid").get();
   debugger;
+  data.fields.guid = Fliplet.Helper.field("guid").get();
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
     // toggleLoaderCodeGeneration(false);

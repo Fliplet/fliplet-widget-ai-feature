@@ -6,10 +6,35 @@ Fliplet.Widget.instance({
     template: `<div class="ai-feature-content">
                 <div class="well text-center">AI feature</div>
               </div>`,
-    ready: function () {
+    ready: async function () {
       // Initialize children components when this widget is ready
       Fliplet.Widget.initializeChildren(this.$el, this);
 
+      const AI = this;
+      const appId = Fliplet.Env.get("appId");
+      const pageId = Fliplet.Env.get("pageId");
+
+      if (Fliplet.Env.get("mode") == "interact") {
+        $(".ai-feature-content").show();
+      } else {
+        $(".ai-feature-content").hide();
+      }
+
+      AI.fields = _.assign(
+        {
+          dataSourceId: "",
+          dataSourceName: "",
+          css: "",
+          javascript: "",
+          layoutHTML: "",
+          regenerateCode: false,
+          guid: "",
+          chatHistory: ""
+        },
+        AI.fields
+      );
+
+      const widgetId = AI.fields.aiFeatureId;
 
       // Helper function to get GUID from component
       function getGuidFromComponent() {
@@ -22,18 +47,23 @@ Fliplet.Widget.instance({
       }
 
       // Helper function to find components with the same GUID
-      async function findComponentsWithSameGuid(currentGuid) {
-        return $(`fl-helper[name="ai-feature"][data-guid="${currentGuid}"]`);
+      async function findComponentsWithSameGuid() {
+        return $(
+          `fl-helper[name="ai-feature"][data-guid="${getGuidFromComponent()}"]`
+        );
       }
 
       // Helper function to get developer options code
       async function getDeveloperOptionsCode() {
         var screenCode = await getCodeFromScreen();
         return {
-          guid: AI.fields.guid,
-          html: (getHtmlCodeFromScreen(screenCode.html) || "").trim(),
-          css: (getCodeFromScreenWithoutComments("css", screenCode.css) || "").trim(),
-          js: (getCodeFromScreenWithoutComments("js", screenCode.js) || "").trim(),
+          html: (getHtmlFromDeveloperOptions(screenCode.html) || "").trim(),
+          css: (
+            getCodeFromDeveloperOptionsWithoutComments("css", screenCode.css) || ""
+          ).trim(),
+          js: (
+            getCodeFromDeveloperOptionsWithoutComments("js", screenCode.js) || ""
+          ).trim(),
         };
       }
 
@@ -68,32 +98,32 @@ Fliplet.Widget.instance({
         if (code.css) AI.fields.css = code.css;
         if (code.js) AI.fields.javascript = code.js;
         if (code.guid) AI.fields.guid = code.guid;
-        return await Fliplet.Widget.save(AI.fields);
+        return await Fliplet.Widget.save(AI.fields, { id: widgetId });
       }
 
       // Helper function to remove code from screen
-      async function removeCodeFromScreen() {
+      async function removeCodeFromDeveloperOptions() {
         try {
           const currentSettings = await getCurrentPageSettings();
-          const removedHtml = removeHtmlCode(currentSettings);
-          const removedCss = removeCodeWithinDelimiters(
+          const cleanedHtml = removeHtmlCode(currentSettings);
+          const cleanedCss = removeCodeWithinDelimiters(
             "css",
             currentSettings.page.settings.customSCSS
           );
-          const removedJs = removeCodeWithinDelimiters(
+          const cleanedJs = removeCodeWithinDelimiters(
             "js",
             currentSettings.page.settings.customJS
           );
 
-          await saveLayout(removedHtml);
-          await saveCssAndJs(removedCss, removedJs);
+          await saveLayoutToDeveloperOptions(cleanedHtml);
+          await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
         } catch (error) {
-          console.error("Error removing code from screen:", error);
+          console.error("Error removing code from developer options:", error);
         }
       }
 
       // Helper function to add code to screen
-      async function addCodeToScreen(code) {
+      async function addCodeToDeveloperOptions(code) {
         try {
           const parsedContent = {
             css: code.css,
@@ -101,29 +131,26 @@ Fliplet.Widget.instance({
             layoutHTML: code.html,
           };
 
-          await saveGeneratedCode(parsedContent);
+          await saveCodeWithWrapperToDeveloperOptions(parsedContent);
         } catch (error) {
           console.error("Error adding code to screen:", error);
         }
       }
 
-      // Helper function to rerender component
-      function rerenderComponent() {
-        Fliplet.Studio.emit("reload-page-preview");
-      }
-
       // Normalize whitespace for comparison
       function normalizeWhitespace(str) {
-        return str ? str.replace(/\s+/g, ' ').trim() : '';
+        return str ? str.replace(/\s+/g, " ").trim() : "";
       }
 
       // Helper function to compare code objects
-      function compareCode(developerOptionsCode, hiddenFieldsCode) {
-        
+      function isCodeEqual(developerOptionsCode, hiddenFieldsCode) {
         return (
-          normalizeWhitespace(developerOptionsCode.html) === normalizeWhitespace(hiddenFieldsCode.html) &&
-          normalizeWhitespace(developerOptionsCode.css) === normalizeWhitespace(hiddenFieldsCode.css) &&
-          normalizeWhitespace(developerOptionsCode.js) === normalizeWhitespace(hiddenFieldsCode.js)
+          normalizeWhitespace(developerOptionsCode.html) ===
+            normalizeWhitespace(hiddenFieldsCode.html) &&
+          normalizeWhitespace(developerOptionsCode.css) ===
+            normalizeWhitespace(hiddenFieldsCode.css) &&
+          normalizeWhitespace(developerOptionsCode.js) ===
+            normalizeWhitespace(hiddenFieldsCode.js)
         );
       }
 
@@ -137,121 +164,51 @@ Fliplet.Widget.instance({
       }
 
       // Main function to handle component GUID logic
-      async function handleComponentGuid(component) {
+      async function handleComponentGuid() {
         try {
           const currentGuid = getGuidFromComponent();
-
-          // 1️⃣ NEW COMPONENT CASE
-          if (!currentGuid) {
-            // By default build.js will create guid
-            // todo check saving to hidden fields
-            return;
-          }
-
           // 2️⃣ EXISTING COMPONENT CASE
-          const duplicates = await findComponentsWithSameGuid(currentGuid);
+          const duplicates = await findComponentsWithSameGuid();
+          const developerOptionsCode = await getDeveloperOptionsCode();
+          const hiddenFieldsCode = getHiddenFieldsCode();
 
-          debugger
           if (duplicates.length > 1) {
-            // Duplicated GUIDs exist
-            const developerOptionsCode = await getDeveloperOptionsCode();
-            const hiddenFieldsCode = getHiddenFieldsCode();
-
-            if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
-              await removeCodeFromScreen();
-              await addCodeToScreen(hiddenFieldsCode);
-            } else {
-              const screenCode = await getCodeFromScreen();
-              const newGuid = generateGuid();
-              await saveToHiddenFields({ ...screenCode, guid: newGuid });
-              await removeCodeFromScreen();
-              await addCodeToScreen(hiddenFieldsCode);
-            }
-          } else {
-            debugger
-            // No duplicates
-            const developerOptionsCode = await getDeveloperOptionsCode();
-            const hiddenFieldsCode = getHiddenFieldsCode();
-
-            // remove comment: all good, do nothing
-            if (compareCode(developerOptionsCode, hiddenFieldsCode)) {
-              // DO NOTHING
-              // var parsedContent = {
-              //   css: AI.fields.css,
-              //   javascript: AI.fields.javascript,
-              //   layoutHTML: AI.fields.layoutHTML,
-              // };
-        
-              // if (AI.fields.css || AI.fields.javascript || AI.fields.layoutHTML) {
-              //   saveGeneratedCode(parsedContent);
-              // }
+            // there are duplicates, so we need to remove the code from developer options and add the new code with a new guid
+            await removeCodeFromDeveloperOptions(); // removing code from developer options for the existing guid
+            AI.fields.guid = generateGuid(); // generating a new guid
+            await Fliplet.Widget.save(AI.fields, { id: widgetId }); // saving the new guid to the hidden fields
+            Fliplet.Studio.emit("reload-page-preview"); // reloading the page preview
+            return;
+          } else if (isCodeEqual(developerOptionsCode, hiddenFieldsCode)) {
+            // the code in developer options is the same as the hidden fields, so we need to do nothing
+            return;
+          } else { // there are no duplicates
+            if (isCodeEmpty(developerOptionsCode)) {
+              // developer options are empty, so we need to add the code from the hidden fields to the developer options
+              await addCodeToDeveloperOptions(hiddenFieldsCode); // adding the code from the hidden fields to the developer options
               return;
-            // remove comment: hidden fields are empty, developer options are not empty, save to hidden fields and rerender component
+            } else if (isCodeEmpty(hiddenFieldsCode)) {
+              // hidden fields are empty, so we need to save the code from the developer options to the hidden fields
+              await saveToHiddenFields({
+                ...developerOptionsCode,
+                guid: currentGuid,
+              });
+              Fliplet.Studio.emit("reload-page-preview"); // reloading the page preview
+              return;
             } else {
-              debugger
-              if (isCodeEmpty(developerOptionsCode)) { // remove comment: developer options are empty take code from hidden fields
-                await saveToHiddenFields({ ...hiddenFieldsCode, guid: currentGuid });
-                await removeCodeFromScreen();
-                await addCodeToScreen(hiddenFieldsCode);
-                return;
-              } else if (isCodeEmpty(hiddenFieldsCode)) {
-                // remove comment: hidden fields are empty, developer options are not empty, save to hidden fields and rerender component
-                await saveToHiddenFields({ ...developerOptionsCode, guid: currentGuid });
-                await removeCodeFromScreen();
-                await addCodeToScreen(developerOptionsCode);
-                return;
-              } else {
-                await saveToHiddenFields({ ...developerOptionsCode, guid: currentGuid });
-                await removeCodeFromScreen();
-                await addCodeToScreen(developerOptionsCode);
-                return;
-              }
+              // both developer options and hidden fields are not empty, so we need to save the developer options to the hidden fields and remove the code from screen and add the new code
+              await saveToHiddenFields({
+                ...developerOptionsCode,
+                guid: currentGuid,
+              });
+              Fliplet.Studio.emit("reload-page-preview"); // reloading the page preview
+              return;
             }
           }
         } catch (error) {
-          debugger
           console.error("Error in handleComponentGuid:", error);
         }
       }
-
-
-      const AI = this;
-      const appId = Fliplet.Env.get("appId");
-      const pageId = Fliplet.Env.get("pageId");
-      const organizationId = Fliplet.Env.get("organizationId");
-      const userId = Fliplet.Env.get("user")?.id || "";
-
-      debugger;
-      if (!AI.fields.guid) {
-        AI.fields.guid = Fliplet.guid();
-        return Fliplet.Widget.save(AI.fields).then(() => {
-          // rerenderComponent()
-          Fliplet.Studio.emit("reload-widget-instance", AI.id);
-          return;
-        });
-      } else {
-        // Handle component GUID logic
-        handleComponentGuid();
-      }
-
-      if (Fliplet.Env.get("mode") == "interact") {
-        $(".ai-feature-content").show();
-      } else {
-        $(".ai-feature-content").hide();
-      }
-
-      AI.fields = _.assign(
-        {
-          dataSourceId: "",
-          css: "",
-          javascript: "",
-          layoutHTML: "",
-          regenerateCode: false,
-        },
-        AI.fields
-      );
-
-      const widgetId = AI.fields.aiFeatureId;
 
       Fliplet.Hooks.on("componentEvent", async function (event) {
         if (
@@ -260,19 +217,19 @@ Fliplet.Widget.instance({
         ) {
           var currentSettings = await getCurrentPageSettings();
 
-          var removedHtml = removeHtmlCode(currentSettings);
+          var cleanedHtml = removeHtmlCode(currentSettings);
 
-          const layoutResponse = await saveLayout(removedHtml);
+          const layoutResponse = await saveLayoutToDeveloperOptions(cleanedHtml);
 
-          const removedCss = removeCodeWithinDelimiters(
+          const cleanedCss = removeCodeWithinDelimiters(
             "css",
             currentSettings.page.settings.customSCSS
           );
-          const removedJs = removeCodeWithinDelimiters(
+          const cleanedJs = removeCodeWithinDelimiters(
             "js",
             currentSettings.page.settings.customJS
           );
-          const saved = saveCssAndJs(removedCss, removedJs);
+          await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
 
           // reload page preview
           Fliplet.Studio.emit("reload-page-preview");
@@ -280,10 +237,6 @@ Fliplet.Widget.instance({
           return { removedHtml, layoutResponse };
         }
       });
-
-      if (!AI.fields.regenerateCode) {
-        return;
-      }
 
       async function getCurrentPageSettings() {
         return await Fliplet.API.request({
@@ -294,7 +247,7 @@ Fliplet.Widget.instance({
         });
       }
 
-      async function saveCssAndJs(css, js) {
+      async function saveCssAndJsToDeveloperOptions(css, js) {
         var response = await Fliplet.API.request({
           url: `v1/apps/${appId}/pages/${pageId}/settings`,
           method: "POST",
@@ -307,7 +260,7 @@ Fliplet.Widget.instance({
         return response;
       }
 
-      async function saveLayout(html) {
+      async function saveLayoutToDeveloperOptions(html) {
         return await Fliplet.API.request({
           url: `v1/apps/${appId}/pages/${pageId}/rich-layout`,
           method: "PUT",
@@ -315,13 +268,13 @@ Fliplet.Widget.instance({
         });
       }
 
-      async function saveGeneratedCode(parsedContent) {
+      async function saveCodeWithWrapperToDeveloperOptions(parsedContent) {
         try {
           // get current page settings
           const currentSettings = await getCurrentPageSettings();
 
           // Save CSS and JavaScript
-          const settingsResponse = await saveCssAndJs(
+          const settingsResponse = await saveCssAndJsToDeveloperOptions(
             updateCodeWithinDelimiters(
               "css",
               parsedContent.css,
@@ -334,9 +287,12 @@ Fliplet.Widget.instance({
             )
           );
 
-          const htmlCodeToInject = injectHtmlCode(currentSettings, parsedContent);
+          const htmlCodeToInject = injectHtmlCode(
+            currentSettings,
+            parsedContent
+          );
 
-          const layoutResponse = await saveLayout(htmlCodeToInject);
+          const layoutResponse = await saveLayoutToDeveloperOptions(htmlCodeToInject);
 
           // save logs
           const logAiComponentUsageResponse = await logAiComponentUsage({
@@ -362,11 +318,13 @@ Fliplet.Widget.instance({
 
       function injectHtmlCode(currentSettings, parsedContent) {
         // code from AI
-        var codeGenContainer = `<div class="ai-feature-${widgetId}">${parsedContent.layoutHTML}</div>`;
+        var codeGenContainer = `<div class="ai-feature-${getGuidFromComponent()}">${
+          parsedContent.layoutHTML
+        }</div>`;
         // Wrap response inside a temporary container
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container
-        $wrapper.find(`.ai-feature-${widgetId}`).remove();
+        $wrapper.find(`.ai-feature-${getGuidFromComponent}`).remove();
         // Find `<fl-ai-feature>` and add a sibling after it
         $wrapper
           .find(`fl-ai-feature[cid="${widgetId}"]`)
@@ -374,41 +332,38 @@ Fliplet.Widget.instance({
         return $wrapper.html();
       }
 
-      function getCssCodeFromScreen() {
-        let $wrapper = $("<div>").html(currentSettings.page.richLayout);
-        let codeWithComments = $wrapper.find(`.ai-feature-${widgetId}`).css();
-        return codeWithComments;
-      }
-
-      function getCodeFromScreenWithoutComments(type, code) {
+      function getCodeFromDeveloperOptionsWithoutComments(type, code) {
         // removeCodeWithinDelimiters
         const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         if (type === "js") {
-          let start = `// start-ai-feature ${widgetId}`;
-          let end = `// end-ai-feature ${widgetId}`;
+          let start = `// start-ai-feature ${getGuidFromComponent()}`;
+          let end = `// end-ai-feature ${getGuidFromComponent()}`;
           let pattern = new RegExp(esc(start) + "([\\s\\S]*?)" + esc(end), "g");
           let match = pattern.exec(code);
           let codeWithComments = match ? match[1] : "";
           return codeWithComments;
         } else if (type === "css") {
-          let start = `/* start-ai-feature ${widgetId} */`;
-          let end = `/* end-ai-feature ${widgetId} */`;
+          let start = `/* start-ai-feature ${getGuidFromComponent()} */`;
+          let end = `/* end-ai-feature ${getGuidFromComponent()} */`;
           let pattern = new RegExp(esc(start) + "([\\s\\S]*?)" + esc(end), "g");
           let match = pattern.exec(code);
           let codeWithComments = match ? match[1] : "";
           return codeWithComments;
         }
       }
-      function getHtmlCodeFromScreen(html) {
+
+      function getHtmlFromDeveloperOptions(html) {
         let $wrapper = $("<div>").html(html);
-        let codeWithoutClass = $wrapper.find(`.ai-feature-${widgetId}`).html();
+        let codeWithoutClass = $wrapper
+          .find(`.ai-feature-${getGuidFromComponent()}`)
+          .html();
         return codeWithoutClass;
       }
 
       function removeHtmlCode(currentSettings) {
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container
-        $wrapper.find(`.ai-feature-${widgetId}`).remove();
+        $wrapper.find(`.ai-feature-${getGuidFromComponent()}`).remove();
         return $wrapper.html();
       }
 
@@ -429,8 +384,8 @@ Fliplet.Widget.instance({
         let start, end, patternStart, patternEnd;
 
         if (type == "js") {
-          start = `// start-ai-feature ${widgetId}`;
-          end = `// end-ai-feature ${widgetId}`;
+          start = `// start-ai-feature ${getGuidFromComponent()}`;
+          end = `// end-ai-feature ${getGuidFromComponent()}`;
 
           // Check if delimiters exist in the old code
           if (oldCode.includes(start) && oldCode.includes(end)) {
@@ -459,14 +414,14 @@ Fliplet.Widget.instance({
             return oldCode + "\n\n" + start + "\n" + newCode + "\n" + end;
           }
         } else {
-          start = `/* start-ai-feature ${widgetId} */`;
-          end = `/* end-ai-feature ${widgetId} */`;
+          start = `/* start-ai-feature ${getGuidFromComponent()} */`;
+          end = `/* end-ai-feature ${getGuidFromComponent()} */`;
 
           if (oldCode.includes(start) && oldCode.includes(end)) {
             // Replace content between delimiters
             // For CSS, we need to escape the special characters properly
-            patternStart = `/\\* start-ai-feature ${widgetId} \\*/`;
-            patternEnd = `/\\* end-ai-feature ${widgetId} \\*/`;
+            patternStart = `/\\* start-ai-feature ${getGuidFromComponent()} \\*/`;
+            patternEnd = `/\\* end-ai-feature ${getGuidFromComponent()} \\*/`;
 
             return oldCode.replace(
               new RegExp(patternStart + "[\\s\\S]*?" + patternEnd, "g"),
@@ -480,18 +435,17 @@ Fliplet.Widget.instance({
       }
 
       function removeCodeWithinDelimiters(type, oldCode = "") {
-        // widgetId is assumed to be in scope; add it as a param if needed
         const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
         let start, end;
 
         if (type === "js") {
-          start = `// start-ai-feature ${widgetId}`;
-          end = `// end-ai-feature ${widgetId}`;
+          start = `// start-ai-feature ${getGuidFromComponent()}`;
+          end = `// end-ai-feature ${getGuidFromComponent()}`;
         } else {
           // Keep CSS markers RAW, not pre-escaped; we'll escape them when building the RegExp
-          start = `/* start-ai-feature ${widgetId} */`;
-          end = `/* end-ai-feature ${widgetId} */`;
+          start = `/* start-ai-feature ${getGuidFromComponent()} */`;
+          end = `/* end-ai-feature ${getGuidFromComponent()} */`;
         }
 
         // Build a robust pattern:
@@ -509,14 +463,30 @@ Fliplet.Widget.instance({
           .trim();
       }
 
-      var parsedContent = {
-        css: AI.fields.css,
-        javascript: AI.fields.javascript,
-        layoutHTML: AI.fields.layoutHTML,
-      };
+      async function handleNewComponent() {
+        AI.fields.guid = generateGuid();
+        await Fliplet.Widget.save(AI.fields, { id: widgetId });
+        Fliplet.Studio.emit("reload-page-preview");
+      }
 
-      if (AI.fields.css || AI.fields.javascript || AI.fields.layoutHTML) {
-        saveGeneratedCode(parsedContent);
+      async function handleRegenerateCode() {
+        let parsedContent = {
+          css: AI.fields.css,
+          javascript: AI.fields.javascript,
+          layoutHTML: AI.fields.layoutHTML,
+        };
+        await saveCodeWithWrapperToDeveloperOptions(parsedContent);
+        AI.fields.regenerateCode = false;
+        await Fliplet.Widget.save(AI.fields, { id: widgetId });
+        Fliplet.Studio.emit("reload-page-preview");
+      }
+
+      if (!getGuidFromComponent()) { // new component
+        await handleNewComponent();
+      } else if (AI.fields.regenerateCode) { // code generated by AI
+        await handleRegenerateCode();
+      } else { // existing component
+        await handleComponentGuid();
       }
     },
   },

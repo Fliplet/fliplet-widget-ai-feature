@@ -4861,7 +4861,7 @@ Fliplet.Widget.generateInterface({
       type: "hidden",
       name: "guid",
       label: "GUID",
-      default: Fliplet.guid(),
+      default: "",
     },
     {
       type: "hidden",
@@ -5029,16 +5029,15 @@ function saveGeneratedCode(parsedContent) {
   data.fields.javascript = parsedContent.javascript;
   data.fields.regenerateCode = true;
   Fliplet.Helper.field("dataSourceId").set("");
-  data.guid = Fliplet.Helper.field("guid").get();
   data.fields.guid = Fliplet.Helper.field("guid").get();
-
+  debugger;
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
     // toggleLoaderCodeGeneration(false);
-    setTimeout(function () {
-      Fliplet.Helper.field("regenerateCode").set(false);
-      data.fields.regenerateCode = false;
-      Fliplet.Widget.save(data.fields);
-    }, 1000);
+    // setTimeout(function () {
+    //   Fliplet.Helper.field("regenerateCode").set(false);
+    //   data.fields.regenerateCode = false;
+    //   Fliplet.Widget.save(data.fields);
+    // }, 1000);
   });
 }

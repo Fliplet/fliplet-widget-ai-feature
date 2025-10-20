@@ -168,8 +168,9 @@ Fliplet.Widget.generateInterface({
         debugger
         if (!Fliplet.Helper.field("guid").get()) {
           debugger
-          Fliplet.Studio.emit("reload-widget-instance", widgetId);
-          return;
+          Fliplet.Widget.save(data.fields).then(function () {
+            Fliplet.Studio.emit("reload-widget-instance", widgetId);
+          });
         }
 
         // Debug utility function to conditionally log console messages
@@ -4867,7 +4868,7 @@ Fliplet.Widget.generateInterface({
       type: "hidden",
       name: "guid",
       label: "GUID",
-      default: "",
+      default: Fliplet.guid(),
     },
     {
       type: "hidden",
@@ -5039,7 +5040,6 @@ function saveGeneratedCode(parsedContent) {
   debugger;
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    // toggleLoaderCodeGeneration(false);
     // setTimeout(function () {
     //   Fliplet.Helper.field("regenerateCode").set(false);
     //   data.fields.regenerateCode = false;

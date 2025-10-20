@@ -177,7 +177,7 @@ Fliplet.Widget.instance({
             await removeCodeFromDeveloperOptions(); // removing code from developer options for the existing guid
             AI.fields.guid = generateGuid(); // generating a new guid
             await Fliplet.Widget.save(AI.fields, { id: widgetId }); // saving the new guid to the hidden fields
-            Fliplet.Studio.emit("reload-page-preview"); // reloading the page preview
+            Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
             return;
           } else if (isCodeEqual(developerOptionsCode, hiddenFieldsCode)) {
             // the code in developer options is the same as the hidden fields, so we need to do nothing
@@ -193,7 +193,7 @@ Fliplet.Widget.instance({
                 ...developerOptionsCode,
                 guid: currentGuid,
               });
-              Fliplet.Studio.emit("reload-page-preview"); // reloading the page preview
+              Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
               return;
             } else {
               // both developer options and hidden fields are not empty, so we need to save the developer options to the hidden fields and remove the code from screen and add the new code
@@ -201,7 +201,7 @@ Fliplet.Widget.instance({
                 ...developerOptionsCode,
                 guid: currentGuid,
               });
-              Fliplet.Studio.emit("reload-page-preview"); // reloading the page preview
+              Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
               return;
             }
           }
@@ -232,7 +232,7 @@ Fliplet.Widget.instance({
           await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
 
           // reload page preview
-          Fliplet.Studio.emit("reload-page-preview");
+          Fliplet.Studio.emit("reload-widget-instance", widgetId);
 
           return { removedHtml, layoutResponse };
         }
@@ -304,7 +304,8 @@ Fliplet.Widget.instance({
           });
 
           // reload page preview
-          Fliplet.Studio.emit("reload-page-preview");
+          // Fliplet.Studio.emit("reload-page-preview");
+          Fliplet.Studio.emit("reload-widget-instance", widgetId);
 
           return {
             settingsResponse,
@@ -466,7 +467,7 @@ Fliplet.Widget.instance({
       async function handleNewComponent() {
         AI.fields.guid = generateGuid();
         await Fliplet.Widget.save(AI.fields, { id: widgetId });
-        Fliplet.Studio.emit("reload-page-preview");
+        Fliplet.Studio.emit("reload-widget-instance", widgetId);
       }
 
       async function handleRegenerateCode() {
@@ -478,7 +479,7 @@ Fliplet.Widget.instance({
         await saveCodeWithWrapperToDeveloperOptions(parsedContent);
         AI.fields.regenerateCode = false;
         await Fliplet.Widget.save(AI.fields, { id: widgetId });
-        Fliplet.Studio.emit("reload-page-preview");
+        Fliplet.Studio.emit("reload-widget-instance", widgetId);
       }
 
       if (!getGuidFromComponent()) { // new component

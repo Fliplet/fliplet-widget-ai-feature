@@ -479,7 +479,7 @@ Fliplet.Widget.instance({
         await saveCodeWithWrapperToDeveloperOptions(parsedContent);
         AI.fields.regenerateCode = false;
         await Fliplet.Widget.save(AI.fields, { id: widgetId });
-        Fliplet.Studio.emit("reload-widget-instance", widgetId);
+        Fliplet.Studio.emit("reload-page-preview");
       }
 
       if (!getGuidFromComponent()) { // new component

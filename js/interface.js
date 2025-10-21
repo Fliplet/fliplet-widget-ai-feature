@@ -211,13 +211,6 @@ Fliplet.Widget.generateInterface({
 
         // Debug mode configuration - set to true to show console logs
         const debugMode = false;
-        debugger
-        if (!Fliplet.Helper.field("guid").get()) {
-          debugger
-          Fliplet.Widget.save(data.fields).then(function () {
-            Fliplet.Studio.emit("reload-widget-instance", widgetId);
-          });
-        }
 
         // Debug utility function to conditionally log console messages
         function debugLog(...args) {

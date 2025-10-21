@@ -11,6 +11,52 @@ Fliplet.Widget.setCancelButtonLabel("Close");
 Fliplet.Widget.generateInterface({
   fields: [
     {
+      type: "hidden",
+      name: "chatGUID",
+      label: "Chat GUID",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "guid",
+      label: "GUID",
+      default: Fliplet.guid(),
+    },
+    {
+      type: "hidden",
+      name: "chatHistory",
+      label: "Chat History",
+      default: "",
+      rows: 12,
+    },
+    {
+      type: "hidden",
+      name: "css",
+      label: "CSS",
+      default: "",
+      rows: 12,
+    },
+    {
+      type: "hidden",
+      name: "javascript",
+      label: "JavaScript",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "layoutHTML",
+      label: "Layout",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "regenerateCode",
+      label: "Regenerate code",
+      description: "Regenerate code",
+      toggleLabel: "Regenerate",
+      default: false,
+    },
+    {
       type: "html",
       html: `
         <div class="panel-group" id="accordion-1">
@@ -4216,7 +4262,7 @@ Fliplet.Widget.generateInterface({
 
             // Build complete HTML document
             const rawHTMLContent =
-              AppState.currentHTML || "<p>No HTML content</p>";
+              AppState.currentHTML || "";
             const htmlContent = sanitizeHTML(rawHTMLContent);
             const cssContent = AppState.currentCSS || "";
             const jsContent = AppState.currentJS || "";
@@ -4857,52 +4903,6 @@ Fliplet.Widget.generateInterface({
       beforeSave: function (value) {
         return value && value.id;
       },
-    },
-    {
-      type: "hidden",
-      name: "chatGUID",
-      label: "Chat GUID",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "guid",
-      label: "GUID",
-      default: Fliplet.guid(),
-    },
-    {
-      type: "hidden",
-      name: "chatHistory",
-      label: "Chat History",
-      default: "",
-      rows: 12,
-    },
-    {
-      type: "hidden",
-      name: "css",
-      label: "CSS",
-      default: "",
-      rows: 12,
-    },
-    {
-      type: "hidden",
-      name: "javascript",
-      label: "JavaScript",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "layoutHTML",
-      label: "Layout",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "regenerateCode",
-      label: "Regenerate code",
-      description: "Regenerate code",
-      toggleLabel: "Regenerate",
-      default: false,
     },
   ],
 });

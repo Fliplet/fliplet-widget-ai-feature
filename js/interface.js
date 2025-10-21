@@ -2352,6 +2352,8 @@ Fliplet.Widget.generateInterface({
          * Initialize the application
          */
         async function initializeApp() {
+          var data = Fliplet.Widget.getData();
+          await Fliplet.Widget.save(data.fields);
           debugLog("🚀 Initializing AI Coding Tool Test App");
 
           // Get DOM element references

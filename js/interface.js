@@ -5035,10 +5035,11 @@ function saveGeneratedCode(parsedContent) {
   debugger;
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    // setTimeout(function () {
-    //   Fliplet.Helper.field("regenerateCode").set(false);
-    //   data.fields.regenerateCode = false;
-    //   Fliplet.Widget.save(data.fields);
-    // }, 1000);
+    // todo remove this after having interface reload function provided
+    setTimeout(function () {
+      Fliplet.Helper.field("regenerateCode").set(false);
+      data.fields.regenerateCode = false;
+      Fliplet.Widget.save(data.fields);
+    }, 1000);
   });
 }

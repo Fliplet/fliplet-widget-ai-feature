@@ -36,6 +36,10 @@ Fliplet.Widget.instance({
 
       debugger
 
+      if (!AI.fields.guid) {
+        return;
+      }
+
       const widgetId = AI.fields.aiFeatureGuidId;
 
       // Helper function to get GUID from component

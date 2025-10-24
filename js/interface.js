@@ -20,7 +20,7 @@ Fliplet.Widget.generateInterface({
       type: "hidden",
       name: "guid",
       label: "GUID",
-      default: Fliplet.guid(),
+      default: "",
     },
     {
       type: "hidden",
@@ -112,7 +112,7 @@ Fliplet.Widget.generateInterface({
         </div>
     </div>
       `,
-      ready: function () {
+      ready: async function () {
         /**
          * AI Coding Tool Test Application
          * Uses Fliplet.AI.createCompletion for code generation with diff processing and code merging
@@ -208,7 +208,6 @@ Fliplet.Widget.generateInterface({
          */
 
         ("use strict");
-        debugger
         // Debug mode configuration - set to true to show console logs
         const debugMode = false;
 
@@ -229,6 +228,13 @@ Fliplet.Widget.generateInterface({
           if (debugMode) {
             console.warn(...args);
           }
+        }
+
+        debugger
+        if (!Fliplet.Helper.field("guid").get()) {
+          Fliplet.Helper.field("guid").set(Fliplet.guid());
+          await Fliplet.Widget.save(Fliplet.Widget.fields);
+          Fliplet.Studio.emit("widget-interface-reload");
         }
 
         // Make debug functions globally available

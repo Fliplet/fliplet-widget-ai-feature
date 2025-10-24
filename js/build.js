@@ -100,10 +100,10 @@ Fliplet.Widget.instance({
 
       // Helper function to save to hidden fields
       async function saveToHiddenFields(code) {
-        if (code.html) AI.fields.layoutHTML = code.html;
-        if (code.css) AI.fields.css = code.css;
-        if (code.js) AI.fields.javascript = code.js;
-        if (code.guid) AI.fields.guid = code.guid;
+        AI.fields.layoutHTML = code.html;
+        AI.fields.css = code.css;
+        AI.fields.javascript = code.js;
+        AI.fields.guid = code.guid;
         return await Fliplet.Widget.save(AI.fields, { id: widgetId });
       }
 

@@ -1,7 +1,7 @@
 // Register this widget instance
 Fliplet.Widget.instance({
-  name: "ai-feature",
-  displayName: "AI feature",
+  name: "ai-feature-guid",
+  displayName: "AI feature GUID",
   render: {
     template: `<div class="ai-feature-content">
                 <div class="well text-center">AI feature</div>
@@ -36,7 +36,7 @@ Fliplet.Widget.instance({
 
       debugger
 
-      const widgetId = AI.fields.aiFeatureId;
+      const widgetId = AI.fields.aiFeatureGuidId;
 
       // Helper function to get GUID from component
       function getGuidFromComponent() {
@@ -51,7 +51,7 @@ Fliplet.Widget.instance({
       // Helper function to find components with the same GUID
       async function findComponentsWithSameGuid() {
         return $(
-          `fl-helper[name="ai-feature"][data-guid="${getGuidFromComponent()}"]`
+          `fl-helper[name="ai-feature-guid"][data-guid="${getGuidFromComponent()}"]`
         );
       }
 
@@ -320,16 +320,16 @@ Fliplet.Widget.instance({
 
       function injectHtmlCode(currentSettings, parsedContent) {
         // code from AI
-        var codeGenContainer = `<div class="ai-feature-${getGuidFromComponent()}">${
+        var codeGenContainer = `<div class="ai-feature-guid-${getGuidFromComponent()}">${
           parsedContent.layoutHTML
         }</div>`;
         // Wrap response inside a temporary container
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container
-        $wrapper.find(`.ai-feature-${getGuidFromComponent()}`).remove();
+        $wrapper.find(`.ai-feature-guid-${getGuidFromComponent()}`).remove();
         // Find `<fl-ai-feature>` and add a sibling after it
         $wrapper
-          .find(`fl-ai-feature[cid="${widgetId}"]`)
+          .find(`fl-ai-feature-guid[cid="${widgetId}"]`)
           .after(codeGenContainer);
         return $wrapper.html();
       }
@@ -338,15 +338,15 @@ Fliplet.Widget.instance({
         // removeCodeWithinDelimiters
         const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
         if (type === "js") {
-          let start = `// start-ai-feature ${getGuidFromComponent()}`;
-          let end = `// end-ai-feature ${getGuidFromComponent()}`;
+          let start = `// start-ai-feature-guid ${getGuidFromComponent()}`;
+          let end = `// end-ai-feature-guid ${getGuidFromComponent()}`;
           let pattern = new RegExp(esc(start) + "([\\s\\S]*?)" + esc(end), "g");
           let match = pattern.exec(code);
           let codeWithComments = match ? match[1] : "";
           return codeWithComments;
         } else if (type === "css") {
-          let start = `/* start-ai-feature ${getGuidFromComponent()} */`;
-          let end = `/* end-ai-feature ${getGuidFromComponent()} */`;
+          let start = `/* start-ai-feature-guid ${getGuidFromComponent()} */`;
+          let end = `/* end-ai-feature-guid ${getGuidFromComponent()} */`;
           let pattern = new RegExp(esc(start) + "([\\s\\S]*?)" + esc(end), "g");
           let match = pattern.exec(code);
           let codeWithComments = match ? match[1] : "";
@@ -357,7 +357,7 @@ Fliplet.Widget.instance({
       function getHtmlFromDeveloperOptions(html) {
         let $wrapper = $("<div>").html(html);
         let codeWithoutClass = $wrapper
-          .find(`.ai-feature-${getGuidFromComponent()}`)
+          .find(`.ai-feature-guid-${getGuidFromComponent()}`)
           .html();
         return codeWithoutClass;
       }
@@ -365,7 +365,7 @@ Fliplet.Widget.instance({
       function removeHtmlCode(currentSettings) {
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container
-        $wrapper.find(`.ai-feature-${getGuidFromComponent()}`).remove();
+        $wrapper.find(`.ai-feature-guid-${getGuidFromComponent()}`).remove();
         return $wrapper.html();
       }
 
@@ -386,8 +386,8 @@ Fliplet.Widget.instance({
         let start, end, patternStart, patternEnd;
 
         if (type == "js") {
-          start = `// start-ai-feature ${getGuidFromComponent()}`;
-          end = `// end-ai-feature ${getGuidFromComponent()}`;
+          start = `// start-ai-feature-guid ${getGuidFromComponent()}`;
+          end = `// end-ai-feature-guid ${getGuidFromComponent()}`;
 
           // Check if delimiters exist in the old code
           if (oldCode.includes(start) && oldCode.includes(end)) {
@@ -422,8 +422,8 @@ Fliplet.Widget.instance({
           if (oldCode.includes(start) && oldCode.includes(end)) {
             // Replace content between delimiters
             // For CSS, we need to escape the special characters properly
-            patternStart = `/\\* start-ai-feature ${getGuidFromComponent()} \\*/`;
-            patternEnd = `/\\* end-ai-feature ${getGuidFromComponent()} \\*/`;
+            patternStart = `/\\* start-ai-feature-guid ${getGuidFromComponent()} \\*/`;
+            patternEnd = `/\\* end-ai-feature-guid ${getGuidFromComponent()} \\*/`;
 
             return oldCode.replace(
               new RegExp(patternStart + "[\\s\\S]*?" + patternEnd, "g"),
@@ -442,12 +442,12 @@ Fliplet.Widget.instance({
         let start, end;
 
         if (type === "js") {
-          start = `// start-ai-feature ${getGuidFromComponent()}`;
-          end = `// end-ai-feature ${getGuidFromComponent()}`;
+          start = `// start-ai-feature-guid ${getGuidFromComponent()}`;
+          end = `// end-ai-feature-guid ${getGuidFromComponent()}`;
         } else {
           // Keep CSS markers RAW, not pre-escaped; we'll escape them when building the RegExp
-          start = `/* start-ai-feature ${getGuidFromComponent()} */`;
-          end = `/* end-ai-feature ${getGuidFromComponent()} */`;
+          start = `/* start-ai-feature-guid ${getGuidFromComponent()} */`;
+          end = `/* end-ai-feature-guid ${getGuidFromComponent()} */`;
         }
 
         // Build a robust pattern:

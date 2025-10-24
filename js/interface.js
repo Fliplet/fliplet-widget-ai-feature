@@ -208,7 +208,7 @@ Fliplet.Widget.generateInterface({
          */
 
         ("use strict");
-
+        debugger
         // Debug mode configuration - set to true to show console logs
         const debugMode = false;
 
@@ -5036,10 +5036,10 @@ function saveGeneratedCode(parsedContent) {
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
     // todo remove this after having interface reload function provided
-    setTimeout(function () {
-      Fliplet.Helper.field("regenerateCode").set(false);
-      data.fields.regenerateCode = false;
-      Fliplet.Widget.save(data.fields);
-    }, 1000);
+    // setTimeout(function () {
+    //   Fliplet.Helper.field("regenerateCode").set(false);
+    //   data.fields.regenerateCode = false;
+    //   Fliplet.Widget.save(data.fields);
+    // }, 1000);
   });
 }

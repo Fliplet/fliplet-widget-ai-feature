@@ -479,6 +479,8 @@ Fliplet.Widget.instance({
         AI.fields.regenerateCode = false;
         await Fliplet.Widget.save(AI.fields, { id: widgetId });
         Fliplet.Studio.emit("reload-page-preview");
+        Fliplet.Studio.emit("widget-interface-reload");
+
       }
 
       if (!getGuidFromComponent()) { // new component interface will create guid by default

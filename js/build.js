@@ -104,7 +104,8 @@ Fliplet.Widget.instance({
         AI.fields.css = code.css;
         AI.fields.javascript = code.js;
         AI.fields.guid = code.guid;
-        return await Fliplet.Widget.save(AI.fields, { id: widgetId });
+        await Fliplet.Widget.save(AI.fields, { id: widgetId });
+        Fliplet.Studio.emit("reload-widget-instance", widgetId);
       }
 
       // Helper function to remove code from screen
@@ -167,53 +168,6 @@ Fliplet.Widget.instance({
           (!code.css || code.css.trim() === "") &&
           (!code.js || code.js.trim() === "")
         );
-      }
-
-      // Main function to handle component GUID logic
-      async function handleComponentGuid() {
-        try {
-          const currentGuid = getGuidFromComponent();
-          // 2️⃣ EXISTING COMPONENT CASE
-          const duplicates = await findComponentsWithSameGuid();
-          const developerOptionsCode = await getDeveloperOptionsCode();
-          const hiddenFieldsCode = getHiddenFieldsCode();
-
-          if (duplicates.length > 1) {
-            // there are duplicates, so we need to remove the code from developer options and add the new code with a new guid
-            await removeCodeFromDeveloperOptions(); // removing code from developer options for the existing guid
-            AI.fields.guid = generateGuid(); // generating a new guid
-            await Fliplet.Widget.save(AI.fields, { id: widgetId }); // saving the new guid to the hidden fields
-            Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
-            return;
-          } else if (isCodeEqual(developerOptionsCode, hiddenFieldsCode)) {
-            // the code in developer options is the same as the hidden fields, so we need to do nothing
-            return;
-          } else { // there are no duplicates
-            if (isCodeEmpty(developerOptionsCode)) {
-              // developer options are empty, so we need to add the code from the hidden fields to the developer options
-              await addCodeToDeveloperOptions(hiddenFieldsCode); // adding the code from the hidden fields to the developer options
-              return;
-            } else if (isCodeEmpty(hiddenFieldsCode)) {
-              // hidden fields are empty, so we need to save the code from the developer options to the hidden fields
-              await saveToHiddenFields({
-                ...developerOptionsCode,
-                guid: currentGuid,
-              });
-              Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
-              return;
-            } else {
-              // both developer options and hidden fields are not empty, so we need to save the developer options to the hidden fields and remove the code from screen and add the new code
-              await saveToHiddenFields({
-                ...developerOptionsCode,
-                guid: currentGuid,
-              });
-              Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
-              return;
-            }
-          }
-        } catch (error) {
-          console.error("Error in handleComponentGuid:", error);
-        }
       }
 
       Fliplet.Hooks.on("componentEvent", async function (event) {
@@ -469,6 +423,59 @@ Fliplet.Widget.instance({
           .trim();
       }
 
+      // Main function to handle component GUID logic
+      async function handleComponentGuid() {
+        try {
+          const currentGuid = getGuidFromComponent();
+          // 2️⃣ EXISTING COMPONENT CASE
+          const duplicates = await findComponentsWithSameGuid();
+          const developerOptionsCode = await getDeveloperOptionsCode();
+          const hiddenFieldsCode = getHiddenFieldsCode();
+
+          if (duplicates.length > 1) {
+            // there are duplicates, so we need to remove the code from developer options and add the new code with a new guid
+            await removeCodeFromDeveloperOptions(); // removing code from developer options for the existing guid
+            AI.fields.guid = generateGuid(); // generating a new guid
+            await saveToHiddenFields({
+              css: AI.fields.css,
+              javascript: AI.fields.javascript,
+              layoutHTML: AI.fields.layoutHTML,
+              guid: AI.fields.guid,
+            });
+            // await Fliplet.Widget.save(AI.fields, { id: widgetId }); // saving the new guid to the hidden fields
+            // Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
+            return;
+          } else if (isCodeEqual(developerOptionsCode, hiddenFieldsCode)) {
+            // the code in developer options is the same as the hidden fields, so we need to do nothing
+            return;
+          } else { // there are no duplicates
+            if (isCodeEmpty(developerOptionsCode)) {
+              // developer options are empty, so we need to add the code from the hidden fields to the developer options
+              await addCodeToDeveloperOptions(hiddenFieldsCode); // adding the code from the hidden fields to the developer options
+              return;
+            } else if (isCodeEmpty(hiddenFieldsCode)) {
+              // hidden fields are empty, so we need to save the code from the developer options to the hidden fields
+              await saveToHiddenFields({
+                ...developerOptionsCode,
+                guid: currentGuid,
+              });
+              // Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
+              return;
+            } else {
+              // both developer options and hidden fields are not empty, so we need to save the developer options to the hidden fields and remove the code from screen and add the new code
+              await saveToHiddenFields({
+                ...developerOptionsCode,
+                guid: currentGuid,
+              });
+              // Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
+              return;
+            }
+          }
+        } catch (error) {
+          console.error("Error in handleComponentGuid:", error);
+        }
+      }
+
       async function handleRegenerateCode() {
         let parsedContent = {
           css: AI.fields.css,
@@ -480,7 +487,6 @@ Fliplet.Widget.instance({
         await Fliplet.Widget.save(AI.fields, { id: widgetId });
         Fliplet.Studio.emit("reload-page-preview");
         Fliplet.Studio.emit("widget-interface-reload");
-
       }
 
       if (AI.fields.regenerateCode) { // code generated by AI

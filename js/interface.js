@@ -5031,21 +5031,15 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("dataSourceId").set("");
 
   var data = Fliplet.Widget.getData();
-  // data.fields.dataSourceId = "";
+  data.fields.dataSourceId = "";
   data.fields.dataSourceName = "";
-  // data.fields.layoutHTML = parsedContent.html;
-  // data.fields.css = parsedContent.css;
-  // data.fields.javascript = parsedContent.javascript;
-  // data.fields.regenerateCode = true;
-  // data.fields.guid = Fliplet.Helper.field("guid").get();
+  data.fields.layoutHTML = parsedContent.html;
+  data.fields.css = parsedContent.css;
+  data.fields.javascript = parsedContent.javascript;
+  data.fields.regenerateCode = true;
+  data.fields.guid = Fliplet.Helper.field("guid").get();
   debugger;
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    // todo remove this after having interface reload function provided
-    // setTimeout(function () {
-    //   Fliplet.Helper.field("regenerateCode").set(false);
-    //   data.fields.regenerateCode = false;
-    //   Fliplet.Widget.save(data.fields);
-    // }, 1000);
   });
 }

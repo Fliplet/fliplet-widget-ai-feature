@@ -34,9 +34,7 @@ Fliplet.Widget.instance({
         AI.fields
       );
 
-      debugger
-
-      if (!AI.fields.guid) { // new component interface will create guid by default
+      if (!AI.fields.guid) { // new component, interface will create guid by default
         return;
       }
 
@@ -442,8 +440,6 @@ Fliplet.Widget.instance({
               layoutHTML: AI.fields.layoutHTML,
               guid: AI.fields.guid,
             });
-            // await Fliplet.Widget.save(AI.fields, { id: widgetId }); // saving the new guid to the hidden fields
-            // Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
             return;
           } else if (isCodeEqual(developerOptionsCode, hiddenFieldsCode)) {
             // the code in developer options is the same as the hidden fields, so we need to do nothing
@@ -459,7 +455,6 @@ Fliplet.Widget.instance({
                 ...developerOptionsCode,
                 guid: currentGuid,
               });
-              // Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
               return;
             } else {
               // both developer options and hidden fields are not empty, so we need to save the developer options to the hidden fields and remove the code from screen and add the new code
@@ -467,7 +462,6 @@ Fliplet.Widget.instance({
                 ...developerOptionsCode,
                 guid: currentGuid,
               });
-              // Fliplet.Studio.emit("reload-widget-instance", widgetId); // reloading the page preview
               return;
             }
           }

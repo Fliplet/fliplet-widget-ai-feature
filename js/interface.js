@@ -648,7 +648,7 @@ Fliplet.Widget.generateInterface({
             };
 
             debugLog("✅ [ContextBuilder] Context built:", context);
-            return this.optimizeForTokens(context);
+            return context
           }
 
           /**
@@ -820,19 +820,6 @@ Fliplet.Widget.generateInterface({
           getRecentChanges(changeHistory, limit = 3) {
             return changeHistory.slice(-limit);
           }
-
-          /**
-           * Optimize context for token limits
-           * @param {Object} context - Context object
-           * @returns {Object} Optimized context
-           */
-          optimizeForTokens(context) {
-            debugLog("⚡ [ContextBuilder] Optimizing context for tokens...");
-
-            // For now, return as-is. In production, implement token counting
-            // and intelligent truncation
-            return context;
-          }
         }
 
         /**
@@ -847,10 +834,6 @@ Fliplet.Widget.generateInterface({
            */
           parseResponse(response) {
             debugLog("📝 [ProtocolParser] Parsing LLM response...");
-            debugLog(
-              "📄 [ProtocolParser] Raw response preview:",
-              response.substring(0, 200) + "..."
-            );
 
             try {
               // With structured outputs, this should always be valid JSON
@@ -1273,11 +1256,6 @@ Fliplet.Widget.generateInterface({
               "🔧 [StringReplacement] Instructions received:",
               JSON.stringify(instructions, null, 2)
             );
-            debugLog("🔧 [StringReplacement] Current code lengths:", {
-              html: currentCode.html.length,
-              css: currentCode.css.length,
-              js: currentCode.js.length,
-            });
 
             const updatedCode = {
               html: currentCode.html,
@@ -2374,12 +2352,7 @@ Fliplet.Widget.generateInterface({
           // Initialize textarea styling and behavior
           setTimeout(() => {
             if (DOM.userInput) {
-              debugLog("🔧 Initializing textarea...");
               initializeTextarea();
-              debugLog(
-                "🔧 Textarea initialized with height:",
-                DOM.userInput.style.height
-              );
             } else {
               debugError("❌ Textarea element not found during initialization");
             }
@@ -2418,7 +2391,7 @@ Fliplet.Widget.generateInterface({
           setupEventListeners();
 
           // Load chat history from Fliplet field
-          const historyLoaded = loadChatHistoryFromStorage();
+          const historyLoaded = loadChatHistory();
           if (!historyLoaded) {
             // If no history loaded, the existing system message in HTML template is sufficient
             // No need to add another system message since there's already one in the HTML
@@ -2471,19 +2444,11 @@ Fliplet.Widget.generateInterface({
 
           // Auto-resize textarea as user types (jQuery)
           $(DOM.userInput).on("input", function () {
-            debugLog(
-              "🔧 Input event triggered (jQuery), current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
           // Auto-resize textarea as user types (native event as backup)
           DOM.userInput.addEventListener("input", function () {
-            debugLog(
-              "🔧 Input event triggered (native), current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
@@ -2521,19 +2486,11 @@ Fliplet.Widget.generateInterface({
 
           // Handle all text changes including programmatic changes
           DOM.userInput.addEventListener("change", function () {
-            debugLog(
-              "🔧 Change event triggered, current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
           // Handle composition events for IME input (useful for international keyboards)
           DOM.userInput.addEventListener("compositionend", function () {
-            debugLog(
-              "🔧 Composition end event triggered, current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
@@ -2544,11 +2501,6 @@ Fliplet.Widget.generateInterface({
           $(document).on("click", ".remove-image-btn", function (event) {
             event.preventDefault();
             const imageId = this.dataset.imageId;
-            debugLog("🗑️ Remove button clicked!");
-            debugLog("🗑️ Button element:", this);
-            debugLog("🗑️ Button dataset:", this.dataset);
-            debugLog("🗑️ Extracted imageId:", imageId);
-            debugLog("🗑️ Type of imageId:", typeof imageId);
 
             if (imageId) {
               debugLog("🗑️ Remove button clicked for image ID:", imageId);
@@ -3242,7 +3194,6 @@ Fliplet.Widget.generateInterface({
           });
 
           debugLog("📤 [AI] Request messages with history:", messages);
-          debugLog("📤 [AI] Final message count:", messages.length);
 
           // Summary of what we're sending
           const userMessagesWithImages = messages.filter(
@@ -4252,15 +4203,6 @@ Fliplet.Widget.generateInterface({
           debugLog("🖼️ Updating code");
 
           try {
-            // Check if we have any code to update
-            // if (
-            //   !AppState.currentHTML &&
-            //   !AppState.currentCSS &&
-            //   !AppState.currentJS
-            // ) {
-            //   return;
-            // }
-
             // Build complete HTML document
             const rawHTMLContent =
               AppState.currentHTML || "";
@@ -4319,7 +4261,7 @@ Fliplet.Widget.generateInterface({
         /**
          * Load chat history from Fliplet field
          */
-        function loadChatHistoryFromStorage() {
+        function loadChatHistory() {
           try {
             const history = Fliplet.Helper.field("chatHistory").get();
             debugLog("💾 Loading chat history from Fliplet field:", history);
@@ -4732,13 +4674,6 @@ Fliplet.Widget.generateInterface({
           if (scrollTop > 0) {
             textarea.scrollTop = scrollTop;
           }
-
-          debugLog("🔧 Textarea resized:", {
-            scrollHeight: scrollHeight,
-            newHeight: newHeight,
-            contentLength: textarea.value.length,
-            currentHeight: textarea.style.height,
-          });
         }
 
         /**
@@ -4750,12 +4685,6 @@ Fliplet.Widget.generateInterface({
           textarea.value = "";
           textarea.style.height = "75px"; // Match CSS min-height
           textarea.style.overflowY = "hidden";
-
-          debugLog(
-            "🔧 Textarea reset to minimum height:",
-            textarea.style.height
-          );
-
           textarea.focus();
         }
 

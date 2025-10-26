@@ -420,8 +420,8 @@ Fliplet.Widget.instance({
             return oldCode + "\n\n" + start + "\n" + newCode + "\n" + end;
           }
         } else {
-          start = `/* start-ai-feature ${getGuidFromComponent()} */`;
-          end = `/* end-ai-feature ${getGuidFromComponent()} */`;
+          start = `/* start-ai-feature-guid ${getGuidFromComponent()} */`;
+          end = `/* end-ai-feature-guid ${getGuidFromComponent()} */`;
 
           if (oldCode.includes(start) && oldCode.includes(end)) {
             // Replace content between delimiters

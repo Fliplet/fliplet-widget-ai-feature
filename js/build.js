@@ -240,7 +240,7 @@ Fliplet.Widget.instance({
           // reload page preview
           Fliplet.Studio.emit("reload-widget-instance", widgetId);
 
-          return { removedHtml, layoutResponse };
+          return { cleanedHtml, layoutResponse };
         }
       });
 

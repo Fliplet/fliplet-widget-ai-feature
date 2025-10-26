@@ -5028,16 +5028,16 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("css").set(parsedContent.css);
   Fliplet.Helper.field("javascript").set(parsedContent.javascript);
   Fliplet.Helper.field("regenerateCode").set(true);
+  Fliplet.Helper.field("dataSourceId").set("");
 
   var data = Fliplet.Widget.getData();
-  data.fields.dataSourceId = "";
+  // data.fields.dataSourceId = "";
   data.fields.dataSourceName = "";
-  data.fields.layoutHTML = parsedContent.html;
-  data.fields.css = parsedContent.css;
-  data.fields.javascript = parsedContent.javascript;
-  data.fields.regenerateCode = true;
-  Fliplet.Helper.field("dataSourceId").set("");
-  data.fields.guid = Fliplet.Helper.field("guid").get();
+  // data.fields.layoutHTML = parsedContent.html;
+  // data.fields.css = parsedContent.css;
+  // data.fields.javascript = parsedContent.javascript;
+  // data.fields.regenerateCode = true;
+  // data.fields.guid = Fliplet.Helper.field("guid").get();
   debugger;
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);

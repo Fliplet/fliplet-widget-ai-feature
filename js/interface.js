@@ -4966,6 +4966,7 @@ function saveGeneratedCode(parsedContent) {
   data.fields.javascript = parsedContent.javascript;
   data.fields.regenerateCode = true;
   data.fields.guid = Fliplet.Helper.field("guid").get();
+  data.fields.chatHistory = Fliplet.Helper.field("chatHistory").get();
 
   return Fliplet.Widget.save(data.fields).then(function () {
     // Fliplet.Studio.emit("reload-widget-instance", widgetId);

@@ -2889,7 +2889,6 @@ Fliplet.Widget.generateInterface({
             // Re-enable user controls after successful AI response
             enableUserControls();
 
-            
             // Step 7: Update code and save fields
             if (!isAnswerType) {
               updateCode();
@@ -4969,6 +4968,6 @@ function saveGeneratedCode(parsedContent) {
   data.fields.guid = Fliplet.Helper.field("guid").get();
 
   return Fliplet.Widget.save(data.fields).then(function () {
-    Fliplet.Studio.emit("reload-widget-instance", widgetId);
+    // Fliplet.Studio.emit("reload-widget-instance", widgetId);
   });
 }

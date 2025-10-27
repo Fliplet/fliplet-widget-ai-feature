@@ -37,6 +37,7 @@ Fliplet.Widget.instance({
       const widgetId = AI.fields.aiFeatureGuidId;
       var developerCode = await getCurrentPageSettings();
       var developerSettings = developerCode.page.settings;
+      debugger
       var oldCssCodeLegacy =
         developerSettings.customSCSS.includes(
           "/* start-ai-feature-guid"
@@ -52,7 +53,7 @@ Fliplet.Widget.instance({
       var oldHtmlCodeLegacy = developerCode.page.richLayout.includes(
         `<div class="ai-feature-guid-${widgetId}">`
       );
-      
+
       if (oldCssCodeLegacy || oldJsCodeLegacy || oldHtmlCodeLegacy) {
         await removeLegacyCodeFromDeveloperOptions(developerCode);
         return;

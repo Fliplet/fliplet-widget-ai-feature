@@ -1,10 +1,10 @@
 // Register this widget instance
 Fliplet.Widget.instance({
-  name: "ai-feature",
-  displayName: "AI feature",
+  name: "ai-feature-guid",
+  displayName: "AI feature GUID",
   render: {
     template: `<div class="ai-feature-content">
-                <div class="well text-center">AI feature</div>
+                <div class="well text-center">AI feature GUID</div>
               </div>`,
     ready: function () {
       // Initialize children components when this widget is ready
@@ -33,7 +33,7 @@ Fliplet.Widget.instance({
         AI.fields
       );
 
-      const widgetId = AI.fields.aiFeatureId;
+      const widgetId = AI.fields.aiFeatureGuidId;
 
       Fliplet.Hooks.on("componentEvent", async function (event) {
         if (
@@ -144,14 +144,14 @@ Fliplet.Widget.instance({
 
       function injectHtmlCode(currentSettings) {
         // code from AI
-        var codeGenContainer = `<div class="ai-feature-${widgetId}">${parsedContent.layoutHTML}</div>`;
+        var codeGenContainer = `<div class="ai-feature-guid-${widgetId}">${parsedContent.layoutHTML}</div>`;
         // Wrap response inside a temporary container
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container
-        $wrapper.find(`.ai-feature-${widgetId}`).remove();
+        $wrapper.find(`.ai-feature-guid-${widgetId}`).remove();
         // Find `<fl-ai-feature>` and add a sibling after it
         $wrapper
-          .find(`fl-ai-feature[cid="${widgetId}"]`)
+          .find(`fl-ai-feature-guid[cid="${widgetId}"]`)
           .after(codeGenContainer);
         return $wrapper.html();
       }
@@ -159,7 +159,7 @@ Fliplet.Widget.instance({
       function removeHtmlCode(currentSettings) {
         let $wrapper = $("<div>").html(currentSettings.page.richLayout);
         // remove existing ai feature container
-        $wrapper.find(`.ai-feature-${widgetId}`).remove();
+        $wrapper.find(`.ai-feature-guid-${widgetId}`).remove();
         return $wrapper.html();
       }
 
@@ -180,8 +180,8 @@ Fliplet.Widget.instance({
         let start, end, patternStart, patternEnd;
 
         if (type == "js") {
-          start = `// start-ai-feature ${widgetId}`;
-          end = `// end-ai-feature ${widgetId}`;
+          start = `// start-ai-feature-guid ${widgetId}`;
+          end = `// end-ai-feature-guid ${widgetId}`;
 
           // Check if delimiters exist in the old code
           if (oldCode.includes(start) && oldCode.includes(end)) {
@@ -210,14 +210,14 @@ Fliplet.Widget.instance({
             return oldCode + "\n\n" + start + "\n" + newCode + "\n" + end;
           }
         } else {
-          start = `/* start-ai-feature ${widgetId} */`;
-          end = `/* end-ai-feature ${widgetId} */`;
+          start = `/* start-ai-feature-guid ${widgetId} */`;
+          end = `/* end-ai-feature-guid ${widgetId} */`;
 
           if (oldCode.includes(start) && oldCode.includes(end)) {
             // Replace content between delimiters
             // For CSS, we need to escape the special characters properly
-            patternStart = `/\\* start-ai-feature ${widgetId} \\*/`;
-            patternEnd = `/\\* end-ai-feature ${widgetId} \\*/`;
+            patternStart = `/\\* start-ai-feature-guid ${widgetId} \\*/`;
+            patternEnd = `/\\* end-ai-feature-guid ${widgetId} \\*/`;
 
             return oldCode.replace(
               new RegExp(patternStart + "[\\s\\S]*?" + patternEnd, "g"),
@@ -237,12 +237,12 @@ Fliplet.Widget.instance({
         let start, end;
 
         if (type === "js") {
-          start = `// start-ai-feature ${widgetId}`;
-          end = `// end-ai-feature ${widgetId}`;
+          start = `// start-ai-feature-guid ${widgetId}`;
+          end = `// end-ai-feature-guid ${widgetId}`;
         } else {
           // Keep CSS markers RAW, not pre-escaped; we'll escape them when building the RegExp
-          start = `/* start-ai-feature ${widgetId} */`;
-          end = `/* end-ai-feature ${widgetId} */`;
+          start = `/* start-ai-feature-guid ${widgetId} */`;
+          end = `/* end-ai-feature-guid ${widgetId} */`;
         }
 
         // Build a robust pattern:

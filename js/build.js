@@ -126,7 +126,7 @@ Fliplet.Widget.instance({
         AI.fields.javascript = code.js;
         AI.fields.guid = code.guid;
         await Fliplet.Widget.save(AI.fields, { id: widgetId });
-        Fliplet.Studio.emit("reload-widget-instance", widgetId);
+        //Fliplet.Studio.emit("reload-widget-instance", widgetId);
       }
 
       // Helper function to remove code from screen
@@ -500,30 +500,25 @@ Fliplet.Widget.instance({
               layoutHTML: AI.fields.layoutHTML,
               guid: AI.fields.guid,
             });
-            return;
           } else if (isCodeEqual(developerOptionsCode, hiddenFieldsCode)) {
             // the code in developer options is the same as the hidden fields, so we need to do nothing
-            return;
           } else {
             // there are no duplicates
             if (isCodeEmpty(developerOptionsCode)) {
               // developer options are empty, so we need to add the code from the hidden fields to the developer options
               await addCodeToDeveloperOptions(hiddenFieldsCode); // adding the code from the hidden fields to the developer options
-              return;
             } else if (isCodeEmpty(hiddenFieldsCode)) {
               // hidden fields are empty, so we need to save the code from the developer options to the hidden fields
               await saveToHiddenFields({
                 ...developerOptionsCode,
                 guid: currentGuid,
               });
-              return;
             } else {
               // both developer options and hidden fields are not empty, so we need to save the developer options to the hidden fields and remove the code from screen and add the new code
               await saveToHiddenFields({
                 ...developerOptionsCode,
                 guid: currentGuid,
               });
-              return;
             }
           }
         } catch (error) {
@@ -540,8 +535,8 @@ Fliplet.Widget.instance({
         await saveCodeWithWrapperToDeveloperOptions(parsedContent);
         AI.fields.regenerateCode = false;
         await Fliplet.Widget.save(AI.fields, { id: widgetId });
-        Fliplet.Studio.emit("reload-page-preview");
-        Fliplet.Studio.emit("widget-interface-reload");
+        // Fliplet.Studio.emit("reload-page-preview");
+        // Fliplet.Studio.emit("widget-interface-reload");
       }
 
       if (AI.fields.regenerateCode) {

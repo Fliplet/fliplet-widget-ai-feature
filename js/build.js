@@ -33,7 +33,7 @@ Fliplet.Widget.instance({
         },
         AI.fields
       );
-      
+
       const widgetId = AI.fields.aiFeatureGuidId;
       var developerOptionsCode = await getCurrentPageSettings();
 
@@ -41,7 +41,7 @@ Fliplet.Widget.instance({
       let endCssDelimiter = `/* end-ai-feature-guid ${widgetId} */`;
       let startJsDelimiter = `// start-ai-feature-guid ${widgetId}`;
       let endJsDelimiter = `// end-ai-feature-guid ${widgetId}`;
-      
+
       if (
         (developerOptionsCode.page.settings.customSCSS.includes(
           startCssDelimiter
@@ -63,17 +63,29 @@ Fliplet.Widget.instance({
         return;
       }
 
-      async function removeLegacyCodeFromDeveloperOptions() { // remove legacy code from developer options created with the old version of the widget using widgetId as valueIdentifier
+      async function removeLegacyCodeFromDeveloperOptions() {
+        // remove legacy code from developer options created with the old version of the widget using widgetId as valueIdentifier
         try {
           const cleanedHtml = removeHtmlCode(widgetId);
-          const cleanedCss = removeCodeWithinDelimiters("css", developerOptionsCode.page.settings.customSCSS, widgetId);
-          const cleanedJs = removeCodeWithinDelimiters("js", developerOptionsCode.page.settings.customJS, widgetId);
-          await Promise.all([
-            saveLayoutToDeveloperOptions(cleanedHtml),
-            saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs),
-          ]);
+          const cleanedCss = removeCodeWithinDelimiters(
+            "css",
+            developerOptionsCode.page.settings.customSCSS,
+            widgetId
+          );
+          const cleanedJs = removeCodeWithinDelimiters(
+            "js",
+            developerOptionsCode.page.settings.customJS,
+            widgetId
+          );
+          await saveLayoutToDeveloperOptions(cleanedHtml);
+          await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
+          Fliplet.Studio.emit("reload-page-preview");
+          return;
         } catch (error) {
-          console.error("Error removing legacy code from developer options:", error);
+          console.error(
+            "Error removing legacy code from developer options:",
+            error
+          );
         }
         Fliplet.Studio.emit("reload-page-preview");
         Fliplet.Studio.emit("widget-interface-reload");
@@ -169,10 +181,10 @@ Fliplet.Widget.instance({
             developerOptionsCode.page.settings.customJS
           );
 
-          await Promise.all([
-            saveLayoutToDeveloperOptions(cleanedHtml),
-            saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs),
-          ]);
+          await saveLayoutToDeveloperOptions(cleanedHtml);
+          await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
+          Fliplet.Studio.emit("reload-page-preview");
+          return;
         } catch (error) {
           console.error("Error removing code from developer options:", error);
         }
@@ -224,7 +236,6 @@ Fliplet.Widget.instance({
           event?.type == "removed" &&
           widgetId == event?.removed[0]?.widgetId
         ) {
-
           var cleanedHtml = removeHtmlCode();
           const cleanedCss = removeCodeWithinDelimiters(
             "css",
@@ -235,12 +246,8 @@ Fliplet.Widget.instance({
             developerOptionsCode.page.settings.customJS
           );
 
-          await Promise.all([
-            saveLayoutToDeveloperOptions(cleanedHtml),
-            saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs),
-          ]);
-
-          // reload page preview
+          await saveLayoutToDeveloperOptions(cleanedHtml);
+          await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
           Fliplet.Studio.emit("reload-page-preview");
 
           return { cleanedHtml, cleanedCss, cleanedJs };
@@ -281,8 +288,8 @@ Fliplet.Widget.instance({
         try {
           const htmlCodeToInject = injectHtmlCode(parsedContent);
 
-          await Promise.all([
-            saveCssAndJsToDeveloperOptions(updateCodeWithinDelimiters(
+          await saveCssAndJsToDeveloperOptions(
+            updateCodeWithinDelimiters(
               "css",
               parsedContent.css,
               developerOptionsCode.page.settings.customSCSS
@@ -291,9 +298,10 @@ Fliplet.Widget.instance({
               "js",
               parsedContent.javascript,
               developerOptionsCode.page.settings.customJS
-            )),
-            saveLayoutToDeveloperOptions(htmlCodeToInject),
-          ]);
+            )
+          );
+
+          await saveLayoutToDeveloperOptions(htmlCodeToInject);
 
           // save logs
           const logAiComponentUsageResponse = await logAiComponentUsage({
@@ -432,7 +440,11 @@ Fliplet.Widget.instance({
         }
       }
 
-      function removeCodeWithinDelimiters(type, oldCode = "", valueIdentifier = getGuidFromComponent()) {
+      function removeCodeWithinDelimiters(
+        type,
+        oldCode = "",
+        valueIdentifier = getGuidFromComponent()
+      ) {
         const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
         let start, end;

@@ -4969,5 +4969,6 @@ function saveGeneratedCode(parsedContent) {
 
   return Fliplet.Widget.save(data.fields).then(function () {
     // Fliplet.Studio.emit("reload-widget-instance", widgetId);
+    Fliplet.Studio.emit("reload-page-preview");
   });
 }

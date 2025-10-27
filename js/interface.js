@@ -230,7 +230,6 @@ Fliplet.Widget.generateInterface({
           }
         }
 
-        debugger
         if (!Fliplet.Helper.field("guid").get()) {
           Fliplet.Helper.field("guid").set(Fliplet.guid());
           await Fliplet.Widget.save(Fliplet.Widget.getData().fields);
@@ -4967,7 +4966,7 @@ function saveGeneratedCode(parsedContent) {
   data.fields.javascript = parsedContent.javascript;
   data.fields.regenerateCode = true;
   data.fields.guid = Fliplet.Helper.field("guid").get();
-  debugger;
+
   return Fliplet.Widget.save(data.fields).then(function () {
     Fliplet.Studio.emit("reload-widget-instance", widgetId);
   });

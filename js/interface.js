@@ -233,7 +233,7 @@ Fliplet.Widget.generateInterface({
         if (!Fliplet.Helper.field("guid").get()) {
           Fliplet.Helper.field("guid").set(Fliplet.guid());
           await Fliplet.Widget.save(Fliplet.Widget.getData().fields);
-          Fliplet.Studio.emit("widget-interface-reload");
+          // Fliplet.Studio.emit("widget-interface-reload");
         }
 
         // Make debug functions globally available

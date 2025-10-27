@@ -37,19 +37,18 @@ Fliplet.Widget.instance({
       const widgetId = AI.fields.aiFeatureGuidId;
       var developerCode = await getCurrentPageSettings();
       var developerSettings = developerCode.page.settings;
-      debugger
       var oldCssCodeLegacy =
         developerSettings.customSCSS.includes(
-          "/* start-ai-feature-guid"
+          `/* start-ai-feature-guid ${widgetId} */`
         ) &&
         developerSettings.customSCSS.includes(
-          "/* end-ai-feature-guid */"
+          `/* end-ai-feature-guid ${widgetId} */`
         );
       var oldJsCodeLegacy =
         developerSettings.customJS.includes(
-          "// start-ai-feature-guid"
+          `// start-ai-feature-guid ${widgetId}`
         ) &&
-        developerSettings.customJS.includes("// end-ai-feature-guid");
+        developerSettings.customJS.includes(`// end-ai-feature-guid ${widgetId}`);
       var oldHtmlCodeLegacy = developerCode.page.richLayout.includes(
         `<div class="ai-feature-guid-${widgetId}">`
       );

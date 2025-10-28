@@ -1432,9 +1432,10 @@ Fliplet.Widget.generateInterface({
               };
             }
 
-            // Check old_string exists
+            // Check old_string exists and is a string
             if (
-              !instruction.old_string ||
+              instruction.old_string === undefined ||
+              instruction.old_string === null ||
               typeof instruction.old_string !== "string"
             ) {
               return {
@@ -1443,18 +1444,16 @@ Fliplet.Widget.generateInterface({
               };
             }
 
-            // For blank screens, old_string is ignored (can be anything)
+            // For blank screens, old_string is ignored (can be anything, including empty string)
             const targetCode = currentCode[instruction.target_type] ?? "";
             const isBlankScreen = targetCode.trim() === "";
 
-            if (
-              !isBlankScreen &&
-              (!instruction.old_string || instruction.old_string.trim() === "")
-            ) {
+            // For non-blank screens, old_string must have content
+            if (!isBlankScreen && instruction.old_string.trim() === "") {
               return {
                 valid: false,
                 error:
-                  "old_string is required for modifying existing code. For blank screens, any value works (system auto-detects).",
+                  "old_string cannot be empty for modifying existing code. For blank screens, empty string is allowed (system auto-detects).",
               };
             }
 

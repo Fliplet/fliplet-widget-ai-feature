@@ -4992,21 +4992,35 @@ async function populateCurrentPageContent() {
       });
 
       // Extract widget-specific CSS content
-      const cssContent = extractCodeBetweenDelimiters(
+      const cssFromPage = extractCodeBetweenDelimiters(
         "css",
         currentSettings.page.settings.customSCSS || ""
       );
 
+      // CRITICAL FIX: Fallback to Helper field if extraction returns empty
+      const existingCssInHelper = Fliplet.Helper.field("css").get() || "";
+      const cssContent = cssFromPage || existingCssInHelper;
+
       // Extract widget-specific JavaScript content
-      const jsContent = extractCodeBetweenDelimiters(
+      const jsFromPage = extractCodeBetweenDelimiters(
         "js",
         currentSettings.page.settings.customJS || ""
       );
 
+      // CRITICAL FIX: Fallback to Helper field if extraction returns empty
+      const existingJsInHelper = Fliplet.Helper.field("javascript").get() || "";
+      const jsContent = jsFromPage || existingJsInHelper;
+
       debugLog("🔍 [populateCurrentPageContent] Extraction complete:", {
-        html: htmlContent.length,
-        css: cssContent.length,
-        js: jsContent.length,
+        htmlFromPageLength: htmlFromPage.length,
+        htmlFinalLength: htmlContent.length,
+        cssFromPageLength: cssFromPage.length,
+        cssFinalLength: cssContent.length,
+        jsFromPageLength: jsFromPage.length,
+        jsFinalLength: jsContent.length,
+        htmlUsingFallback: htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
+        cssUsingFallback: cssFromPage.length === 0 && existingCssInHelper.length > 0,
+        jsUsingFallback: jsFromPage.length === 0 && existingJsInHelper.length > 0,
       });
 
       // Populate the Helper fields with widget-specific content

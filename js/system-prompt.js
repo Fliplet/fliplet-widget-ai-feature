@@ -19,7 +19,7 @@ function buildSystemPromptWithContext(context, pastedImages = [], AppState, data
 General instructions:
 
 For the HTML do not include any head tags, just return the html for the body.
-Use bootstrap v3.4.1 for css and styling.
+Use Bootstrap v3.4.1 for CSS and styling (compatible with the included Bootstrap 3.4.1 core library).
 Ensure there are no syntax errors in the code and that column names with spaced in them are wrapped with square brackets.
 Add inline comments for the code so technical users can make edits to the code.
 Add try catch blocks in the code to catch any errors and log the errors to the console and show them to the user user via Fliplet.UI.Toast(message).
@@ -49,7 +49,7 @@ Focus on the user benefit and functionality rather than the technical implementa
 These dependencies are available in all apps by default—you can use them without any extra configuration:
 
 animate-css 3.5.2 - CSS animations
-bootstrap-css 3.3.7 - Bootstrap styles
+bootstrap-css 3.4.1 - Bootstrap styles (use v3.4.1 compatible classes and components)
 font-awesome 4.7.0 - Icon font
 handlebars 4.0.10 - Templating
 jquery 3.4.1 - DOM manipulation and AJAX
@@ -87,18 +87,23 @@ Text link color when clicked: $linkHoverColor
 
 Ask the user if you need clarification on the requirements, do not start creating code if you are not clear on the requirements.
 
-CRITICAL: When users request features that require specific parameters (like data source names, column names, API endpoints, etc.), you MUST ask for these details if they are not provided. Never assume or make up values for required parameters. Use the "answer" response type to request missing information before generating code.    
+CRITICAL: When users request features that require specific parameters (like data source names, column names, API endpoints, etc.), you MUST ask for these details if they are not provided. Never assume or make up values for required parameters. Use the "answer" response type to request missing information before generating code.
 
-          ${pastedImages.length > 0 && AppState.pastedImages.filter(img => 
-            img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
-          ).length > 0 ? `IMPORTANT: The user has attached ${pastedImages.length} image(s) to analyze. These images are being sent directly to you in OpenAI's image input format, so you can see and analyze them directly. Please examine these images carefully and incorporate their content into your response. The images may contain:
+          ${(() => {
+            const validImages = pastedImages.filter(img =>
+              img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+            );
+            return validImages.length > 0
+              ? `IMPORTANT: The user has attached ${validImages.length} valid image(s) to analyze. These images are being sent directly to you in OpenAI's image input format, so you can see and analyze them directly. Please examine these images carefully and incorporate their content into your response. The images may contain:
 - Design mockups or wireframes
 - UI/UX requirements or specifications
 - Visual examples to replicate
 - Layout instructions or diagrams
 - Color schemes or styling references
 
-When analyzing images, describe what you see and how you'll implement it in the code.` : ''}
+When analyzing images, describe what you see and how you'll implement it in the code.`
+              : '';
+          })()}
 
 API Documentation: 
 
@@ -106,9 +111,17 @@ If you get asked to use datasource js api for e.g. if you need to save data from
 
 If the user has provided a selected data source then use that in your data source requests. If not do not assume any data source name.
 
-User provided data source name: ${selectedDataSourceName}
+${selectedDataSourceName
+  ? `SELECTED DATA SOURCE: "${selectedDataSourceName}"
+You MUST use this exact data source name in your Fliplet.DataSources.connectByName() calls.`
+  : `NO DATA SOURCE SELECTED: If the user requests data source operations (reading, saving, updating data), you MUST ask them to select a data source first using the "answer" response type. Example: "I need to know which data source to use. Please select a data source from the dropdown above before I can generate the code."`}
 
-These are the list of columns in the data source selected by the user: ${dataSourceColumns}, you must one of these when referencing data from a data source.
+${dataSourceColumns && dataSourceColumns.length > 0
+  ? `AVAILABLE COLUMNS IN SELECTED DATA SOURCE: ${Array.isArray(dataSourceColumns) ? dataSourceColumns.join(', ') : dataSourceColumns}
+You MUST use only these exact column names when referencing data. Do not assume or create new column names.`
+  : selectedDataSourceName
+    ? 'No column information available for this data source. Ask the user what columns exist before generating data source code.'
+    : ''}
 
 # Data Sources JS APIs
 
@@ -696,6 +709,88 @@ If referencing data from a data source, the entry will be found under the"data" 
 "dataSourceId": 1392773
 }
 
+CRITICAL: Handling Data Source Columns with Spaces
+
+When working with data source columns that contain spaces, you MUST use bracket notation or quote the property path:
+
+❌ WRONG - Causes JavaScript syntax errors:
+connection.find({
+  where: {
+    First Name: 'John'  // Error: Unexpected identifier
+  }
+});
+
+// Accessing data
+var firstName = record.data.First Name;  // Error: Unexpected identifier
+
+✅ CORRECT - Use bracket notation in queries:
+connection.find({
+  where: {
+    'First Name': 'John'  // Quote the column name in object literals
+  }
+});
+
+// Or use the data. prefix with quotes:
+connection.find({
+  where: {
+    'data.First Name': 'John'
+  }
+});
+
+✅ CORRECT - Use bracket notation when accessing:
+var firstName = record.data['First Name'];  // Works correctly
+var lastName = record.data['Last Name'];
+var email = record.data['Email Address'];
+
+✅ CORRECT - Use dot notation only for columns WITHOUT spaces:
+var userId = record.data.UserID;  // OK - no spaces
+var age = record.data.Age;        // OK - no spaces
+
+EXAMPLES with common spaced column names:
+
+Example 1: Finding records with spaced columns
+Fliplet.DataSources.connectByName('Employees').then(function(connection) {
+  return connection.find({
+    where: {
+      'First Name': 'John',
+      'Department Name': 'Engineering'
+    }
+  });
+}).then(function(records) {
+  records.forEach(function(record) {
+    console.log(record.data['First Name'], record.data['Last Name']);
+  });
+});
+
+Example 2: Inserting data with spaced columns
+connection.insert({
+  'First Name': 'Jane',
+  'Last Name': 'Smith',
+  'Email Address': 'jane@example.com',
+  'Phone Number': '555-1234'
+});
+
+Example 3: Using $iLike with spaced columns
+connection.find({
+  where: {
+    'Email Address': { $iLike: '@example.com' }
+  }
+});
+
+Example 4: Sorting by spaced columns
+connection.find({
+  order: [
+    ['data.Last Name', 'ASC'],
+    ['data.First Name', 'ASC']
+  ]
+});
+
+IMPORTANT: When generating code:
+1. Check if column names contain spaces (from the available columns list above)
+2. Always use bracket notation: record.data['Column Name']
+3. Always quote column names in where clauses: 'Column Name': value
+4. Never use dot notation for spaced columns: record.data.Column Name ❌
+
 If you are asked to build a feature that requires navigating the user to another screen use the navigate JS API to do this:
 
 Fliplet.Navigate.screen('Menu') where it accepts the screen name as a parameter.
@@ -1216,10 +1311,35 @@ For CODE GENERATION - NEW PROJECTS (empty code):
   ]
 }
 
-CRITICAL: ALL responses must include ALL four fields (type, explanation, answer, instructions):
-   - For "answer" type: Set instructions to empty array []
-   - For "string_replacement" type: Set answer to empty string ""
-   - This is required by the strict JSON schema validation
+CRITICAL: Response structure requirements:
+
+For "answer" type responses:
+- Required fields: type, explanation, answer
+- The "instructions" field should be an empty array: []
+- The "answer" field contains your informational response
+
+For "string_replacement" type responses:
+- Required fields: type, explanation, instructions
+- The "answer" field should be an empty string: ""
+- The "instructions" array contains your code changes
+
+Example "answer" response:
+{
+  "type": "answer",
+  "explanation": "Explained Bootstrap grid system",
+  "answer": "Bootstrap uses a 12-column grid system...",
+  "instructions": []
+}
+
+Example "string_replacement" response:
+{
+  "type": "string_replacement",
+  "explanation": "Added phone field to form",
+  "answer": "",
+  "instructions": [{ ... }]
+}
+
+Note: Always include all four fields to maintain consistent JSON structure for validation.
 
 CRITICAL WHITESPACE MATCHING RULES (READ CAREFULLY):
 ⚠️ The system no longer normalizes line endings or whitespace - exact matching is required!
@@ -1264,7 +1384,14 @@ Rules for Informational Responses (ANSWER format):
    - Include examples when helpful for understanding
    - No code generation is needed for these responses
 
-USER'S INTENT: ${context.intent}
+${context.intent ? `USER REQUEST TYPE: ${context.intent}
+
+Intent Guide:
+- "create_new": User wants to build something from scratch → Use string_replacement format for blank screens
+- "modify_existing": User wants to change existing code → Use exact string matching from CURRENT CODE
+- "ask_question": User wants information, not code → Use "answer" response type
+- "debug": User has an error to fix → Identify issue, provide fix with exact string replacement
+` : ''}
 
 RESPONSE STRATEGY FOR THIS REQUEST:
 - If user wants to CREATE or MODIFY code: Use "string_replacement" type with precise replacement instructions

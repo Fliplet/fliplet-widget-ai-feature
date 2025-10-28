@@ -2632,26 +2632,43 @@ Fliplet.Widget.generateInterface({
           DOM.chatMessages.appendChild(loadingDiv);
           scrollToBottom();
 
-          // Only reload from Helper fields if we don't have current values
-          // This prevents losing in-memory changes that haven't been saved yet
-          if (!AppState.currentHTML) {
-            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
-            AppState.currentHTML = AppState.layoutHTML;
-          }
-          if (!AppState.currentCSS) {
-            AppState.css = Fliplet.Helper.field("css").get() || "";
-            AppState.currentCSS = AppState.css;
-          }
-          if (!AppState.currentJS) {
-            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
-            AppState.currentJS = AppState.javascript;
-          }
+          try {
+            // CRITICAL: Always fetch fresh code from the page before each AI call
+            // This ensures we have the latest state even after navigation
+            debugLog("🔄 [Main] Fetching current code from page...");
+            await populateCurrentPageContent();
 
-          debugLog("📊 [Main] Using current code state:", {
-            htmlLength: AppState.currentHTML?.length || 0,
-            cssLength: AppState.currentCSS?.length || 0,
-            jsLength: AppState.currentJS?.length || 0,
-          });
+            // Now read from Helper fields (just populated by populateCurrentPageContent)
+            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+            AppState.css = Fliplet.Helper.field("css").get() || "";
+            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+
+            AppState.currentHTML = AppState.layoutHTML;
+            AppState.currentCSS = AppState.css;
+            AppState.currentJS = AppState.javascript;
+
+            debugLog("📊 [Main] Loaded current code state:", {
+              htmlLength: AppState.currentHTML.length,
+              cssLength: AppState.currentCSS.length,
+              jsLength: AppState.currentJS.length,
+            });
+          } catch (fetchError) {
+            debugError("⚠️ [Main] Error fetching current page content:", fetchError);
+            // Fallback to existing Helper field values
+            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+            AppState.css = Fliplet.Helper.field("css").get() || "";
+            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+
+            AppState.currentHTML = AppState.layoutHTML;
+            AppState.currentCSS = AppState.css;
+            AppState.currentJS = AppState.javascript;
+
+            debugLog("📊 [Main] Fallback to Helper fields:", {
+              htmlLength: AppState.currentHTML.length,
+              cssLength: AppState.currentCSS.length,
+              jsLength: AppState.currentJS.length,
+            });
+          }
 
           try {
             // Step 1: Build intelligent context

@@ -1223,7 +1223,7 @@ A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends
 
 /**
  * @typedef {Object} CompletionOptionsPrompt
- * @property {string} model - Model ID (e.g., 'text-davinci-003'). Required.
+ * @property {string} model - Model ID (e.g., 'text-davinci-003'). Required. Any model from openAI can be used. 
  * @property {string|string[]} prompt - Prompt string(s).
  * @property {number} [temperature=1]
  * @property {boolean} [stream=false]
@@ -1233,7 +1233,7 @@ A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends
 async function runChatCompletion() {
   try {
     const params = {
-       model: 'gpt-4o' // Use gpt-4o unless specified by the user
+       model: 'gpt-5' // Use gpt-5 unless specified by the user
       messages: [{ role: 'user', content: 'Hello, AI!' }]
     };
     console.log('Input for createCompletion (chat):', params);

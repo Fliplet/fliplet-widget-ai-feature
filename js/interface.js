@@ -198,7 +198,6 @@ Fliplet.Widget.generateInterface({
           /** @type {string} AI Model - Options: gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
           OPENAI_MODEL: "gpt-4.1",
           TEMPERATURE: 0.7,
-          MAX_TOKENS: 10000,
         };
 
         /**
@@ -2296,7 +2295,6 @@ Fliplet.Widget.generateInterface({
           model: CONFIG.OPENAI_MODEL,
           /** @type {number} Temperature for response randomness */
           temperature: CONFIG.TEMPERATURE,
-          max_tokens: CONFIG.MAX_TOKENS,
         };
 
         /**

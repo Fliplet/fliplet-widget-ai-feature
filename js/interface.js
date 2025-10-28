@@ -2632,13 +2632,26 @@ Fliplet.Widget.generateInterface({
           DOM.chatMessages.appendChild(loadingDiv);
           scrollToBottom();
 
-          AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
-          AppState.css = Fliplet.Helper.field("css").get() || "";
-          AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+          // Only reload from Helper fields if we don't have current values
+          // This prevents losing in-memory changes that haven't been saved yet
+          if (!AppState.currentHTML) {
+            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+            AppState.currentHTML = AppState.layoutHTML;
+          }
+          if (!AppState.currentCSS) {
+            AppState.css = Fliplet.Helper.field("css").get() || "";
+            AppState.currentCSS = AppState.css;
+          }
+          if (!AppState.currentJS) {
+            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+            AppState.currentJS = AppState.javascript;
+          }
 
-          AppState.currentHTML = AppState.layoutHTML;
-          AppState.currentCSS = AppState.css;
-          AppState.currentJS = AppState.javascript;
+          debugLog("📊 [Main] Using current code state:", {
+            htmlLength: AppState.currentHTML?.length || 0,
+            cssLength: AppState.currentCSS?.length || 0,
+            jsLength: AppState.currentJS?.length || 0,
+          });
 
           try {
             // Step 1: Build intelligent context

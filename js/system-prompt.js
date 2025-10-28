@@ -779,17 +779,29 @@ connection.find({
 
 Example 4: Sorting by spaced columns
 connection.find({
+  where: {
+    'Department Name': 'Engineering'
+  },
   order: [
-    ['data.Last Name', 'ASC'],
-    ['data.First Name', 'ASC']
+    ['data.Last Name', 'ASC'],      // Use data.Column Name as a single string
+    ['data.First Name', 'ASC']      // Entire path quoted as one string
   ]
+}).then(function(records) {
+  records.forEach(function(record) {
+    console.log(record.data['First Name'] + ' ' + record.data['Last Name']);
+  });
 });
 
 IMPORTANT: When generating code:
 1. Check if column names contain spaces (from the available columns list above)
-2. Always use bracket notation: record.data['Column Name']
+2. Always use bracket notation when accessing: record.data['Column Name']
 3. Always quote column names in where clauses: 'Column Name': value
-4. Never use dot notation for spaced columns: record.data.Column Name ❌
+4. For order clauses with spaced columns, use: order: [['data.Column Name', 'ASC']]
+   - The entire path 'data.Column Name' must be a SINGLE quoted string
+   - ✅ CORRECT: ['data.First Name', 'ASC']
+   - ❌ WRONG: [['data', 'First Name'], 'ASC']
+   - ❌ WRONG: ['data["First Name"]', 'ASC']
+5. Never use dot notation for spaced columns when accessing: record.data.Column Name ❌
 
 If you are asked to build a feature that requires navigating the user to another screen use the navigate JS API to do this:
 

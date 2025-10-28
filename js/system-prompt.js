@@ -1221,16 +1221,41 @@ CRITICAL: ALL responses must include ALL four fields (type, explanation, answer,
    - For "string_replacement" type: Set answer to empty string ""
    - This is required by the strict JSON schema validation
 
+CRITICAL WHITESPACE MATCHING RULES (READ CAREFULLY):
+⚠️ The system no longer normalizes line endings or whitespace - exact matching is required!
+
+When creating old_string for MODIFICATIONS:
+1. Copy the text EXACTLY from "CURRENT COMPLETE [HTML/CSS/JAVASCRIPT]" shown above
+2. Preserve ALL whitespace characters:
+   - Spaces vs tabs (don't convert one to the other)
+   - Line breaks (\\n or \\r\\n - keep them as-is)
+   - Indentation levels (count spaces/tabs carefully)
+   - Trailing whitespace on lines
+3. If unsure about exact whitespace, include MORE surrounding context to ensure unique match
+4. Line endings matter: Don't assume LF when code uses CRLF or vice versa
+5. When the match fails, the error message will show you exactly what you searched for vs what exists
+
+Example of whitespace sensitivity:
+❌ WRONG (added extra space):
+"old_string": "<div  class=\\"form\\">"
+
+✅ CORRECT (exact match):
+"old_string": "<div class=\\"form\\">"
+
+For BLANK SCREENS: Whitespace doesn't matter - the system auto-detects empty code regardless of old_string value.
+
 Rules for String Replacements (CODE GENERATION only):
-   - old_string must be a non-empty string that matches EXACTLY (including whitespace and indentation)
-   - Be as specific as possible to avoid multiple matches  
-   - For adding elements, replace a closing tag with content + closing tag
-   - For new projects with no existing code, use these empty markers:
-     * HTML: old_string: "<!-- EMPTY -->" 
-     * CSS: old_string: "/* EMPTY */"
-     * JS: old_string: "// EMPTY"
-   - Always preserve existing functionality
-   - NEVER use empty strings or null values for old_string or new_string
+   - For BLANK SCREENS: The system auto-detects empty code and inserts new_string directly
+     * You can use ANY value for old_string (it will be ignored)
+     * Recommended: Use old_string: "" for blank screens to make intent clear
+   - For MODIFICATIONS: old_string must match EXACTLY (case-sensitive, whitespace-sensitive)
+     * Copy the exact text from CURRENT CODE (shown above)
+     * Include surrounding context if needed to ensure unique match
+   - Only send instructions for code types you're actually changing
+     * Changing HTML only? Send 1 instruction with target_type: "html"
+     * No need to send CSS/JS instructions if those aren't changing
+   - If exact match fails, the system will show you what it was looking for
+   - Always preserve existing functionality when making modifications
 
 Rules for Informational Responses (ANSWER format):
    - Use "type": "answer" when the user is asking questions or needs explanations
@@ -1304,27 +1329,32 @@ DESC: Added phone number field to form
 
 This is much more reliable than generating the entire form again!`;
     } else {
-      prompt += `\nThis is a new project. Create complete, functional code.`;
+      prompt += `\n
+IMPORTANT: This is a NEW PROJECT with blank/empty code.
+
+The system AUTO-DETECTS blank screens and inserts code directly.
+For blank screens, you MUST use string_replacement format:
+- You can use ANY value for old_string (it will be ignored by the system)
+- Recommended: Use old_string: "" to make your intent clear
+
+Example for blank HTML screen:
+{
+  "type": "string_replacement",
+  "explanation": "Created contact form",
+  "answer": "",
+  "instructions": [
+    {
+      "target_type": "html",
+      "old_string": "",
+      "new_string": "<form id=\\"contact\\">\\n  <input type=\\"text\\" name=\\"name\\" placeholder=\\"Name\\">\\n  <button type=\\"submit\\">Submit</button>\\n</form>",
+      "description": "Created contact form HTML",
+      "replace_all": false
     }
+  ]
+}
 
-    prompt += `\n
-RESPONSE FORMAT:
-For MODIFICATIONS: Use REPLACE instructions as shown above
-For NEW projects: Use code blocks \`\`\`html \`\`\`css \`\`\`javascript
-
-\`\`\`html
-<!-- Complete HTML structure -->
-\`\`\`
-
-\`\`\`css
-/* Complete CSS styles */
-\`\`\`
-
-\`\`\`javascript
-// Complete JavaScript functionality
-\`\`\`
-
-Make sure each code block is complete and functional.`;
+CRITICAL: Always use string_replacement format for code generation. Do NOT use markdown code blocks.`;
+    }
 
     debugLog("✅ [AI] System prompt built");
     debugLog(

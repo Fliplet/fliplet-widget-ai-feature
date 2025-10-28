@@ -1308,135 +1308,120 @@ Fliplet.Widget.generateInterface({
               instruction
             );
 
-            const validation = this.validateInstruction(instruction);
+            const validation = this.validateInstruction(instruction, currentCode);
             if (!validation.valid) {
               return { success: false, error: validation.error };
             }
 
             const targetCode = currentCode[instruction.target_type] ?? "";
-            const oldString = instruction.old_string ?? "";
-            const newString = instruction.new_string ?? "";
+            const oldString = instruction.old_string;
+            const newString = instruction.new_string;
 
-            // Special case: new/empty files
-            const emptyMarkers = {
-              html: "<!-- EMPTY -->",
-              css: "/* EMPTY */",
-              js: "// EMPTY",
-            };
-            const expectedEmptyMarker = emptyMarkers[instruction.target_type];
-            if (oldString === expectedEmptyMarker && targetCode.trim() === "") {
+            // CASE 1: Blank screen detection (auto-detect, no markers needed)
+            const isBlankCode = targetCode.trim() === "";
+
+            if (isBlankCode) {
               debugLog(
-                `🆕 [StringReplacement] Handling empty ${instruction.target_type} code case for new project`
+                `🆕 [StringReplacement] Blank ${instruction.target_type} detected, inserting new code directly`
               );
               return {
                 success: true,
                 newCode: newString,
                 location: "entire content (new)",
-              };
-            }
-
-            // 1) Try exact literal match first (after normalizing EOLs on both sides)
-            const tNorm = normalizeEols(targetCode);
-            const oNorm = normalizeEols(oldString);
-
-            let occurrences = 0;
-            let newCode;
-            let location;
-
-            if (tNorm.includes(oNorm)) {
-              // exact literal branch
-              const literalPattern = new RegExp(escapeRegExp(oNorm), "gms");
-              occurrences = (tNorm.match(literalPattern) || []).length;
-
-              if (occurrences > 1 && !instruction.replace_all) {
-                return {
-                  success: false,
-                  error: `Multiple occurrences found (${occurrences}). Use replace_all: true or provide more specific old_string`,
-                };
-              }
-
-              if (instruction.replace_all) {
-                // Do replacement on original (not normalized) to preserve original EOLs
-                newCode = targetCode.split(oldString).join(newString);
-                location = `${occurrences} locations`;
-              } else {
-                const idx = tNorm.indexOf(oNorm);
-                // translate index back to original by re-finding in original
-                const originalIdx = targetCode.indexOf(oldString);
-                const start = originalIdx > -1 ? originalIdx : idx; // fallback if EOLs differ
-                newCode =
-                  targetCode.slice(0, start) +
-                  newString +
-                  targetCode.slice(start + oldString.length);
-                location = `character ${start}`;
-              }
-
-              return {
-                success: true,
-                newCode,
-                location,
                 oldLength: targetCode.length,
-                newLength: newCode.length,
+                newLength: newString.length,
               };
             }
 
-            // 2) Fallback: whitespace-tolerant regex (handles different indentation / trailing newline / CRLF)
-            const flexRe = buildFlexibleRegexFromLiteral(oldString);
-            const matches =
-              targetCode.match(new RegExp(flexRe.source, flexRe.flags + "g")) ||
-              [];
-            occurrences = matches.length;
+            // CASE 2: Exact string matching using indexOf()
+            let index = 0;
+            let count = 0;
+            const positions = [];
 
-            if (occurrences === 0) {
+            while ((index = targetCode.indexOf(oldString, index)) !== -1) {
+              positions.push(index);
+              count++;
+              index += oldString.length;
+            }
+
+            if (count === 0) {
               return {
                 success: false,
-                error: `Old string not found in ${
+                error: this.buildNoMatchError(
+                  oldString,
+                  targetCode,
                   instruction.target_type
-                }: "${oldString.substring(0, 50)}..."`,
+                ),
               };
             }
 
-            if (occurrences > 1 && !instruction.replace_all) {
+            if (count > 1 && !instruction.replace_all) {
               return {
                 success: false,
-                error: `Multiple occurrences found (${occurrences}). Use replace_all: true or provide more specific old_string`,
+                error: `Found ${count} exact matches. Set "replace_all": true or provide more specific old_string.`,
               };
             }
 
-            if (instruction.replace_all) {
-              newCode = targetCode.replace(
-                new RegExp(flexRe.source, flexRe.flags + "g"),
-                newString
-              );
-              location = `${occurrences} locations`;
-            } else {
-              // single replacement (no /g/, only first hit)
-              newCode = targetCode.replace(flexRe, newString);
-              // best-effort index for reporting (post-replace index inaccurate otherwise)
-              const firstMatch = targetCode.search(flexRe);
-              location = `character ${firstMatch}`;
-            }
+            // Perform replacement
+            const newCode = instruction.replace_all
+              ? targetCode.split(oldString).join(newString)
+              : targetCode.substring(0, positions[0]) +
+                newString +
+                targetCode.substring(positions[0] + oldString.length);
 
             return {
               success: true,
               newCode,
-              location,
+              location: `${count} location(s)`,
               oldLength: targetCode.length,
               newLength: newCode.length,
             };
           }
 
           /**
+           * Build detailed error message when string match fails
+           * @param {string} oldString - The string that was searched for
+           * @param {string} targetCode - The code that was searched
+           * @param {string} targetType - The type of code (html/css/js)
+           * @returns {string} Detailed error message
+           */
+          buildNoMatchError(oldString, targetCode, targetType) {
+            const oldPreview =
+              oldString.length > 100
+                ? oldString.substring(0, 100) + "..."
+                : oldString;
+
+            const codePreview =
+              targetCode.length > 300
+                ? targetCode.substring(0, 300) + "..."
+                : targetCode;
+
+            let error = `Could not find exact match in ${targetType}.\n\n`;
+            error += `Looking for:\n"${oldPreview}"\n\n`;
+
+            if (targetCode.trim() === "") {
+              error += `Current ${targetType} is empty. The system auto-detects blank screens - this error should not occur for empty code.`;
+            } else {
+              error += `Current ${targetType} preview:\n"${codePreview}"\n\n`;
+              error += `💡 Tip: Make sure old_string matches exactly (including spacing, quotes, and line breaks).`;
+            }
+
+            return error;
+          }
+
+          /**
            * Validate replacement instruction format
            * @param {Object} instruction - Instruction to validate
+           * @param {Object} currentCode - Current code state
            * @returns {Object} Validation result
            */
-          validateInstruction(instruction) {
+          validateInstruction(instruction, currentCode) {
             debugLog(
               "✅ [StringReplacement] Validating instruction:",
               JSON.stringify(instruction, null, 2)
             );
 
+            // Check target_type
             if (
               !instruction.target_type ||
               !["html", "css", "js"].includes(instruction.target_type)
@@ -1447,28 +1432,36 @@ Fliplet.Widget.generateInterface({
               };
             }
 
+            // Check old_string exists
             if (
               !instruction.old_string ||
-              typeof instruction.old_string !== "string" ||
-              instruction.old_string.trim() === ""
+              typeof instruction.old_string !== "string"
             ) {
-              debugLog("❌ [StringReplacement] old_string validation failed:", {
-                exists: !!instruction.old_string,
-                type: typeof instruction.old_string,
-                value: instruction.old_string,
-                isEmpty: instruction.old_string === "",
-                isOnlyWhitespace:
-                  typeof instruction.old_string === "string" &&
-                  instruction.old_string.trim() === "",
-              });
               return {
                 valid: false,
-                error: "old_string is required and must be a non-empty string",
+                error: "old_string is required and must be a string",
               };
             }
 
+            // For blank screens, old_string is ignored (can be anything)
+            const targetCode = currentCode[instruction.target_type] ?? "";
+            const isBlankScreen = targetCode.trim() === "";
+
             if (
-              !instruction.new_string ||
+              !isBlankScreen &&
+              (!instruction.old_string || instruction.old_string.trim() === "")
+            ) {
+              return {
+                valid: false,
+                error:
+                  "old_string is required for modifying existing code. For blank screens, any value works (system auto-detects).",
+              };
+            }
+
+            // Check new_string exists
+            if (
+              instruction.new_string === undefined ||
+              instruction.new_string === null ||
               typeof instruction.new_string !== "string"
             ) {
               return {
@@ -1477,7 +1470,11 @@ Fliplet.Widget.generateInterface({
               };
             }
 
-            if (instruction.old_string === instruction.new_string) {
+            // Check not identical (unless blank screen)
+            if (
+              !isBlankScreen &&
+              instruction.old_string === instruction.new_string
+            ) {
               return {
                 valid: false,
                 error: "old_string and new_string cannot be identical",
@@ -4988,25 +4985,10 @@ function extractCodeBetweenDelimiters(type, code) {
   return "";
 }
 
-// helper: normalize \r\n and \r to \n
-function normalizeEols(s) {
-  return s.replace(/\r\n?/g, "\n");
-}
-
 // helper: escape literal for regex
+// Note: Still used for exact occurrence counting in StringReplacementEngine
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-// helper: build a whitespace-tolerant regex from a literal string
-// turns any run of whitespace in the literal into \s+
-// and allows optional leading/trailing whitespace
-function buildFlexibleRegexFromLiteral(literal) {
-  // keep original literal’s *semantic* tokens, ignore exact spacing
-  const tokens = literal.split(/\s+/).map(escapeRegExp).filter(Boolean);
-  const body = tokens.join("\\s+");
-  // allow optional surrounding whitespace and dotAll/multiline
-  return new RegExp(`\\s*${body}\\s*`, "ms");
 }
 
 function saveGeneratedCode(parsedContent) {

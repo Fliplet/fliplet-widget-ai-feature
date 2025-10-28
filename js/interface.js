@@ -1317,6 +1317,23 @@ Fliplet.Widget.generateInterface({
             const oldString = instruction.old_string;
             const newString = instruction.new_string;
 
+            // DIAGNOSTIC: Log detailed state before blank detection
+            debugLog("🔍 [StringReplacement] DIAGNOSTIC - Target code analysis:", {
+              targetType: instruction.target_type,
+              targetCodeLength: targetCode.length,
+              targetCodeTrimmedLength: targetCode.trim().length,
+              targetCodePreview: targetCode.substring(0, 200) + "...",
+              targetCodeEnd: "..." + targetCode.substring(targetCode.length - 100),
+              isEmptyString: targetCode === "",
+              isWhitespaceOnly: targetCode.trim() === "",
+              currentCodeKeys: Object.keys(currentCode),
+              allCodeLengths: {
+                html: currentCode.html?.length || 0,
+                css: currentCode.css?.length || 0,
+                js: currentCode.js?.length || 0,
+              },
+            });
+
             // CASE 1: Blank screen detection (auto-detect, no markers needed)
             const isBlankCode = targetCode.trim() === "";
 
@@ -1324,6 +1341,7 @@ Fliplet.Widget.generateInterface({
               debugLog(
                 `🆕 [StringReplacement] Blank ${instruction.target_type} detected, inserting new code directly`
               );
+              debugLog("⚠️ [StringReplacement] WARNING: Blank detected - verify currentCode was passed correctly!");
               return {
                 success: true,
                 newCode: newString,
@@ -2651,6 +2669,8 @@ Fliplet.Widget.generateInterface({
               htmlLength: AppState.currentHTML.length,
               cssLength: AppState.currentCSS.length,
               jsLength: AppState.currentJS.length,
+              htmlPreview: AppState.currentHTML.substring(0, 200) || "(empty)",
+              htmlIsEmpty: AppState.currentHTML.trim() === "",
             });
           } catch (fetchError) {
             debugError("⚠️ [Main] Error fetching current page content:", fetchError);
@@ -2816,6 +2836,13 @@ Fliplet.Widget.generateInterface({
               changeRequest.instructions.length > 0
             ) {
               debugLog("🎯 [Main] Using string replacement engine...");
+              debugLog("📋 [Main] DIAGNOSTIC - currentCode being passed:", {
+                htmlLength: currentCode.html?.length || 0,
+                cssLength: currentCode.css?.length || 0,
+                jsLength: currentCode.js?.length || 0,
+                htmlPreview: currentCode.html?.substring(0, 200) || "(empty)",
+                instructionCount: changeRequest.instructions?.length || 0,
+              });
               applicationResult =
                 await stringReplacementEngine.applyReplacements(
                   changeRequest.instructions,

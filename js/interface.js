@@ -4971,13 +4971,27 @@ async function getCurrentPageSettings() {
 
 async function populateCurrentPageContent() {
   try {
+    debugLog("🔍 [populateCurrentPageContent] Starting to fetch page content...");
     const currentSettings = await getCurrentPageSettings();
 
     if (currentSettings && currentSettings.page) {
-      // Extract widget-specific HTML content
-      const htmlContent = extractHtmlContent(
+      // Extract widget-specific HTML content from richLayout
+      const htmlFromPage = extractHtmlContent(
         currentSettings.page.richLayout || ""
       );
+
+      // CRITICAL FIX: If extractHtmlContent returns empty, use the stored Helper field value
+      // This handles the case where the HTML hasn't been rendered to the page yet
+      const existingHtmlInHelper = Fliplet.Helper.field("layoutHTML").get() || "";
+
+      const htmlContent = htmlFromPage || existingHtmlInHelper;
+
+      debugLog("🔍 [populateCurrentPageContent] HTML extraction results:", {
+        htmlFromPageLength: htmlFromPage.length,
+        existingHelperLength: existingHtmlInHelper.length,
+        finalHtmlLength: htmlContent.length,
+        usingFallback: htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
+      });
 
       // Extract widget-specific CSS content
       const cssContent = extractCodeBetweenDelimiters(
@@ -4991,13 +5005,19 @@ async function populateCurrentPageContent() {
         currentSettings.page.settings.customJS || ""
       );
 
+      debugLog("🔍 [populateCurrentPageContent] Extraction complete:", {
+        html: htmlContent.length,
+        css: cssContent.length,
+        js: jsContent.length,
+      });
+
       // Populate the Helper fields with widget-specific content
       Fliplet.Helper.field("layoutHTML").set(htmlContent);
       Fliplet.Helper.field("css").set(cssContent);
       Fliplet.Helper.field("javascript").set(jsContent);
     }
   } catch (error) {
-    debugError("Error populating current page content:", error);
+    debugError("❌ [populateCurrentPageContent] Error:", error);
     Fliplet.UI.Toast("Error loading current page content: " + error);
   }
 }

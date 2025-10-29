@@ -59,10 +59,6 @@ Fliplet.Widget.instance({
         return;
       } else if (!AI.fields.guid) {
         // new component, interface will create guid by default
-        if (Fliplet.Env.get("mode") != "interact") {
-          AI.fields.guid = generateGuid();
-          await Fliplet.Widget.save(AI.fields, { id: widgetId });
-        }
         return;
       }
 
@@ -172,7 +168,10 @@ Fliplet.Widget.instance({
           await saveLayoutToDeveloperOptions(cleanedHtml);
           await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
           AI.fields.guid = generateGuid();
-          await Fliplet.Widget.save(AI.fields, { id: widgetId });
+          await Fliplet.Widget.save(AI.fields, { id: widgetId }).then(() => {
+            window.location.reload();
+          });
+          return true;
         } catch (error) {
           console.error(
             "Error removing legacy code from developer options:",

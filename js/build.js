@@ -167,7 +167,8 @@ Fliplet.Widget.instance({
 
           await saveLayoutToDeveloperOptions(cleanedHtml);
           await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
-          Fliplet.Studio.emit("reload-page-preview");
+          AI.fields.guid = generateGuid();
+          await Fliplet.Widget.save(AI.fields, { id: widgetId });
         } catch (error) {
           console.error(
             "Error removing legacy code from developer options:",

@@ -59,6 +59,10 @@ Fliplet.Widget.instance({
         return;
       } else if (!AI.fields.guid) {
         // new component, interface will create guid by default
+        if (Fliplet.Env.get("mode") != "interact") {
+          AI.fields.guid = generateGuid();
+          await Fliplet.Widget.save(AI.fields, { id: widgetId });
+        }
         return;
       }
 

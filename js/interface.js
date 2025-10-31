@@ -11,6 +11,52 @@ Fliplet.Widget.setCancelButtonLabel("Close");
 Fliplet.Widget.generateInterface({
   fields: [
     {
+      type: "hidden",
+      name: "chatGUID",
+      label: "Chat GUID",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "guid",
+      label: "GUID",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "chatHistory",
+      label: "Chat History",
+      default: "",
+      rows: 12,
+    },
+    {
+      type: "hidden",
+      name: "css",
+      label: "CSS",
+      default: "",
+      rows: 12,
+    },
+    {
+      type: "hidden",
+      name: "javascript",
+      label: "JavaScript",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "layoutHTML",
+      label: "Layout",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "regenerateCode",
+      label: "Regenerate code",
+      description: "Regenerate code",
+      toggleLabel: "Regenerate",
+      default: false,
+    },
+    {
       type: "html",
       html: `
         <div class="panel-group" id="accordion-1">
@@ -66,7 +112,7 @@ Fliplet.Widget.generateInterface({
         </div>
     </div>
       `,
-      ready: function () {
+      ready: async function () {
         /**
          * AI Coding Tool Test Application
          * Uses Fliplet.AI.createCompletion for code generation with diff processing and code merging
@@ -162,7 +208,6 @@ Fliplet.Widget.generateInterface({
          */
 
         ("use strict");
-
         // Debug mode configuration - set to true to show console logs
         const debugMode = false;
 
@@ -183,6 +228,12 @@ Fliplet.Widget.generateInterface({
           if (debugMode) {
             console.warn(...args);
           }
+        }
+
+        if (!Fliplet.Helper.field("guid").get()) {
+          Fliplet.Helper.field("guid").set(Fliplet.guid());
+          await Fliplet.Widget.save(Fliplet.Widget.getData().fields);
+          // Fliplet.Studio.emit("widget-interface-reload");
         }
 
         // Make debug functions globally available
@@ -596,7 +647,7 @@ Fliplet.Widget.generateInterface({
             };
 
             debugLog("✅ [ContextBuilder] Context built:", context);
-            return this.optimizeForTokens(context);
+            return context
           }
 
           /**
@@ -768,19 +819,6 @@ Fliplet.Widget.generateInterface({
           getRecentChanges(changeHistory, limit = 3) {
             return changeHistory.slice(-limit);
           }
-
-          /**
-           * Optimize context for token limits
-           * @param {Object} context - Context object
-           * @returns {Object} Optimized context
-           */
-          optimizeForTokens(context) {
-            debugLog("⚡ [ContextBuilder] Optimizing context for tokens...");
-
-            // For now, return as-is. In production, implement token counting
-            // and intelligent truncation
-            return context;
-          }
         }
 
         /**
@@ -795,10 +833,6 @@ Fliplet.Widget.generateInterface({
            */
           parseResponse(response) {
             debugLog("📝 [ProtocolParser] Parsing LLM response...");
-            debugLog(
-              "📄 [ProtocolParser] Raw response preview:",
-              response.substring(0, 200) + "..."
-            );
 
             try {
               // With structured outputs, this should always be valid JSON
@@ -1221,11 +1255,6 @@ Fliplet.Widget.generateInterface({
               "🔧 [StringReplacement] Instructions received:",
               JSON.stringify(instructions, null, 2)
             );
-            debugLog("🔧 [StringReplacement] Current code lengths:", {
-              html: currentCode.html.length,
-              css: currentCode.css.length,
-              js: currentCode.js.length,
-            });
 
             const updatedCode = {
               html: currentCode.html,
@@ -2306,6 +2335,8 @@ Fliplet.Widget.generateInterface({
          * Initialize the application
          */
         async function initializeApp() {
+          var data = Fliplet.Widget.getData();
+          await Fliplet.Widget.save(data.fields);
           debugLog("🚀 Initializing AI Coding Tool Test App");
 
           // Get DOM element references
@@ -2320,12 +2351,7 @@ Fliplet.Widget.generateInterface({
           // Initialize textarea styling and behavior
           setTimeout(() => {
             if (DOM.userInput) {
-              debugLog("🔧 Initializing textarea...");
               initializeTextarea();
-              debugLog(
-                "🔧 Textarea initialized with height:",
-                DOM.userInput.style.height
-              );
             } else {
               debugError("❌ Textarea element not found during initialization");
             }
@@ -2364,7 +2390,7 @@ Fliplet.Widget.generateInterface({
           setupEventListeners();
 
           // Load chat history from Fliplet field
-          const historyLoaded = loadChatHistoryFromStorage();
+          const historyLoaded = loadChatHistory();
           if (!historyLoaded) {
             // If no history loaded, the existing system message in HTML template is sufficient
             // No need to add another system message since there's already one in the HTML
@@ -2417,19 +2443,11 @@ Fliplet.Widget.generateInterface({
 
           // Auto-resize textarea as user types (jQuery)
           $(DOM.userInput).on("input", function () {
-            debugLog(
-              "🔧 Input event triggered (jQuery), current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
           // Auto-resize textarea as user types (native event as backup)
           DOM.userInput.addEventListener("input", function () {
-            debugLog(
-              "🔧 Input event triggered (native), current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
@@ -2467,19 +2485,11 @@ Fliplet.Widget.generateInterface({
 
           // Handle all text changes including programmatic changes
           DOM.userInput.addEventListener("change", function () {
-            debugLog(
-              "🔧 Change event triggered, current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
           // Handle composition events for IME input (useful for international keyboards)
           DOM.userInput.addEventListener("compositionend", function () {
-            debugLog(
-              "🔧 Composition end event triggered, current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
@@ -2490,11 +2500,6 @@ Fliplet.Widget.generateInterface({
           $(document).on("click", ".remove-image-btn", function (event) {
             event.preventDefault();
             const imageId = this.dataset.imageId;
-            debugLog("🗑️ Remove button clicked!");
-            debugLog("🗑️ Button element:", this);
-            debugLog("🗑️ Button dataset:", this.dataset);
-            debugLog("🗑️ Extracted imageId:", imageId);
-            debugLog("🗑️ Type of imageId:", typeof imageId);
 
             if (imageId) {
               debugLog("🗑️ Remove button clicked for image ID:", imageId);
@@ -2849,18 +2854,6 @@ Fliplet.Widget.generateInterface({
             // Step 6b: User message already added to chat history by addMessageToChat() in handleSendMessage()
             // No need to add it again here
 
-            // Step 7: Update code and save fields
-            if (!isAnswerType) {
-              updateCode();
-            } else {
-              // For answer type, we still need to save the fields even without code changes
-              saveGeneratedCode({
-                html: AppState.currentHTML || "",
-                css: AppState.currentCSS || "",
-                javascript: AppState.currentJS || "",
-              });
-            }
-
             // Remove loading indicator
             DOM.chatMessages.removeChild(loadingDiv);
 
@@ -2895,6 +2888,18 @@ Fliplet.Widget.generateInterface({
 
             // Re-enable user controls after successful AI response
             enableUserControls();
+
+            // Step 7: Update code and save fields
+            if (!isAnswerType) {
+              updateCode();
+            } else {
+              // For answer type, we still need to save the fields even without code changes
+              saveGeneratedCode({
+                html: AppState.currentHTML || "",
+                css: AppState.currentCSS || "",
+                javascript: AppState.currentJS || "",
+              });
+            }
 
             debugLog(
               `✅ [Main] Request #${AppState.requestCount} completed successfully`
@@ -3188,7 +3193,6 @@ Fliplet.Widget.generateInterface({
           });
 
           debugLog("📤 [AI] Request messages with history:", messages);
-          debugLog("📤 [AI] Final message count:", messages.length);
 
           // Summary of what we're sending
           const userMessagesWithImages = messages.filter(
@@ -4198,18 +4202,9 @@ Fliplet.Widget.generateInterface({
           debugLog("🖼️ Updating code");
 
           try {
-            // Check if we have any code to update
-            // if (
-            //   !AppState.currentHTML &&
-            //   !AppState.currentCSS &&
-            //   !AppState.currentJS
-            // ) {
-            //   return;
-            // }
-
             // Build complete HTML document
             const rawHTMLContent =
-              AppState.currentHTML || "<p>No HTML content</p>";
+              AppState.currentHTML || "";
             const htmlContent = sanitizeHTML(rawHTMLContent);
             const cssContent = AppState.currentCSS || "";
             const jsContent = AppState.currentJS || "";
@@ -4265,7 +4260,7 @@ Fliplet.Widget.generateInterface({
         /**
          * Load chat history from Fliplet field
          */
-        function loadChatHistoryFromStorage() {
+        function loadChatHistory() {
           try {
             const history = Fliplet.Helper.field("chatHistory").get();
             debugLog("💾 Loading chat history from Fliplet field:", history);
@@ -4678,13 +4673,6 @@ Fliplet.Widget.generateInterface({
           if (scrollTop > 0) {
             textarea.scrollTop = scrollTop;
           }
-
-          debugLog("🔧 Textarea resized:", {
-            scrollHeight: scrollHeight,
-            newHeight: newHeight,
-            contentLength: textarea.value.length,
-            currentHeight: textarea.style.height,
-          });
         }
 
         /**
@@ -4696,12 +4684,6 @@ Fliplet.Widget.generateInterface({
           textarea.value = "";
           textarea.style.height = "75px"; // Match CSS min-height
           textarea.style.overflowY = "hidden";
-
-          debugLog(
-            "🔧 Textarea reset to minimum height:",
-            textarea.style.height
-          );
-
           textarea.focus();
         }
 
@@ -4851,46 +4833,6 @@ Fliplet.Widget.generateInterface({
         return value && value.id;
       },
     },
-    {
-      type: "hidden",
-      name: "chatGUID",
-      label: "Chat GUID",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "chatHistory",
-      label: "Chat History",
-      default: "",
-      rows: 12,
-    },
-    {
-      type: "hidden",
-      name: "css",
-      label: "CSS",
-      default: "",
-      rows: 12,
-    },
-    {
-      type: "hidden",
-      name: "javascript",
-      label: "JavaScript",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "layoutHTML",
-      label: "Layout",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "regenerateCode",
-      label: "Regenerate code",
-      description: "Regenerate code",
-      toggleLabel: "Regenerate",
-      default: false,
-    },
   ],
 });
 
@@ -4954,7 +4896,7 @@ function extractHtmlContent(richLayout) {
   let $wrapper = $("<div>").html(richLayout);
 
   // Find the widget-specific container and extract its content
-  const $widgetContainer = $wrapper.find(`.ai-feature-${widgetId}`);
+  const $widgetContainer = $wrapper.find(`.ai-feature-guid-${widgetId}`);
 
   if ($widgetContainer.length > 0) {
     return $widgetContainer.html() || "";
@@ -4967,11 +4909,11 @@ function extractCodeBetweenDelimiters(type, code) {
   let start, end;
 
   if (type === "js") {
-    start = `// start-ai-feature ${widgetId}`;
-    end = `// end-ai-feature ${widgetId}`;
+    start = `// start-ai-feature-guid ${widgetId}`;
+    end = `// end-ai-feature-guid ${widgetId}`;
   } else if (type === "css") {
-    start = `/* start-ai-feature ${widgetId} */`;
-    end = `/* end-ai-feature ${widgetId} */`;
+    start = `/* start-ai-feature-guid ${widgetId} */`;
+    end = `/* end-ai-feature-guid ${widgetId} */`;
   }
 
   // Find the start and end positions
@@ -5014,6 +4956,7 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("css").set(parsedContent.css);
   Fliplet.Helper.field("javascript").set(parsedContent.javascript);
   Fliplet.Helper.field("regenerateCode").set(true);
+  Fliplet.Helper.field("dataSourceId").set("");
 
   var data = Fliplet.Widget.getData();
   data.fields.dataSourceId = "";
@@ -5022,15 +4965,11 @@ function saveGeneratedCode(parsedContent) {
   data.fields.css = parsedContent.css;
   data.fields.javascript = parsedContent.javascript;
   data.fields.regenerateCode = true;
-  Fliplet.Helper.field("dataSourceId").set("");
+  data.fields.guid = Fliplet.Helper.field("guid").get();
+  data.fields.chatHistory = Fliplet.Helper.field("chatHistory").get();
 
   return Fliplet.Widget.save(data.fields).then(function () {
-    Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    // toggleLoaderCodeGeneration(false);
-    setTimeout(function () {
-      Fliplet.Helper.field("regenerateCode").set(false);
-      data.fields.regenerateCode = false;
-      Fliplet.Widget.save(data.fields);
-    }, 1000);
+    // Fliplet.Studio.emit("reload-widget-instance", widgetId);
+    Fliplet.Studio.emit("reload-page-preview");
   });
 }

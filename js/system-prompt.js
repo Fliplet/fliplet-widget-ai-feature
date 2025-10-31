@@ -49,7 +49,7 @@ Focus on the user benefit and functionality rather than the technical implementa
 These dependencies are available in all apps by default—you can use them without any extra configuration:
 
 animate-css 3.5.2 - CSS animations
-bootstrap-css 3.3.7 - Bootstrap styles
+bootstrap-css 3.4.1 - Bootstrap styles
 font-awesome 4.7.0 - Icon font
 handlebars 4.0.10 - Templating
 jquery 3.4.1 - DOM manipulation and AJAX

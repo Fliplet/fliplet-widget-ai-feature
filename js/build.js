@@ -14,7 +14,6 @@ Fliplet.Widget.instance({
       const appId = Fliplet.Env.get("appId");
       const pageId = Fliplet.Env.get("pageId");
 
-      debugger
       if (Fliplet.Env.get("mode") == "interact") {
         $(".ai-feature-content").show();
       } else {

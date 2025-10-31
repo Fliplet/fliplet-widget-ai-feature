@@ -230,7 +230,6 @@ Fliplet.Widget.generateInterface({
           }
         }
 
-        debugger
         if (!Fliplet.Helper.field("guid").get()) {
           Fliplet.Helper.field("guid").set(Fliplet.guid());
           await Fliplet.Widget.save(Fliplet.Widget.getData().fields);

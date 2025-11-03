@@ -198,7 +198,6 @@ Fliplet.Widget.generateInterface({
           /** @type {string} AI Model - Options: gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
           OPENAI_MODEL: "gpt-4.1",
           TEMPERATURE: 0.7,
-          MAX_TOKENS: 10000,
         };
 
         /**
@@ -1308,135 +1307,138 @@ Fliplet.Widget.generateInterface({
               instruction
             );
 
-            const validation = this.validateInstruction(instruction);
+            const validation = this.validateInstruction(instruction, currentCode);
             if (!validation.valid) {
               return { success: false, error: validation.error };
             }
 
             const targetCode = currentCode[instruction.target_type] ?? "";
-            const oldString = instruction.old_string ?? "";
-            const newString = instruction.new_string ?? "";
+            const oldString = instruction.old_string;
+            const newString = instruction.new_string;
 
-            // Special case: new/empty files
-            const emptyMarkers = {
-              html: "<!-- EMPTY -->",
-              css: "/* EMPTY */",
-              js: "// EMPTY",
-            };
-            const expectedEmptyMarker = emptyMarkers[instruction.target_type];
-            if (oldString === expectedEmptyMarker && targetCode.trim() === "") {
+            // DIAGNOSTIC: Log detailed state before blank detection
+            debugLog("🔍 [StringReplacement] DIAGNOSTIC - Target code analysis:", {
+              targetType: instruction.target_type,
+              targetCodeLength: targetCode.length,
+              targetCodeTrimmedLength: targetCode.trim().length,
+              targetCodePreview: targetCode.substring(0, 200) + "...",
+              targetCodeEnd: "..." + targetCode.substring(targetCode.length - 100),
+              isEmptyString: targetCode === "",
+              isWhitespaceOnly: targetCode.trim() === "",
+              currentCodeKeys: Object.keys(currentCode),
+              allCodeLengths: {
+                html: currentCode.html?.length || 0,
+                css: currentCode.css?.length || 0,
+                js: currentCode.js?.length || 0,
+              },
+            });
+
+            // CASE 1: Blank screen detection (auto-detect, no markers needed)
+            const isBlankCode = targetCode.trim() === "";
+
+            if (isBlankCode) {
               debugLog(
-                `🆕 [StringReplacement] Handling empty ${instruction.target_type} code case for new project`
+                `🆕 [StringReplacement] Blank ${instruction.target_type} detected, inserting new code directly`
               );
+              debugLog("⚠️ [StringReplacement] WARNING: Blank detected - verify currentCode was passed correctly!");
               return {
                 success: true,
                 newCode: newString,
                 location: "entire content (new)",
-              };
-            }
-
-            // 1) Try exact literal match first (after normalizing EOLs on both sides)
-            const tNorm = normalizeEols(targetCode);
-            const oNorm = normalizeEols(oldString);
-
-            let occurrences = 0;
-            let newCode;
-            let location;
-
-            if (tNorm.includes(oNorm)) {
-              // exact literal branch
-              const literalPattern = new RegExp(escapeRegExp(oNorm), "gms");
-              occurrences = (tNorm.match(literalPattern) || []).length;
-
-              if (occurrences > 1 && !instruction.replace_all) {
-                return {
-                  success: false,
-                  error: `Multiple occurrences found (${occurrences}). Use replace_all: true or provide more specific old_string`,
-                };
-              }
-
-              if (instruction.replace_all) {
-                // Do replacement on original (not normalized) to preserve original EOLs
-                newCode = targetCode.split(oldString).join(newString);
-                location = `${occurrences} locations`;
-              } else {
-                const idx = tNorm.indexOf(oNorm);
-                // translate index back to original by re-finding in original
-                const originalIdx = targetCode.indexOf(oldString);
-                const start = originalIdx > -1 ? originalIdx : idx; // fallback if EOLs differ
-                newCode =
-                  targetCode.slice(0, start) +
-                  newString +
-                  targetCode.slice(start + oldString.length);
-                location = `character ${start}`;
-              }
-
-              return {
-                success: true,
-                newCode,
-                location,
                 oldLength: targetCode.length,
-                newLength: newCode.length,
+                newLength: newString.length,
               };
             }
 
-            // 2) Fallback: whitespace-tolerant regex (handles different indentation / trailing newline / CRLF)
-            const flexRe = buildFlexibleRegexFromLiteral(oldString);
-            const matches =
-              targetCode.match(new RegExp(flexRe.source, flexRe.flags + "g")) ||
-              [];
-            occurrences = matches.length;
+            // CASE 2: Exact string matching using indexOf()
+            let index = 0;
+            let count = 0;
+            const positions = [];
 
-            if (occurrences === 0) {
+            while ((index = targetCode.indexOf(oldString, index)) !== -1) {
+              positions.push(index);
+              count++;
+              index += oldString.length;
+            }
+
+            if (count === 0) {
               return {
                 success: false,
-                error: `Old string not found in ${
+                error: this.buildNoMatchError(
+                  oldString,
+                  targetCode,
                   instruction.target_type
-                }: "${oldString.substring(0, 50)}..."`,
+                ),
               };
             }
 
-            if (occurrences > 1 && !instruction.replace_all) {
+            if (count > 1 && !instruction.replace_all) {
               return {
                 success: false,
-                error: `Multiple occurrences found (${occurrences}). Use replace_all: true or provide more specific old_string`,
+                error: `Found ${count} exact matches. Set "replace_all": true or provide more specific old_string.`,
               };
             }
 
-            if (instruction.replace_all) {
-              newCode = targetCode.replace(
-                new RegExp(flexRe.source, flexRe.flags + "g"),
-                newString
-              );
-              location = `${occurrences} locations`;
-            } else {
-              // single replacement (no /g/, only first hit)
-              newCode = targetCode.replace(flexRe, newString);
-              // best-effort index for reporting (post-replace index inaccurate otherwise)
-              const firstMatch = targetCode.search(flexRe);
-              location = `character ${firstMatch}`;
-            }
+            // Perform replacement
+            const newCode = instruction.replace_all
+              ? targetCode.split(oldString).join(newString)
+              : targetCode.substring(0, positions[0]) +
+                newString +
+                targetCode.substring(positions[0] + oldString.length);
 
             return {
               success: true,
               newCode,
-              location,
+              location: `${count} location(s)`,
               oldLength: targetCode.length,
               newLength: newCode.length,
             };
           }
 
           /**
+           * Build detailed error message when string match fails
+           * @param {string} oldString - The string that was searched for
+           * @param {string} targetCode - The code that was searched
+           * @param {string} targetType - The type of code (html/css/js)
+           * @returns {string} Detailed error message
+           */
+          buildNoMatchError(oldString, targetCode, targetType) {
+            const oldPreview =
+              oldString.length > 100
+                ? oldString.substring(0, 100) + "..."
+                : oldString;
+
+            const codePreview =
+              targetCode.length > 300
+                ? targetCode.substring(0, 300) + "..."
+                : targetCode;
+
+            let error = `Could not find exact match in ${targetType}.\n\n`;
+            error += `Looking for:\n"${oldPreview}"\n\n`;
+
+            if (targetCode.trim() === "") {
+              error += `Current ${targetType} is empty. The system auto-detects blank screens - this error should not occur for empty code.`;
+            } else {
+              error += `Current ${targetType} preview:\n"${codePreview}"\n\n`;
+              error += `💡 Tip: Make sure old_string matches exactly (including spacing, quotes, and line breaks).`;
+            }
+
+            return error;
+          }
+
+          /**
            * Validate replacement instruction format
            * @param {Object} instruction - Instruction to validate
+           * @param {Object} currentCode - Current code state
            * @returns {Object} Validation result
            */
-          validateInstruction(instruction) {
+          validateInstruction(instruction, currentCode) {
             debugLog(
               "✅ [StringReplacement] Validating instruction:",
               JSON.stringify(instruction, null, 2)
             );
 
+            // Check target_type
             if (
               !instruction.target_type ||
               !["html", "css", "js"].includes(instruction.target_type)
@@ -1447,28 +1449,35 @@ Fliplet.Widget.generateInterface({
               };
             }
 
+            // Check old_string exists and is a string
             if (
-              !instruction.old_string ||
-              typeof instruction.old_string !== "string" ||
-              instruction.old_string.trim() === ""
+              instruction.old_string === undefined ||
+              instruction.old_string === null ||
+              typeof instruction.old_string !== "string"
             ) {
-              debugLog("❌ [StringReplacement] old_string validation failed:", {
-                exists: !!instruction.old_string,
-                type: typeof instruction.old_string,
-                value: instruction.old_string,
-                isEmpty: instruction.old_string === "",
-                isOnlyWhitespace:
-                  typeof instruction.old_string === "string" &&
-                  instruction.old_string.trim() === "",
-              });
               return {
                 valid: false,
-                error: "old_string is required and must be a non-empty string",
+                error: "old_string is required and must be a string",
               };
             }
 
+            // For blank screens, old_string is ignored (can be anything, including empty string)
+            const targetCode = currentCode[instruction.target_type] ?? "";
+            const isBlankScreen = targetCode.trim() === "";
+
+            // For non-blank screens, old_string must have content
+            if (!isBlankScreen && instruction.old_string.trim() === "") {
+              return {
+                valid: false,
+                error:
+                  "old_string cannot be empty for modifying existing code. For blank screens, empty string is allowed (system auto-detects).",
+              };
+            }
+
+            // Check new_string exists
             if (
-              !instruction.new_string ||
+              instruction.new_string === undefined ||
+              instruction.new_string === null ||
               typeof instruction.new_string !== "string"
             ) {
               return {
@@ -1477,7 +1486,11 @@ Fliplet.Widget.generateInterface({
               };
             }
 
-            if (instruction.old_string === instruction.new_string) {
+            // Check not identical (unless blank screen)
+            if (
+              !isBlankScreen &&
+              instruction.old_string === instruction.new_string
+            ) {
               return {
                 valid: false,
                 error: "old_string and new_string cannot be identical",
@@ -2282,7 +2295,6 @@ Fliplet.Widget.generateInterface({
           model: CONFIG.OPENAI_MODEL,
           /** @type {number} Temperature for response randomness */
           temperature: CONFIG.TEMPERATURE,
-          max_tokens: CONFIG.MAX_TOKENS,
         };
 
         /**
@@ -2636,13 +2648,45 @@ Fliplet.Widget.generateInterface({
           DOM.chatMessages.appendChild(loadingDiv);
           scrollToBottom();
 
-          AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
-          AppState.css = Fliplet.Helper.field("css").get() || "";
-          AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+          try {
+            // CRITICAL: Always fetch fresh code from the page before each AI call
+            // This ensures we have the latest state even after navigation
+            debugLog("🔄 [Main] Fetching current code from page...");
+            await populateCurrentPageContent();
 
-          AppState.currentHTML = AppState.layoutHTML;
-          AppState.currentCSS = AppState.css;
-          AppState.currentJS = AppState.javascript;
+            // Now read from Helper fields (just populated by populateCurrentPageContent)
+            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+            AppState.css = Fliplet.Helper.field("css").get() || "";
+            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+
+            AppState.currentHTML = AppState.layoutHTML;
+            AppState.currentCSS = AppState.css;
+            AppState.currentJS = AppState.javascript;
+
+            debugLog("📊 [Main] Loaded current code state:", {
+              htmlLength: AppState.currentHTML.length,
+              cssLength: AppState.currentCSS.length,
+              jsLength: AppState.currentJS.length,
+              htmlPreview: AppState.currentHTML.substring(0, 200) || "(empty)",
+              htmlIsEmpty: AppState.currentHTML.trim() === "",
+            });
+          } catch (fetchError) {
+            debugError("⚠️ [Main] Error fetching current page content:", fetchError);
+            // Fallback to existing Helper field values
+            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+            AppState.css = Fliplet.Helper.field("css").get() || "";
+            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+
+            AppState.currentHTML = AppState.layoutHTML;
+            AppState.currentCSS = AppState.css;
+            AppState.currentJS = AppState.javascript;
+
+            debugLog("📊 [Main] Fallback to Helper fields:", {
+              htmlLength: AppState.currentHTML.length,
+              cssLength: AppState.currentCSS.length,
+              jsLength: AppState.currentJS.length,
+            });
+          }
 
           try {
             // Step 1: Build intelligent context
@@ -2790,6 +2834,13 @@ Fliplet.Widget.generateInterface({
               changeRequest.instructions.length > 0
             ) {
               debugLog("🎯 [Main] Using string replacement engine...");
+              debugLog("📋 [Main] DIAGNOSTIC - currentCode being passed:", {
+                htmlLength: currentCode.html?.length || 0,
+                cssLength: currentCode.css?.length || 0,
+                jsLength: currentCode.js?.length || 0,
+                htmlPreview: currentCode.html?.substring(0, 200) || "(empty)",
+                instructionCount: changeRequest.instructions?.length || 0,
+              });
               applicationResult =
                 await stringReplacementEngine.applyReplacements(
                   changeRequest.instructions,
@@ -4918,25 +4969,59 @@ async function getCurrentPageSettings() {
 
 async function populateCurrentPageContent() {
   try {
+    debugLog("🔍 [populateCurrentPageContent] Starting to fetch page content...");
     const currentSettings = await getCurrentPageSettings();
 
     if (currentSettings && currentSettings.page) {
-      // Extract widget-specific HTML content
-      const htmlContent = extractHtmlContent(
+      // Extract widget-specific HTML content from richLayout
+      const htmlFromPage = extractHtmlContent(
         currentSettings.page.richLayout || ""
       );
 
+      // CRITICAL FIX: If extractHtmlContent returns empty, use the stored Helper field value
+      // This handles the case where the HTML hasn't been rendered to the page yet
+      const existingHtmlInHelper = Fliplet.Helper.field("layoutHTML").get() || "";
+
+      const htmlContent = htmlFromPage || existingHtmlInHelper;
+
+      debugLog("🔍 [populateCurrentPageContent] HTML extraction results:", {
+        htmlFromPageLength: htmlFromPage.length,
+        existingHelperLength: existingHtmlInHelper.length,
+        finalHtmlLength: htmlContent.length,
+        usingFallback: htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
+      });
+
       // Extract widget-specific CSS content
-      const cssContent = extractCodeBetweenDelimiters(
+      const cssFromPage = extractCodeBetweenDelimiters(
         "css",
         currentSettings.page.settings.customSCSS || ""
       );
 
+      // CRITICAL FIX: Fallback to Helper field if extraction returns empty
+      const existingCssInHelper = Fliplet.Helper.field("css").get() || "";
+      const cssContent = cssFromPage || existingCssInHelper;
+
       // Extract widget-specific JavaScript content
-      const jsContent = extractCodeBetweenDelimiters(
+      const jsFromPage = extractCodeBetweenDelimiters(
         "js",
         currentSettings.page.settings.customJS || ""
       );
+
+      // CRITICAL FIX: Fallback to Helper field if extraction returns empty
+      const existingJsInHelper = Fliplet.Helper.field("javascript").get() || "";
+      const jsContent = jsFromPage || existingJsInHelper;
+
+      debugLog("🔍 [populateCurrentPageContent] Extraction complete:", {
+        htmlFromPageLength: htmlFromPage.length,
+        htmlFinalLength: htmlContent.length,
+        cssFromPageLength: cssFromPage.length,
+        cssFinalLength: cssContent.length,
+        jsFromPageLength: jsFromPage.length,
+        jsFinalLength: jsContent.length,
+        htmlUsingFallback: htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
+        cssUsingFallback: cssFromPage.length === 0 && existingCssInHelper.length > 0,
+        jsUsingFallback: jsFromPage.length === 0 && existingJsInHelper.length > 0,
+      });
 
       // Populate the Helper fields with widget-specific content
       Fliplet.Helper.field("layoutHTML").set(htmlContent);
@@ -4944,7 +5029,7 @@ async function populateCurrentPageContent() {
       Fliplet.Helper.field("javascript").set(jsContent);
     }
   } catch (error) {
-    debugError("Error populating current page content:", error);
+    debugError("❌ [populateCurrentPageContent] Error:", error);
     Fliplet.UI.Toast("Error loading current page content: " + error);
   }
 }
@@ -4988,25 +5073,10 @@ function extractCodeBetweenDelimiters(type, code) {
   return "";
 }
 
-// helper: normalize \r\n and \r to \n
-function normalizeEols(s) {
-  return s.replace(/\r\n?/g, "\n");
-}
-
 // helper: escape literal for regex
+// Note: Still used for exact occurrence counting in StringReplacementEngine
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-// helper: build a whitespace-tolerant regex from a literal string
-// turns any run of whitespace in the literal into \s+
-// and allows optional leading/trailing whitespace
-function buildFlexibleRegexFromLiteral(literal) {
-  // keep original literal’s *semantic* tokens, ignore exact spacing
-  const tokens = literal.split(/\s+/).map(escapeRegExp).filter(Boolean);
-  const body = tokens.join("\\s+");
-  // allow optional surrounding whitespace and dotAll/multiline
-  return new RegExp(`\\s*${body}\\s*`, "ms");
 }
 
 function saveGeneratedCode(parsedContent) {

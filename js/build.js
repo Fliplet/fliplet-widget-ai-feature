@@ -128,6 +128,7 @@ Fliplet.Widget.instance({
         debugger
         await Fliplet.Widget.save(AI.fields, { id: widgetId });
         debugger
+        Fliplet.Studio.emit("reload-page-preview");
         //Fliplet.Studio.emit("reload-widget-instance", widgetId);
       }
 

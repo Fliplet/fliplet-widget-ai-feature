@@ -4891,6 +4891,10 @@ async function populateCurrentPageContent() {
   }
 }
 
+function getGuidFromComponent() {
+  return Fliplet.Helper.field("guid").get();
+}
+
 function extractHtmlContent(richLayout) {
   // Create a temporary wrapper to parse HTML
   let $wrapper = $("<div>").html(richLayout);

@@ -2648,7 +2648,7 @@ Fliplet.Widget.generateInterface({
           AppState.currentHTML = AppState.layoutHTML;
           AppState.currentCSS = AppState.css;
           AppState.currentJS = AppState.javascript;
-          debugger
+
           try {
             // Step 1: Build intelligent context
             const currentCode = {
@@ -4956,7 +4956,6 @@ function buildFlexibleRegexFromLiteral(literal) {
 }
 
 function saveGeneratedCode(parsedContent) {
-  debugger
   Fliplet.Helper.field("layoutHTML").set(parsedContent.html);
   Fliplet.Helper.field("css").set(parsedContent.css);
   Fliplet.Helper.field("javascript").set(parsedContent.javascript);

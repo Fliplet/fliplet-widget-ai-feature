@@ -53,6 +53,7 @@ Fliplet.Widget.instance({
         `<div class="ai-feature-guid-${widgetId}">`
       );
 
+      debugger
       if (oldCssCodeLegacy || oldJsCodeLegacy || oldHtmlCodeLegacy) {
         await removeLegacyCodeFromDeveloperOptions(developerCode);
         return;

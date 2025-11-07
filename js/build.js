@@ -167,7 +167,19 @@ Fliplet.Widget.instance({
 
           await saveLayoutToDeveloperOptions(cleanedHtml);
           await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
+          let oldGuid = AI.fields.guid;
           AI.fields.guid = generateGuid();
+
+          await logAiComponentUsage({
+            aiCssResponse: AI.fields.css,
+            aiJsResponse: AI.fields.javascript,
+            aiLayoutResponse: AI.fields.layoutHTML,
+            widgetId: widgetId,
+            oldGuid: oldGuid,
+            newGuid: AI.fields.guid,
+            type: "legacy-code-removed",
+          });
+
           await Fliplet.Widget.save(AI.fields, { id: widgetId }).then(() => {
             window.location.reload();
           });

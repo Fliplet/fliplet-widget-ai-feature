@@ -4574,9 +4574,9 @@ Fliplet.Widget.generateInterface({
             debugLog("🔄 Resetting session");
 
             // Reset application state
-            AppState.previousHTML = "";
-            AppState.previousCSS = "";
-            AppState.previousJS = "";
+            // AppState.previousHTML = "";
+            // AppState.previousCSS = "";
+            // AppState.previousJS = "";
             AppState.chatHistory = [];
             AppState.isFirstGeneration = true;
             AppState.requestCount = 0;
@@ -4621,7 +4621,14 @@ Fliplet.Widget.generateInterface({
             }
 
             // Reset
-            updateCode();
+            // updateCode();
+            
+            var data = Fliplet.Widget.getData();
+            debugger
+            return Fliplet.Widget.save(data.fields).then(function () {
+              // Fliplet.Studio.emit("reload-widget-instance", widgetId);
+              Fliplet.Studio.emit("reload-page-preview");
+            });
           });
           return; // Stop execution here
         }

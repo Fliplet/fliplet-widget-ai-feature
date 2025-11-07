@@ -4382,22 +4382,6 @@ Fliplet.Widget.generateInterface({
         }
 
         /**
-         * Clear chat history from Fliplet field
-         */
-        function clearChatHistoryFromStorage() {
-          try {
-            // Clear the Fliplet field
-            Fliplet.Helper.field("chatHistory").set("");
-            debugLog("✅ Chat history cleared from Fliplet field");
-          } catch (error) {
-            debugError(
-              "Failed to clear chat history from Fliplet field:",
-              error
-            );
-          }
-        }
-
-        /**
          * Add message to chat interface
          * @param {string} message - The message content
          * @param {string} type - Message type ('user', 'ai', 'system')
@@ -4596,9 +4580,6 @@ Fliplet.Widget.generateInterface({
             AppState.chatGUID = Fliplet.guid();
             Fliplet.Helper.field("chatGUID").set(AppState.chatGUID);
 
-            // Clear Fliplet field
-            clearChatHistoryFromStorage();
-
             // Clear pasted images
             clearPastedImages(false, DOM, AppState);
 
@@ -4621,10 +4602,12 @@ Fliplet.Widget.generateInterface({
             }
 
             // Reset
-            // updateCode();
-            
             var data = Fliplet.Widget.getData();
-            debugger
+            data.fields.chatHistory = "";
+            data.fields.chatGUID = Fliplet.guid();
+            data.fields.dataSourceId = "";
+            data.fields.dataSourceName = "";
+
             return Fliplet.Widget.save(data.fields).then(function () {
               // Fliplet.Studio.emit("reload-widget-instance", widgetId);
               Fliplet.Studio.emit("reload-page-preview");

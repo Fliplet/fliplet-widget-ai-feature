@@ -121,9 +121,9 @@ Fliplet.Widget.instance({
 
       // Helper function to save to hidden fields
       async function saveToHiddenFields(code) {
-        AI.fields.layoutHTML = code.html || code.layoutHTML;
-        AI.fields.css = code.css;
-        AI.fields.javascript = code.js || code.javascript;
+        AI.fields.layoutHTML = code.html || code.layoutHTML || '';
+        AI.fields.css = code.css || '';
+        AI.fields.javascript = code.js || code.javascript || '';
         AI.fields.guid = code.guid;
         await Fliplet.Widget.save(AI.fields, { id: widgetId });
         Fliplet.Studio.emit("reload-page-preview");

@@ -1336,6 +1336,7 @@ Fliplet.Widget.generateInterface({
               instruction
             );
 
+            debugger
             const validation = this.validateInstruction(instruction, currentCode);
             if (!validation.valid) {
               return { success: false, error: validation.error };

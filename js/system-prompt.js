@@ -1254,6 +1254,7 @@ You MUST respond with a JSON object in one of two formats depending on the user'
 
 1. CODE GENERATION (when user wants to create/modify HTML, CSS, JavaScript):
 Use the string replacement format for maximum reliability and precision.
+CRITICAL: As a selector in javascript always use the guid of the component as part of the selector.
 
 2. INFORMATIONAL RESPONSES (when user asks questions, needs explanations, or requests information):
 Use the answer format to provide helpful information without code.

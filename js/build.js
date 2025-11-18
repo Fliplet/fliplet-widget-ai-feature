@@ -508,14 +508,16 @@ Fliplet.Widget.instance({
           const hiddenFieldsCode = getHiddenFieldsCode();
 
           if (duplicates.length > 1) {
+            var oldGuid = AI.fields.guid;
+            var newGuid = generateGuid();
             // there are duplicates, so we need to remove the code from developer options and add the new code with a new guid
             await removeCodeFromDeveloperOptions(); // removing code from developer options for the existing guid
-            AI.fields.guid = generateGuid(); // generating a new guid
+            AI.fields.guid = newGuid; // generating a new guid
             await saveToHiddenFields({
-              css: AI.fields.css,
-              javascript: AI.fields.javascript,
-              layoutHTML: AI.fields.layoutHTML,
-              guid: AI.fields.guid,
+              css: AI.fields.css.replaceAll(oldGuid, newGuid) || '',
+              javascript: AI.fields.javascript.replaceAll(oldGuid, newGuid) || '',
+              layoutHTML: AI.fields.layoutHTML.replaceAll(oldGuid, newGuid) || '',
+              guid: newGuid,
             });
           } else if (isCodeEqual(developerOptionsCode, hiddenFieldsCode)) {
             // the code in developer options is the same as the hidden fields, so we need to do nothing

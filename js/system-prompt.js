@@ -3,7 +3,7 @@
  * @param {Object} context - Context object
  * @returns {string} System prompt
  */
-function buildSystemPromptWithContext(context, pastedImages = [], AppState, dataSourceColumns, selectedDataSourceName) {
+function buildSystemPromptWithContext(context, pastedImages = [], AppState, dataSourceColumns, selectedDataSourceName, componentGuid) {
     debugLog("📝 [AI] Building system prompt with context...");
     debugLog("📝 [AI] Images passed to system prompt:", {
       passedImagesCount: pastedImages.length,
@@ -1254,7 +1254,7 @@ You MUST respond with a JSON object in one of two formats depending on the user'
 
 1. CODE GENERATION (when user wants to create/modify HTML, CSS, JavaScript):
 Use the string replacement format for maximum reliability and precision.
-CRITICAL: As a selectors (id, class, etc.) always use the guid of the component as part of the selector to ensure the code is specific to the component.
+CRITICAL: As a selectors (id, class, etc.) always use the guid (${componentGuid}) as part of the selector to ensure the code is specific to the component.
 
 2. INFORMATIONAL RESPONSES (when user asks questions, needs explanations, or requests information):
 Use the answer format to provide helpful information without code.

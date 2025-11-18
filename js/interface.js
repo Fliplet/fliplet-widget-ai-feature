@@ -3102,7 +3102,8 @@ Fliplet.Widget.generateInterface({
             finalCurrentImages,
             AppState,
             dataSourceColumns,
-            selectedDataSourceName
+            selectedDataSourceName,
+            getGuidFromComponent()
           );
 
           // Build complete conversation history

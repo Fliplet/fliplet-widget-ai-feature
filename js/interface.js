@@ -4976,7 +4976,7 @@ function extractHtmlContent(richLayout) {
   let $wrapper = $("<div>").html(richLayout);
 
   // Find the widget-specific container and extract its content
-  const $widgetContainer = $wrapper.find(`.ai-feature-guid-${getGuidFromComponent()}`);
+  const $widgetContainer = $wrapper.find(`.ai-feature-${getGuidFromComponent()}`);
 
   if ($widgetContainer.length > 0) {
     return $widgetContainer.html() || "";

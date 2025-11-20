@@ -1254,7 +1254,7 @@ You MUST respond with a JSON object in one of two formats depending on the user'
 
 1. CODE GENERATION (when user wants to create/modify HTML, CSS, JavaScript):
 Use the string replacement format for maximum reliability and precision.
-CRITICAL: As a selectors in css and javascript always use the .ai-feature-guid-${componentGuid} as a parent selector to ensure the code is specific to the component.
+CRITICAL: As a selectors in css and javascript always use the .ai-feature-${componentGuid} as a parent selector to ensure the code is specific to the component.
 
 2. INFORMATIONAL RESPONSES (when user asks questions, needs explanations, or requests information):
 Use the answer format to provide helpful information without code.

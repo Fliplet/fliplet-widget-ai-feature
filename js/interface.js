@@ -4610,9 +4610,6 @@ Fliplet.Widget.generateInterface({
             debugLog("🔄 Resetting session");
 
             // Reset application state
-            // AppState.previousHTML = "";
-            // AppState.previousCSS = "";
-            // AppState.previousJS = "";
             AppState.chatHistory = [];
             AppState.isFirstGeneration = true;
             AppState.requestCount = 0;
@@ -4989,11 +4986,11 @@ function extractCodeBetweenDelimiters(type, code) {
   let start, end;
 
   if (type === "js") {
-    start = `// start-ai-feature-guid ${getGuidFromComponent()}`;
-    end = `// end-ai-feature-guid ${getGuidFromComponent()}`;
+    start = `// start-ai-feature ${getGuidFromComponent()}`;
+    end = `// end-ai-feature ${getGuidFromComponent()}`;
   } else if (type === "css") {
-    start = `/* start-ai-feature-guid ${getGuidFromComponent()} */`;
-    end = `/* end-ai-feature-guid ${getGuidFromComponent()} */`;
+    start = `/* start-ai-feature ${getGuidFromComponent()} */`;
+    end = `/* end-ai-feature ${getGuidFromComponent()} */`;
   }
 
   // Find the start and end positions

@@ -3,7 +3,7 @@
  * @param {Object} context - Context object
  * @returns {string} System prompt
  */
-function buildSystemPromptWithContext(context, pastedImages = [], AppState, dataSourceColumns, selectedDataSourceName) {
+function buildSystemPromptWithContext(context, pastedImages = [], AppState, dataSourceColumns, selectedDataSourceName, componentGuid) {
     debugLog("📝 [AI] Building system prompt with context...");
     debugLog("📝 [AI] Images passed to system prompt:", {
       passedImagesCount: pastedImages.length,
@@ -1254,6 +1254,7 @@ You MUST respond with a JSON object in one of two formats depending on the user'
 
 1. CODE GENERATION (when user wants to create/modify HTML, CSS, JavaScript):
 Use the string replacement format for maximum reliability and precision.
+CRITICAL: As a selectors in css and javascript always use the .ai-feature-${componentGuid} as a parent selector to ensure the code is specific to the component.
 
 2. INFORMATIONAL RESPONSES (when user asks questions, needs explanations, or requests information):
 Use the answer format to provide helpful information without code.
@@ -1292,7 +1293,7 @@ For CODE GENERATION - MODIFICATIONS (existing code):
   "instructions": [
     {
       "target_type": "html",
-      "old_string": "</form>",
+      "old_string": "test.</div></form>",
       "new_string": "    <div class=\"form-group\">\n        <label for=\"phone\">Phone Number:</label>\n        <input type=\"tel\" id=\"phone\" name=\"phone\" required>\n    </div>\n</form>",
       "description": "Added phone number field before closing form tag",
       "replace_all": false
@@ -1358,21 +1359,23 @@ CRITICAL WHITESPACE MATCHING RULES (READ CAREFULLY):
 
 When creating old_string for MODIFICATIONS:
 1. Copy the text EXACTLY from "CURRENT COMPLETE [HTML/CSS/JAVASCRIPT]" shown above
-2. Preserve ALL whitespace characters:
+2. Always use a unique block of code as "old_string" — never generic tags like "</div>". 
+Expand the selection until it matches only one place in the file, using surrounding context, classes, IDs, or multiple lines to ensure uniqueness.
+3. Preserve ALL whitespace characters:
    - Spaces vs tabs (don't convert one to the other)
    - Line breaks (\\n or \\r\\n - keep them as-is)
    - Indentation levels (count spaces/tabs carefully)
    - Trailing whitespace on lines
-3. If unsure about exact whitespace, include MORE surrounding context to ensure unique match
-4. Line endings matter: Don't assume LF when code uses CRLF or vice versa
-5. When the match fails, the error message will show you exactly what you searched for vs what exists
+4. If unsure about exact whitespace, include MORE surrounding context to ensure unique match
+5. Line endings matter: Don't assume LF when code uses CRLF or vice versa
+6. When the match fails, the error message will show you exactly what you searched for vs what exists
 
 Example of whitespace sensitivity:
 ❌ WRONG (added extra space):
-"old_string": "<div  class=\\"form\\">"
+"old_string": "test.<div  class=\\"form\\">"
 
 ✅ CORRECT (exact match):
-"old_string": "<div class=\\"form\\">"
+"old_string": "test.<div class=\\"form\\">"
 
 For BLANK SCREENS: Whitespace doesn't matter - the system auto-detects empty code regardless of old_string value.
 
@@ -1382,7 +1385,7 @@ Rules for String Replacements (CODE GENERATION only):
      * Recommended: Use old_string: "" for blank screens to make intent clear
    - For MODIFICATIONS: old_string must match EXACTLY (case-sensitive, whitespace-sensitive)
      * Copy the exact text from CURRENT CODE (shown above)
-     * Include surrounding context if needed to ensure unique match
+     * Include surrounding context if needed to ensure unique match - this is the must have rule!
    - Only send instructions for code types you're actually changing
      * Changing HTML only? Send 1 instruction with target_type: "html"
      * No need to send CSS/JS instructions if those aren't changing

@@ -4460,9 +4460,23 @@ Fliplet.Widget.generateInterface({
           const prefix = type === "user" ? "You" : type === "ai" ? "AI" : "";
           
           // Build message content
+          let processedMessage;
+          
+          if (type === "ai") {
+            // Convert markdown to HTML for AI responses
+            const converter = new showdown.Converter();
+            processedMessage = converter.makeHtml(message);
+            console.log('AI message - Markdown input:', message);
+            console.log('AI message - HTML output:', processedMessage);
+          } else {
+            // Escape HTML for user and system messages for security
+            processedMessage = escapeHTML(message);
+            console.log('User/System message - Escaped:', processedMessage);
+          }
+          
           let messageContent = `${
             prefix ? `<strong>${prefix}</strong>: ` : ""
-          }${escapeHTML(message)}`;
+          }${processedMessage}`;
 
           // Add images if present
           if (images && images.length > 0) {

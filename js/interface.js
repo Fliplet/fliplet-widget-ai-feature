@@ -4458,7 +4458,7 @@ Fliplet.Widget.generateInterface({
           messageDiv.className = `message ${type}-message`;
 
           const prefix = type === "user" ? "You" : type === "ai" ? "AI" : "";
-
+          
           // Build message content
           let messageContent = `${
             prefix ? `<strong>${prefix}</strong>: ` : ""
@@ -4573,7 +4573,13 @@ Fliplet.Widget.generateInterface({
 
           const div = document.createElement("div");
           div.textContent = text;
-          return div.innerHTML;
+          // Replace newlines with <br> tags to preserve them in HTML
+          const escapedHTML = div.innerHTML.replace(/\n/g, '<br>');
+          
+          console.log('escapeHTML input:', text);
+          console.log('escapeHTML output:', escapedHTML);
+          
+          return escapedHTML;
         }
 
         /**

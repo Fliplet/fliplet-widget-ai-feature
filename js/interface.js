@@ -87,7 +87,8 @@ Fliplet.Widget.generateInterface({
     },
     {
       type: "html",
-      html: `<div class="container">
+      html: `<script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
+      <div class="container">
         <p class="text-right"><a id="reset-btn" href="#">Clear chat history <i class="fa fa-trash-o"></i></a></p>
         <!-- Chat Interface -->
         <div class="chat-section">

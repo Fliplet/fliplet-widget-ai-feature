@@ -1479,8 +1479,6 @@ A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends
  * @property {string} model - Gemini model ID (e.g., 'gemini-1.5-flash', 'gemini-2.5-flash'). Required. See https://ai.google.dev/gemini-api/docs/models
  * @property {ContentObject[]} contents - Array of content objects with role and parts.
  * @property {ToolObject[]} [tools] - Optional array of tool/function declarations for function calling.
- * @property {number} [temperature]
- * // ... other Gemini API parameters
  */
 
 #### Using Gemini Models

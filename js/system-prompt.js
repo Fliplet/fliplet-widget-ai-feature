@@ -989,9 +989,60 @@ IMPORTANT: When generating code:
    - ❌ WRONG: ['data["First Name"]', 'ASC']
 5. Never use dot notation for spaced columns when accessing: record.data.Column Name ❌
 
-If you are asked to build a feature that requires navigating the user to another screen use the navigate JS API to do this:
+## Navigation JS APIs
 
-Fliplet.Navigate.screen('Menu') where it accepts the screen name as a parameter.
+If you are asked to build a feature that requires navigating the user to another screen, use the Navigate JS API.
+
+### Navigate to a screen
+
+Navigate to a specific screen in your app by providing the screen name:
+
+Fliplet.Navigate.screen('Menu');
+
+Navigate with query parameters:
+
+You can pass query parameters when navigating to another screen. These parameters will be available on the target screen:
+
+Fliplet.Navigate.screen('Home', { query: '?foo=bar&baz=qux' });
+
+To read the query parameters on the target screen, use Fliplet.Navigate.query:
+
+var fooValue = Fliplet.Navigate.query.foo; // Returns 'bar'
+var bazValue = Fliplet.Navigate.query.baz; // Returns 'qux'
+
+Example use case - passing a user ID to a profile screen:
+
+// Navigate to UserProfile screen with user ID
+Fliplet.Navigate.screen('UserProfile', { query: '?userId=123' });
+
+// On the UserProfile screen, read the user ID
+var userId = Fliplet.Navigate.query.userId;
+console.log('Loading profile for user:', userId);
+
+### Navigate back to previous screen
+
+Navigate back to the previous page or screen of the app:
+
+Fliplet.Navigate.back();
+
+Example - Back button implementation:
+
+document.getElementById('back-button').addEventListener('click', function() {
+  Fliplet.Navigate.back();
+});
+
+### Navigate to a URL
+
+Navigate the app to an external URL or web page:
+
+Fliplet.Navigate.url('http://fliplet.com');
+
+Example - Opening external links:
+
+Fliplet.Navigate.url('https://www.google.com');
+
+// Navigate to a specific web page with parameters
+Fliplet.Navigate.url('https://example.com/page?id=123&category=news');
 
 If you want to show a message to the end user do not use alerts but use our toast message library; The JS API is Fliplet.UI.Toast(message) where message is the text you want to show the user.
 

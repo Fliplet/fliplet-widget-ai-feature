@@ -4466,12 +4466,10 @@ Fliplet.Widget.generateInterface({
             // Convert markdown to HTML for AI responses
             const converter = new showdown.Converter();
             processedMessage = converter.makeHtml(message);
-            console.log('AI message - Markdown input:', message);
-            console.log('AI message - HTML output:', processedMessage);
+
           } else {
             // Escape HTML for user and system messages for security
             processedMessage = escapeHTML(message);
-            console.log('User/System message - Escaped:', processedMessage);
           }
           
           let messageContent = `${
@@ -4589,9 +4587,6 @@ Fliplet.Widget.generateInterface({
           div.textContent = text;
           // Replace newlines with <br> tags to preserve them in HTML
           const escapedHTML = div.innerHTML.replace(/\n/g, '<br>');
-          
-          console.log('escapeHTML input:', text);
-          console.log('escapeHTML output:', escapedHTML);
           
           return escapedHTML;
         }

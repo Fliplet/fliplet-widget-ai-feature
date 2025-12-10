@@ -3565,18 +3565,20 @@ Fliplet.Widget.generateInterface({
           // Extract text from output array
           let aiResponse = '';
 
-          // Output is an array of message objects
-          const firstOutput = response.output[0];
+          // Find the message object in the output array
+          // (reasoning models may have a "reasoning" object first, then the "message" object)
+          const messageOutput = response.output.find(item => item.type === 'message');
 
-          if (firstOutput && firstOutput.content && Array.isArray(firstOutput.content)) {
+          if (messageOutput && messageOutput.content && Array.isArray(messageOutput.content)) {
             // Find the output_text content item
-            const textContent = firstOutput.content.find(item => item.type === 'output_text');
+            const textContent = messageOutput.content.find(item => item.type === 'output_text');
             if (textContent && textContent.text) {
               aiResponse = textContent.text;
             }
           }
 
           if (!aiResponse) {
+            debugError("❌ [AI] Failed to extract text from response. Output structure:", response.output);
             throw new Error("Could not extract text from response output");
           }
 

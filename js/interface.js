@@ -57,6 +57,21 @@ Fliplet.Widget.generateInterface({
       default: false,
     },
     {
+      type: "dropdown",
+      name: "openaiModel",
+      label: "OpenAI Model",
+      options: [
+        "gpt-5.1-reasoning-none",
+        "gpt-5.1-reasoning-low",
+        "gpt-5.1-reasoning-medium",
+        "gpt-5.1-reasoning-high",
+        "gpt-5.1-codex",
+        "gpt-5.1-codex-mini"
+      ],
+      default: "gpt-5.1-reasoning-none",
+      required: true
+    },
+    {
       type: "html",
       html: `
         <div class="panel-group" id="accordion-1">
@@ -209,7 +224,7 @@ Fliplet.Widget.generateInterface({
 
         ("use strict");
         // Debug mode configuration - set to true to show console logs
-        const debugMode = false;
+        const debugMode = true;
 
         // Debug utility function to conditionally log console messages
         function debugLog(...args) {
@@ -241,16 +256,6 @@ Fliplet.Widget.generateInterface({
         window.debugLog = debugLog;
         window.debugError = debugError;
         window.debugWarn = debugWarn;
-        /**
-         * CONFIGURATION - Modify these settings as needed
-         * @type {Object}
-         */
-        const CONFIG = {
-          /** @type {string} AI Model - Options: gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
-          OPENAI_MODEL: "gpt-4.1",
-          TEMPERATURE: 0.7,
-        };
-
         /**
          * Application state management
          * @type {Object}
@@ -2316,17 +2321,6 @@ Fliplet.Widget.generateInterface({
         const stringReplacementEngine = new StringReplacementEngine();
 
         /**
-         * AI Configuration for Fliplet.AI.createCompletion
-         * @type {Object}
-         */
-        const AIConfig = {
-          /** @type {string} Model to use for code generation */
-          model: CONFIG.OPENAI_MODEL,
-          /** @type {number} Temperature for response randomness */
-          temperature: CONFIG.TEMPERATURE,
-        };
-
-        /**
          * DOM element references
          * @type {Object}
          */
@@ -3020,6 +3014,30 @@ Fliplet.Widget.generateInterface({
         ) {
           debugLog("🌐 [AI] Making API call with optimized context...");
 
+          // Get current model selection from dropdown
+          const selectedModel = Fliplet.Helper.field("openaiModel").get() || "gpt-5.1-reasoning-none";
+
+          // Parse model name and reasoning level
+          let modelName = selectedModel;
+          let reasoningEffort = null;
+
+          if (selectedModel.includes("-reasoning-")) {
+            const parts = selectedModel.split("-reasoning-");
+            modelName = parts[0]; // e.g., "gpt-5.1"
+            reasoningEffort = parts[1]; // e.g., "medium", "low", "high", "none"
+
+            // If reasoning is "none", don't include it in the request
+            if (reasoningEffort === "none") {
+              reasoningEffort = null;
+            }
+          }
+
+          debugLog("🔧 [AI] Current model configuration:", {
+            selectedModel: selectedModel,
+            parsedModelName: modelName,
+            reasoningEffort: reasoningEffort,
+          });
+
           // CRITICAL: ALWAYS use AppState.pastedImages as the source of truth for current images
           // The passed pastedImages parameter might be stale if images were removed
           // This ensures we never send removed images to the AI
@@ -3139,15 +3157,15 @@ Fliplet.Widget.generateInterface({
                 historyItem.images &&
                 historyItem.images.length > 0
               ) {
-                // User message with images - use OpenAI's image format
-                const content = [{ type: "text", text: historyItem.message }];
+                // User message with images - use Responses API format (input_text, input_image)
+                const content = [{ type: "input_text", text: historyItem.message }];
 
                 // Add all images from this history item
                 historyItem.images.forEach((img) => {
                   if (img.flipletUrl) {
                     content.push({
-                      type: "image_url",
-                      image_url: { url: img.flipletUrl },
+                      type: "input_image",
+                      image_url: img.flipletUrl, // Direct string, not nested object
                     });
                   } else {
                     debugWarn(
@@ -3165,7 +3183,7 @@ Fliplet.Widget.generateInterface({
                 debugLog(
                   `📝 [AI] Added user history message with ${
                     historyItem.images.length
-                  } images: ${historyItem.message.substring(0, 50)}...`
+                  } images (Responses API format): ${historyItem.message.substring(0, 50)}...`
                 );
               } else {
                 // Assistant message or user message without images - use text format
@@ -3183,16 +3201,19 @@ Fliplet.Widget.generateInterface({
             }
           });
 
-          // Add current user message - always check for images (current or historical)
-          const content = [{ type: "text", text: userMessage }];
+          // Add current user message - check if we have images to determine format
+          let content;
 
-          // First, add any current images
+          // First, check if we have current images
           if (finalCurrentImages && finalCurrentImages.length > 0) {
+            // If we have images, use Responses API array format with input_text and input_image
+            content = [{ type: "input_text", text: userMessage }];
+
             finalCurrentImages.forEach((img) => {
               if (img.flipletUrl) {
                 content.push({
-                  type: "image_url",
-                  image_url: { url: img.flipletUrl },
+                  type: "input_image",
+                  image_url: img.flipletUrl, // Direct string, not nested object
                 });
               } else {
                 debugWarn(
@@ -3202,8 +3223,14 @@ Fliplet.Widget.generateInterface({
               }
             });
             debugLog(
-              "📤 [AI] Added current images to user message:",
+              "📤 [AI] Added current images to user message (Responses API format):",
               finalCurrentImages.length
+            );
+          } else {
+            // If no images, use simple string format
+            content = userMessage;
+            debugLog(
+              "📤 [AI] User message has no images, using string format"
             );
           }
 
@@ -3214,12 +3241,12 @@ Fliplet.Widget.generateInterface({
             "📤 [AI] Current user message will only contain current images, not historical ones"
           );
 
-          // Always send the user message with content array (even if no images)
+          // Add the user message with appropriate content format
           messages.push({ role: "user", content: content });
 
-          const totalImagesInMessage = content.filter(
-            (c) => c.type === "image_url"
-          ).length;
+          const totalImagesInMessage = Array.isArray(content)
+            ? content.filter((c) => c.type === "input_image").length
+            : 0;
           debugLog("📤 [AI] Sending current user message:", {
             textLength: userMessage.length,
             currentImageCount: finalCurrentImages
@@ -3233,16 +3260,23 @@ Fliplet.Widget.generateInterface({
           });
 
           // Log the final content structure
-          debugLog("📤 [AI] Current user message content structure:", {
-            contentLength: content.length,
-            textContent: content.find((c) => c.type === "text")?.text,
-            imageContents: content
-              .filter((c) => c.type === "image_url")
-              .map((img) => ({
-                url: img.image_url.url,
-                name: img.image_url.url.split("/").pop(), // Extract filename from URL
-              })),
-          });
+          if (Array.isArray(content)) {
+            debugLog("📤 [AI] Current user message content structure (array):", {
+              contentLength: content.length,
+              textContent: content.find((c) => c.type === "input_text")?.text,
+              imageContents: content
+                .filter((c) => c.type === "input_image")
+                .map((img) => ({
+                  url: img.image_url,
+                  name: img.image_url.split("/").pop(), // Extract filename from URL
+                })),
+            });
+          } else {
+            debugLog("📤 [AI] Current user message content structure (string):", {
+              textLength: content.length,
+              text: content
+            });
+          }
 
           debugLog("📤 [AI] Request messages with history:", messages);
 
@@ -3387,14 +3421,12 @@ Fliplet.Widget.generateInterface({
           }
 
           const requestBody = {
-            model: AIConfig.model,
-            messages: messages,
-            temperature: AIConfig.temperature,
+            model: modelName,
+            input: messages,
             // max_tokens: CONFIG.MAX_TOKENS,
-            // reasoning_effort: "low",
-            response_format: {
-              type: "json_schema",
-              json_schema: {
+            text: {
+              format: {
+                type: "json_schema",
                 name: "ai_response",
                 strict: true,
                 schema: {
@@ -3460,28 +3492,39 @@ Fliplet.Widget.generateInterface({
                 },
               },
             },
+            useResponses: true,
           };
 
+          // Add reasoning if it's configured (for reasoning models)
+          if (reasoningEffort) {
+            requestBody.reasoning = {
+              effort: reasoningEffort
+            };
+          }
+
           // Log the final request body to verify what's being sent
-          debugLog("🚀 [AI] Final request body being sent to API:", {
+          debugLog("🚀 [AI] Final request body being sent to API (Responses API):", {
             model: requestBody.model,
-            messageCount: requestBody.messages.length,
-            hasImages: requestBody.messages.some(
+            reasoning: requestBody.reasoning,
+            useResponses: requestBody.useResponses,
+            inputCount: requestBody.input.length,
+            hasTextFormat: !!requestBody.text,
+            hasImages: requestBody.input.some(
               (msg) =>
                 msg.role === "user" &&
                 Array.isArray(msg.content) &&
-                msg.content.some((c) => c.type === "image_url")
+                msg.content.some((c) => c.type === "input_image")
             ),
-            imageCount: requestBody.messages.reduce((count, msg) => {
+            imageCount: requestBody.input.reduce((count, msg) => {
               if (msg.role === "user" && Array.isArray(msg.content)) {
                 return (
                   count +
-                  msg.content.filter((c) => c.type === "image_url").length
+                  msg.content.filter((c) => c.type === "input_image").length
                 );
               }
               return count;
             }, 0),
-            userMessageContent: requestBody.messages.find(
+            userMessageContent: requestBody.input.find(
               (msg) => msg.role === "user"
             )?.content,
           });
@@ -3510,23 +3553,45 @@ Fliplet.Widget.generateInterface({
             throw error;
           }
 
-          if (!response || !response.choices || !response.choices[0]) {
+          // Validate Responses API response structure
+          if (!response || !response.output) {
             throw new Error(`AI API error: No valid response received`);
           }
 
-          if (
-            !response.choices ||
-            !response.choices[0] ||
-            !response.choices[0].message
-          ) {
+          if (!Array.isArray(response.output) || response.output.length === 0) {
             throw new Error("Invalid response format from AI API");
           }
 
-          const aiResponse = response.choices[0].message.content;
+          // Extract text from output array
+          let aiResponse = '';
+
+          // Output is an array of message objects
+          const firstOutput = response.output[0];
+
+          if (firstOutput && firstOutput.content && Array.isArray(firstOutput.content)) {
+            // Find the output_text content item
+            const textContent = firstOutput.content.find(item => item.type === 'output_text');
+            if (textContent && textContent.text) {
+              aiResponse = textContent.text;
+            }
+          }
+
+          if (!aiResponse) {
+            throw new Error("Could not extract text from response output");
+          }
+
           debugLog(
             "📥 [AI] Response received:",
             aiResponse.substring(0, 200) + "..."
           );
+
+          // Log additional Responses API metadata if available
+          if (response.usage && response.usage.output_tokens_details && response.usage.output_tokens_details.reasoning_tokens) {
+            debugLog(
+              "🧠 [AI] Reasoning tokens used:",
+              response.usage.output_tokens_details.reasoning_tokens
+            );
+          }
 
           return aiResponse;
         }

@@ -20,12 +20,32 @@ General instructions:
 
 For the HTML do not include any head tags, just return the html for the body.
 Use Bootstrap v3.4.1 for CSS and styling (compatible with the included Bootstrap 3.4.1 core library).
+
+CRITICAL - Template Tag Escaping:
+All HTML is passed through a Handlebars compilation process. If the user requests Handlebars templates or Vue templates in the HTML, you MUST escape the template tags by adding a backslash before the opening braces.
+Examples:
+- Instead of: <h3>{{ floorplan.sessionTitle }}</h3>
+- Use: <h3>\{{ floorplan.sessionTitle }}</h3>
+- Instead of: <div>{{ item.name }}</div>
+- Use: <div>\{{ item.name }}</div>
+- Instead of: {{#each items}}
+- Use: \{{#each items}}
+- Instead of: {{/each}}
+- Use: \{{/each}}
+This escaping prevents the system from processing the templates during save and allows them to be processed at runtime.
+
 Ensure there are no syntax errors in the code and that column names with spaced in them are wrapped with square brackets.
 Add inline comments for the code so technical users can make edits to the code.
 Add try catch blocks in the code to catch any errors and log the errors to the console and show them to the user user via Fliplet.UI.Toast(message).
 Ensure you chain all the promises correctly with return statements.
-If the user provides any links to dependencies/libraries please include them via script tags in the html.
-Always remind the user to include the dependency explicitly for proper inclusion.
+
+CRITICAL - External Dependencies:
+NEVER add external dependencies as comments in the code (e.g., script tags in HTML comments, or TODO comments in JavaScript).
+If your code requires external libraries or dependencies that are not in the core libraries list, you MUST:
+1. Return a chat message to the user explaining what dependency is needed
+2. Include the dependency name, version, and CDN link in your chat response
+3. Do NOT include script tags or dependency references as comments in the generated code
+4. Wait for the user to confirm they've added the dependency before proceeding
 
 User Communication Guidelines:
 When providing explanations or descriptions to end users, use simple, non-technical language that focuses on functionality rather than implementation details. Instead of technical jargon, describe what the feature does for the user in plain English.
@@ -150,542 +170,708 @@ Example response when information is missing:
   "instructions": []
 }
 
-// Create a new data source
-Fliplet.DataSources.create({
-  name: 'Your Data Source Name',
-  appId: Fliplet.Env.get('appId'),
-  organizationId: Fliplet.Env.get('organizationId'),
-  columns: ['Column1', 'Column2', 'Column3'], // Define your columns here
-  entries: [
-    { Column1: 'Value1', Column2: 'Value2', Column3: 'Value3' },
-    // Add more entries as needed
-  ],
-  accessRules: [
-    { type: ['select', 'insert', 'update', 'delete'], allow: 'all' }
-  ]
-}).then(function (dataSource) {
-  console.log('New data source created:', dataSource);
-  // dataSource.id contains the ID of the newly created data source
-}).catch(function (error) {
-  console.error('Error creating data source:', error);
-  Fliplet.UI.Toast('Failed to create data source: ' + error.message);
-});
+# Data Sources JS APIs
 
-Parameters for creating a data source:
-- **name** (required): The name of the data source - MUST be provided by user
-- **appId** (required): The app ID - automatically set using Fliplet.Env.get('appId')
-- **organizationId** (required): The organization ID - automatically set using Fliplet.Env.get('organizationId')
-- **columns** (recommended): Array of column names for the data source structure - SHOULD be specified by user
-- **entries** (optional): Array of initial data entries to populate the data source
-- **accessRules** (optional): Array of access rules defining permissions for the data source
+The Data Source JS APIs allows you to interact and make any sort of change to your app's Data Sources from the app itself.
 
-Example of creating a data source for a contact form:
-// Create a contacts data source
-Fliplet.DataSources.create({
-  name: 'Contact Submissions',
-  appId: Fliplet.Env.get('appId'),
-  organizationId: Fliplet.Env.get('organizationId'),
-  columns: ['Name', 'Email', 'Phone', 'Message', 'Submitted At'],
-  accessRules: [
-    { type: ['select', 'insert', 'update', 'delete'], allow: 'all' }
-  ]
-}).then(function (dataSource) {
-  console.log('Contact data source created with ID:', dataSource.id);
-  // You can now use this data source to store form submissions
-}).catch(function (error) {
-  console.error('Failed to create contact data source:', error);
-});
+## ⚠️ Important: All API Calls Are Asynchronous
 
-### Get the list of data sources in use by the current app
+**All Fliplet Data Sources API methods return Promises and must be chained using  .then()  or used with  async/await .**
 
-Use the "appId" and "includeInUse" options together to get the list of data sources owned or in use by the current app.
+ 
+// Using async/await (recommended)
+async function example() {
+  const connection = await Fliplet.DataSources.connect(dataSourceId);
+  const records = await connection.find();
+  return records;
+}
 
-Fliplet.DataSources.get({
-  appId: Fliplet.Env.get('masterAppId'),
-  includeInUse: true
-}).then(function (dataSources) {
- // dataSources is an array of data sources in use by the current app
-});
-
-### Get a data source by ID
-
-Use the "getById" function to fetch details about a data source by its ID. You can optionally pass a list of "attributes" to return.
-
-Fliplet.DataSources.getById(123, {
-  attributes: ['name', 'hooks', 'columns']
-}).then(function (dataSource) {
-
-});
-
-### Connect to a data source by ID
-
-Fliplet.DataSources.connect(dataSourceId).then(function (connection) {
-  // check below for the list of instance methods for the connection object
-});
-
-Once you get a **connection**, you can use the instance methods described below to **find, insert, update and delete data source entries**.
-
-### Connect to a data source by Name
-
-You can also connect to a data source by its name (case-sensitive) using the "connectByName" method.
-
-Fliplet.DataSources.connectByName("Attendees").then(function (connection) {
-  // check below for the list of instance methods for the connection object
-});
+// Using .then() chaining
+Fliplet.DataSources.connect(dataSourceId)
+  .then(connection => connection.find())
+  .then(records => {
+    // Process records
+  })
+  .catch(error => {
+    // Handle errors
+  });
+ 
 
 ---
 
-## Connection instance methods
+## Core Workflow: Connect First
 
-### Fetch records from a data source
+### Connect to a Data Source by Name
 
-#### Fetch all records
+**Purpose:** Connect using the data source name instead of ID (recommended for portability)  
+**Syntax:**  Fliplet.DataSources.connectByName(name)   
+**Returns:**  Promise<Connection>   
+**When to use:** Preferred method - data source names remain consistent when copying apps between environments
 
-// use"find" with no options to get all entries
-connection.find().then(function (records) {
-  // records is an array
+ 
+const connection = await Fliplet.DataSources.connectByName("Users");
+ 
+
+**Why use connectByName:** Data source names typically remain the same when copying apps between environments, while IDs change. This makes your code more portable and maintainable.
+
+### Connect to a Data Source by ID
+
+**Purpose:** Establish a connection to work with a specific data source by ID  
+**Syntax:**  Fliplet.DataSources.connect(dataSourceId, options?)   
+**Returns:**  Promise<Connection>   
+**When to use:** Only when you specifically need to target a data source by ID (less portable)
+
+ 
+// Basic connection by ID (not recommended for portability)
+const connection = await Fliplet.DataSources.connect(123);
+
+// Advanced connection with options
+const connection = await Fliplet.DataSources.connect(123, {
+  offline: false // Force online-only queries (mobile apps default to offline)
 });
+ 
 
-#### Fetch records with a query
+**Note:** Fliplet apps on mobile devices attempt to connect to the **offline bundled data sources by default**. You can optionally prevent a data source from being bundled by editing its settings in Fliplet Studio, or by using the  offline: false  parameter to connect only to the live online data source.
 
-Querying options are based on the [Sift.js](https://github.com/Fliplet/sift.js) operators, which mimic MongoDB querying operators. Here are the supported operators from Sift.js:
+---
 
-  - "$in", "$nin", "$exists", "$gte", "$gt", "$lte", "$lt", "$eq", "$ne", "$iLike", "$mod", "$all", "$and", "$or", "$nor", "$not", "$size", "$type", "$regex", "$elemMatch"
+## Essential Connection Methods
 
-The following operators and values are optimized to perform better with Fliplet's database.
+### 1. Find Records (Query Data)
 
-  - Operators: "$or", "$and", "$gte", "$lte", "$gt", "$lt", "$eq"
-  - Values: strings and numbers
+**Purpose:** Retrieve records from the data source  
+**Syntax:**  connection.find(options?)   
+**Returns:**  Promise<Record[]>   
+**When to use:** Reading/querying data (most common operation)
 
-Fliplet also supports a custom "$filters" operator with some unique conditional logic such as case-insensitive match or date & time comparison. See example below.
+#### Basic Usage
+ 
+// Complete example: Get all user records
+const connection = await Fliplet.DataSources.connectByName("Users");
+const allUsers = await connection.find();
 
-A few examples to get you started:
-
-// Find records where column"sum" is greater than 10 and column"name"
-// is either"Nick" or"Tony"
-connection.find({
-  where: {
-    sum: { $gt: 10 },
-    name: { $in: ['Nick', 'Tony'] }
-  }
+// Complete example: Get users from London office
+const connection = await Fliplet.DataSources.connectByName("Users");
+const londonUsers = await connection.find({
+  where: { Office: 'London' }
 });
+console.log('London users:', londonUsers);
 
-// Find a case insensitive and partial match to the"Email" column. For e.g. it will match with bobsmith@email.com or Bobsmith@email.com or smith@email.com
-connection.find({
-  where: {
-    Email: { $iLike: 'BobSmith@email.com' }
-  }
+// Complete example: Get specific user data columns only
+const connection = await Fliplet.DataSources.connectByName("Users");
+const userNames = await connection.find({
+  attributes: ['Name', 'Email', 'Department']
 });
+console.log('User names and emails:', userNames);
+ 
 
-// Find records where column"email" matches the domain"example.org"
-connection.find({
+#### Advanced Querying
+ 
+// Complete example: Complex query with multiple conditions
+const connection = await Fliplet.DataSources.connectByName("Users");
+const seniorEngineers = await connection.find({
   where: {
-    email: { $regex: /example\.org$/i }
-  }
+    Office: 'London',
+    Age: { $gte: 25 },
+    Department: { $in: ['Engineering', 'Design'] },
+    Status: 'Active'
+  },
+  order: [['Name', 'ASC']],
+  limit: 50
 });
+console.log('Senior engineers in London:', seniorEngineers);
 
-// Nested queries using the $or operator: find records where either"name" is"Nick"
-// or"address" is"UK" and"name" is"Tony"
-connection.find({
+// Complete example: Using Fliplet's custom $filters (optimized for performance)
+const connection = await Fliplet.DataSources.connectByName("Users");
+const activeUsers = await connection.find({
   where: {
-    $or: [
-      { name: 'Nick' },
-      { address: 'UK', name: 'Tony' }
+    $filters: [
+      {
+        column: 'Email',
+        condition: 'contains',
+        value: '@company.com'
+      },
+      {
+        column: 'Status',
+        condition: '==',
+        value: 'Active'
+      }
     ]
   }
 });
+console.log('Active company users:', activeUsers);
+ 
 
-// Find records where the column"country" is not"Germany" or"France"
-// and"createdAt" is on or after a specific date
-connection.find({
-  where: {
-    country: { $nin: ['Germany', 'France'] },
-    createdAt: { $gte: '2018-03-20' }
-  }
-});
+#### Query Operators Reference
 
-// Use Fliplet's custom $filters operator
-// The"==" and"contains" conditions are optimized to perform better with Fliplet's database
-connection.find({
+**MongoDB-style Operators (Sift.js)**
+ 
+// Comparison operators
+{ field: { $gt: 10 } }           // Greater than
+{ field: { $gte: 10 } }          // Greater than or equal
+{ field: { $lt: 10 } }           // Less than
+{ field: { $lte: 10 } }          // Less than or equal
+{ field: { $eq: 'value' } }      // Equal to
+{ field: { $ne: 'value' } }      // Not equal to
+
+// Array operators
+{ field: { $in: ['a', 'b'] } }   // Value in array
+{ field: { $nin: ['a', 'b'] } }  // Value not in array
+
+// Text operators
+{ field: { $iLike: 'john' } }    // Case-insensitive partial match
+{ field: { $regex: /pattern/i } } // Regular expression
+
+// Logical operators
+{ $and: [{ field1: 'a' }, { field2: 'b' }] }
+{ $or: [{ field1: 'a' }, { field2: 'b' }] }
+{ $nor: [{ field1: 'a' }, { field2: 'b' }] }  // None of the conditions
+{ field: { $not: { $lt: 18 } } }              // Logical NOT
+
+// Other operators
+{ field: { $exists: true } }     // Field exists
+{ field: { $mod: [4, 0] } }      // Modulo operation
+{ field: { $all: ['a', 'b'] } }  // Array contains all values
+{ field: { $size: 3 } }          // Array size
+{ field: { $type: 'string' } }   // Type check
+{ field: { $elemMatch: { $gte: 80 } } } // Array element matching
+ 
+
+**Fliplet Custom $filters Operator**
+
+The  $filters  operator provides optimized performance and additional conditions:
+
+ 
+{
   where: {
-    // Find entries that match ALL of the following conditions
     $filters: [
-      // Find entries with a case insensitive match on the column
+      // Exact match (case-insensitive)
       {
         column: 'Email',
         condition: '==',
         value: 'user@email.com'
       },
-      // Find entries where the column does not match the value
+      // Not equal
       {
-        column: 'Email',
+        column: 'Status',
         condition: '!=',
-        value: 'user@email.com'
+        value: 'Inactive'
       },
-      // Find entries where the column is greater than the value
+      // Numeric comparisons
       {
-        column: 'Size',
-        condition: '>',
-        value: 10
+        column: 'Age',
+        condition: '>',    // '>', '>=', '<', '<='
+        value: 25
       },
-      // Find entries where the column is greater than or equal to the value
+      // Contains (case-insensitive partial match)
       {
-        column: 'Size',
-        condition: '>=',
-        value: 10
-      },
-      // Find entries where the column is less than the value
-      {
-        column: 'Size',
-        condition: '<',
-        value: 10
-      },
-      // Find entries where the column is less than or equal to the value
-      {
-        column: 'Size',
-        condition: '<=',
-        value: 10
-      },
-      // Find entries with a case insensitive partial match on the column
-      {
-        column: 'Email',
+        column: 'Name',
         condition: 'contains',
-        value: '@email.com'
+        value: 'John'
       },
-      // Find entries where the column is empty based on _.isEmpty()
+      // Empty/not empty checks
       {
-        column: 'Tags',
-        condition: 'empty'
+        column: 'Notes',
+        condition: 'empty'    // or 'notempty'
       },
-      // Find entries where the column is not empty based on _.isEmpty()
+      // Range check
       {
-        column: 'Tags',
-        condition: 'notempty'
-      },
-      // Find entries where the column is in between 2 numeric values (inclusive)
-      {
-        column: 'Size',
+        column: 'Score',
         condition: 'between',
-        value: {
-          from: 10,
-          to: 20
-        }
+        value: { from: 80, to: 100 }
       },
-      // Find entries where the column is one of the values
+      // One of multiple values
       {
-        column: 'Category',
+        column: 'Department',
         condition: 'oneof',
-        // value can also be a CSV string
-        value: ['News', 'Tutorial']
+        value: ['Engineering', 'Design', 'Marketing']
       },
-      // Find entries where the column matches a date comparison
+      // Date comparisons
       {
         column: 'Birthday',
-        // Use dateis, datebefore or dateafter to match
-        // dates before and after the comparison value
-        condition: 'dateis',
-        value: '1978-04-30'
-        // Optionally provide a unit of comparison:
-        //  - year
-        //  - quarter
-        //  - month
-        //  - week
-        //  - day
-        //  - hour
-        //  - minute
-        //  - second
-        // unit: 'month'
-      },
-      // Find entries where the column is before the a certain time of the day
-      {
-        column: 'Start time',
-        condition: 'datebefore',
-        value: '17:30'
-      },
-      // Find entries where the column is after a timestamp
-      {
-        column: 'Birthday',
-        condition: 'dateafter',
-        // Provide a full timestamp for comparison in YYYY-MM-DD HH:mm format
-        value: '2020-03-10 13:03'
-      },
-      // Find entries where the column is between 2 dates (inclusive)
-      {
-        column: 'Birthday',
-        condition: 'datebetween',
-        from: {
-          value: '1978-01-01'
-        },
-        to: {
-          value: '1978-12-31'
-        }
+        condition: 'dateis',     // 'datebefore', 'dateafter', 'datebetween'
+        value: '1990-01-01'
       }
     ]
   }
+}
+ 
+
+**📖 Complete Operators Reference:** [View detailed query operators documentation](datasources/query-operators.md)
+
+### 2. Insert Records (Add Data)
+
+**Purpose:** Add new records to the data source  
+**Syntax:**  connection.insert(data, options?)   
+**Returns:**  Promise<Record>   
+**When to use:** Creating new entries
+
+ 
+// Complete example: Insert a single user record
+const connection = await Fliplet.DataSources.connectByName("Users");
+const newUser = await connection.insert({
+  Name: 'John Doe',
+  Email: 'john.doe@company.com',
+  Department: 'Engineering',
+  Office: 'London',
+  Age: 28,
+  Status: 'Active'
+});
+console.log('Created new user:', newUser);
+
+// Complete example: Insert with acknowledgment for immediate local update
+const connection = await Fliplet.DataSources.connectByName("Users");
+const newUser = await connection.insert({
+  Name: 'Jane Smith',
+  Email: 'jane.smith@company.com',
+  Department: 'Design',
+  Office: 'New York',
+  Age: 26,
+  Status: 'Active'
+}, {
+  ack: true // Ensure local database updates immediately
+});
+console.log('Created user with immediate sync:', newUser);
+
+// Complete example: Insert with file upload (FormData)
+const connection = await Fliplet.DataSources.connectByName("Users");
+const formData = new FormData();
+formData.append('Name', 'Bob Johnson');
+formData.append('Email', 'bob.johnson@company.com');
+formData.append('Department', 'Marketing');
+formData.append('Avatar', fileInput.files[0]); // File from input element
+
+const newUserWithFile = await connection.insert(formData, {
+  folderId: 123 // Specify media folder for file uploads
+});
+console.log('Created user with avatar:', newUserWithFile);
+ 
+
+**Options:**
+-  folderId  (Number): MediaFolder ID where uploaded files should be stored
+-  ack  (Boolean): If true, ensures the local offline database gets updated immediately
+
+### 3. Update Records (Modify Data)
+
+**Purpose:** Modify existing records  
+**Syntax:**  connection.update(recordId, data, options?)   
+**Returns:**  Promise<Record>   
+**When to use:** Changing existing entries
+
+ 
+// Complete example: Update a user record by ID
+const connection = await Fliplet.DataSources.connectByName("Users");
+
+// First find the user to get their ID
+const users = await connection.find({
+  where: { Email: 'john.doe@company.com' }
 });
 
-#### Filter the columns returned when finding records
-
-Use the "attributes" array to optionally define a list of the columns that should be returned for the records.
-
-// use"find" with"attributes" to filter the columns returned
-connection.find({ attributes: ['Foo', 'Bar'] }).then(function (records) {
-  // records is an array
-});
-
-You can also use this by passing an empty array as an efficient method to count the number of entries without requesting much data from the server:
-
-connection.find({ attributes: [] }).then(function (records) {
-  // use records.length as the number of records
-});
-
-#### Fetch records with pagination
-
-You can use the "limit" and "offset" parameters to filter down the returned entries to a specific chunk (page) of the Data Source.
-
-// use limit and offset for pagination
-connection.find({
-  limit: 50,
-  offset: 10
-});
-
-Full example:
-
-Fliplet.DataSources.connect(123).then(function (connection) {
-  return connection.find({ limit: 1000 }).then(function (results) {
-
+if (users.length > 0) {
+  const updatedUser = await connection.update(users[0].id, {
+    Office: 'Berlin',
+    Department: 'Product Engineering'
   });
-});
-
-Moreover, the "includePagination" parameter enables the response to return the count of total entries in the Data Source:
-
-connection.find({
-  limit: 50,
-  offset: 10,
-  includePagination: true
-}).then(function (response) {
-  // response.entries []
-  // response.pagination = { total, limit, offset }
-});
-
-Note that when using the above parameter, the returned object from the "find()" method changes from an array of records to an object with the following structure:
-
-{
- "entries": [],
- "dataSourceId": 123456,
- "count": 50,
- "pagination": {
-   "total": 1000,
-   "limit": 50,
-   "offset": 10
-  }
+  console.log('Updated user:', updatedUser);
 }
 
-#### Run aggregation queries
+// Complete example: Update user with file upload
+const connection = await Fliplet.DataSources.connectByName("Users");
+const formData = new FormData();
+formData.append('Office', 'San Francisco');
+formData.append('Avatar', newAvatarFile);
 
-You can use the built-in [Mingo](https://github.com/kofrasa/mingo) library to run complex aggregation queries or projections on top of Data Sources. Mingo operations can be provided to the "find" method via the "aggregate" attribute:
+const updatedUser = await connection.update(456, formData, {
+  mediaFolderId: 789
+});
+console.log('Updated user with new avatar:', updatedUser);
+ 
 
-// This example groups records by values found on a sample column"myColumnName"
-// and counts the matches for each value
-connection.find({
+### 4. Find Single Record
+
+**Purpose:** Get one specific record  
+**Syntax:**  connection.findOne(options)  or  connection.findById(id)   
+**Returns:**  Promise<Record | undefined>   
+**When to use:** Looking for a specific entry
+
+ 
+// Complete example: Find one user by email
+const connection = await Fliplet.DataSources.connectByName("Users");
+const user = await connection.findOne({
+  where: { Email: 'john.doe@company.com' }
+});
+
+if (user) {
+  console.log('Found user:', user);
+} else {
+  console.log('User not found');
+}
+
+// Complete example: Find user by ID (if you know the ID)
+const connection = await Fliplet.DataSources.connectByName("Users");
+const user = await connection.findById(123);
+
+if (user) {
+  console.log('Found user by ID:', user);
+} else {
+  console.log('User with ID 123 not found');
+}
+ 
+
+### 5. Remove Records (Delete Data)
+
+**Purpose:** Delete records from the data source  
+**Syntax:**  connection.removeById(id)  or  connection.query({ type: 'delete', where: {...} })   
+**Returns:**  Promise<void>   
+**When to use:** Removing unwanted entries
+
+ 
+// Complete example: Remove user by ID
+const connection = await Fliplet.DataSources.connectByName("Users");
+
+// First find the user to get their ID
+const users = await connection.find({
+  where: { Email: 'obsolete.user@company.com' }
+});
+
+if (users.length > 0) {
+  await connection.removeById(users[0].id);
+  console.log('User removed successfully');
+}
+
+// Complete example: Remove multiple users matching criteria
+const connection = await Fliplet.DataSources.connectByName("Users");
+const deletedCount = await connection.query({
+  type: 'delete',
+  where: { Status: 'Inactive' }
+});
+ 
+
+---
+
+## Bulk Operations
+
+### Insert Multiple Records
+
+**Purpose:** Add many records at once (more efficient than individual inserts)  
+**Syntax:**  connection.append(recordsArray, options?)   
+**Returns:**  Promise<void>   
+**When to use:** Bulk data import
+
+ 
+// Complete example: Add multiple users at once
+const connection = await Fliplet.DataSources.connectByName("Users");
+
+const newUsers = [
+  { 
+    Name: 'Alice Cooper', 
+    Email: 'alice.cooper@company.com',
+    Department: 'Engineering',
+    Office: 'London',
+    Age: 29,
+    Status: 'Active'
+  },
+  { 
+    Name: 'Bob Wilson', 
+    Email: 'bob.wilson@company.com',
+    Department: 'Design',
+    Office: 'New York',
+    Age: 31,
+    Status: 'Active'
+  },
+  { 
+    Name: 'Charlie Brown', 
+    Email: 'charlie.brown@company.com',
+    Department: 'Marketing',
+    Office: 'Berlin',
+    Age: 27,
+    Status: 'Active'
+  }
+];
+
+await connection.append(newUsers);
+
+// Complete example: Bulk insert with disabled hooks for better performance
+const connection = await Fliplet.DataSources.connectByName("Users");
+await connection.append(newUsers, { runHooks: false });
+console.log('Bulk insert completed (hooks disabled for performance)');
+
+
+### Commit Multiple Changes
+
+**Purpose:** Insert, update, and delete in a single operation  
+**Syntax:**  connection.commit(options)   
+**Returns:**  Promise<void>   
+**When to use:** Complex bulk operations
+
+ 
+// Complete example: Multiple operations in one transaction
+const connection = await Fliplet.DataSources.connectByName("Users");
+
+await connection.commit({
+  entries: [
+    // Insert new user
+    { 
+      data: { 
+        Name: 'New Employee', 
+        Email: 'new.employee@company.com',
+        Department: 'Sales',
+        Office: 'Paris',
+        Age: 24,
+        Status: 'Active'
+      } 
+    },
+    
+    // Update existing user (assuming ID 123 exists)
+    { 
+      id: 123, 
+      data: { 
+        Office: 'Remote',
+        Department: 'Engineering - Remote'
+      } 
+    }
+  ],
+  
+  // Delete users by ID (assuming these IDs exist)
+  delete: [456, 789],
+  
+  // Keep existing entries not mentioned
+  append: true,
+  
+  // Merge with existing data instead of replacing
+  extend: true,
+  
+  // Don't return all entries (faster)
+  returnEntries: false
+});
+
+console.log('Bulk operations completed successfully');
+ 
+
+---
+
+## Pagination and Performance
+
+### Basic Pagination
+
+ 
+// Complete example: Paginated user retrieval
+const connection = await Fliplet.DataSources.connectByName("Users");
+
+// Get first 10 users
+const page1 = await connection.find({
+  limit: 10,
+  offset: 0,
+  order: [['Name', 'ASC']]
+});
+console.log('Page 1 users:', page1);
+
+// Get next 10 users
+const page2 = await connection.find({
+  limit: 10,
+  offset: 10,
+  order: [['Name', 'ASC']]
+});
+console.log('Page 2 users:', page2);
+
+// Complete example: Get pagination info
+const connection = await Fliplet.DataSources.connectByName("Users");
+const result = await connection.find({
+  limit: 10,
+  offset: 0,
+  includePagination: true,
+  order: [['Name', 'ASC']]
+});
+ 
+
+## Sorting and Ordering
+
+**Purpose:** Control the order of returned records  
+**Syntax:** Use  order  array in find options  
+**When to use:** When you need specific sorting
+
+ 
+// Complete example: Sort users by creation date (newest first)
+const connection = await Fliplet.DataSources.connectByName("Users");
+const recentUsers = await connection.find({
+  order: [['createdAt', 'DESC']],
+  limit: 10
+});
+console.log('Most recent users:', recentUsers);
+
+// Complete example: Sort by multiple columns
+const connection = await Fliplet.DataSources.connectByName("Users");
+const sortedUsers = await connection.find({
+  order: [
+    ['data.Department', 'ASC'],  // Sort by department first
+    ['data.Name', 'ASC']         // Then by name
+  ]
+});
+console.log('Users sorted by department then name:', sortedUsers);
+
+// Available sort columns:
+// - Fliplet columns: 'id', 'order', 'createdAt', 'deletedAt', 'updatedAt'
+// - Entry columns: 'data.ColumnName'
+// - Sort directions: 'ASC' (ascending), 'DESC' (descending)
+ 
+
+## Utility Methods
+
+### Get Unique Values
+
+**Purpose:** Get distinct values from columns  
+**When to use:** Building filters, dropdowns, or analytics
+
+ 
+// Complete example: Get unique office locations
+const connection = await Fliplet.DataSources.connectByName("Users");
+const offices = await connection.getIndex('Office');
+console.log('Available offices:', offices);
+// Returns: ['London', 'New York', 'Berlin', 'Paris']
+
+// Complete example: Get unique values for multiple columns
+const connection = await Fliplet.DataSources.connectByName("Users");
+const indexes = await connection.getIndexes(['Office', 'Department']);
+console.log('Unique values:', indexes);
+// Returns: { 
+//   Office: ['London', 'New York', 'Berlin'], 
+//   Department: ['Engineering', 'Design', 'Marketing'] 
+// }
+
+// Use for building dynamic filters
+const { Office: availableOffices, Department: availableDepartments } = indexes;
+console.log('Build office filter with:', availableOffices);
+console.log('Build department filter with:', availableDepartments);
+ 
+
+
+## Data Source Management
+
+### Get Available Data Sources
+
+**Purpose:** List data sources you can work with  
+**Syntax:**  Fliplet.DataSources.get(options?)   
+**Returns:**  Promise<DataSource[]>   
+**When to use:** Discovery, building dynamic interfaces
+
+ 
+// Complete example: Get all data sources for organization
+const dataSources = await Fliplet.DataSources.get({
+  attributes: ['id', 'name', 'columns']
+});
+console.log('Available data sources:', dataSources);
+
+// Find the Users data source
+const usersDataSource = dataSources.find(ds => ds.name === 'Users');
+if (usersDataSource) {
+  console.log('Users data source found:', usersDataSource);
+  console.log('Available columns:', usersDataSource.columns);
+}
+
+// Complete example: Get data sources used by current app
+const appDataSources = await Fliplet.DataSources.get({
+  appId: Fliplet.Env.get('masterAppId'),
+  includeInUse: true
+});
+console.log('App data sources:', appDataSources);
+
+// Complete example: Get specific data source details by ID
+const dataSource = await Fliplet.DataSources.getById(123, {
+  attributes: ['name', 'hooks', 'columns']
+});
+console.log('Data source details:', dataSource);
+ 
+
+### Create New Data Source
+
+**Purpose:** Programmatically create data sources  
+**Syntax:**  Fliplet.DataSources.create(options)   
+**Returns:**  Promise<DataSource>   
+**When to use:** Dynamic app setup, automated workflows
+
+ 
+// Complete example: Create a new Users data source
+const newDataSource = await Fliplet.DataSources.create({
+  name: 'Users',
+  
+  // Attach to current app
+  appId: Fliplet.Env.get('appId'),
+  organizationId: Fliplet.Env.get('organizationId'),
+  
+  // Define structure
+  columns: ['Name', 'Email', 'Department', 'Office', 'Age', 'Status'],
+  
+  // Add initial test data
+  entries: [
+    {
+      Name: 'John Smith',
+      Email: 'john.smith@company.com',
+      Department: 'Engineering',
+      Office: 'London',
+      Age: 30,
+      Status: 'Active'
+    },
+    {
+      Name: 'Sarah Jones',
+      Email: 'sarah.jones@company.com',
+      Department: 'Design',
+      Office: 'New York',
+      Age: 28,
+      Status: 'Active'
+    }
+  ],
+  
+  // Set permissions
+  accessRules: [
+    { type: ['select', 'insert', 'update', 'delete'], allow: 'all' }
+  ]
+});
+
+console.log('Created Users data source:', newDataSource);
+
+// Now you can connect to it by name
+const connection = await Fliplet.DataSources.connectByName("Users");
+console.log('Connected to new Users data source');
+ 
+
+---
+
+## Advanced Features
+
+### Aggregation Queries
+
+**Purpose:** Run complex data analysis using MongoDB-style aggregation  
+**Syntax:** Use  aggregate  option in find method  
+**When to use:** Analytics, reporting, data transformation
+
+ 
+// Complete example: Group users by department and calculate average age
+const connection = await Fliplet.DataSources.connectByName("Users");
+
+const departmentStats = await connection.find({
   aggregate: [
     {
       $project: {
-        numericData: { $convertToNumber: $data.myColumnName }
+        department: '$data.Department',
+        numericAge: { $convertToNumber: '$data.Age' }
       }
     },
     {
       $group: {
-        _id: '$numericData',
-        avg: { $avg: $numericData }
+        _id: '$department',
+        avgAge: { $avg: '$numericAge' },
+        userCount: { $sum: 1 }
       }
     }
   ]
 });
 
-The version of Mingo we have used does not automatically typecast strings to numbers. Therefore, we have added our own custom operator ($convertToNumber) to type cast to a number before performing aggregation. To use this custom operator, please refer to above snippet.
-
-### Sort / order the results
-
-Use the "order" array of arrays to specify the sorting order for the returned entries.
-
-You can order by:
-- Fliplet columns: "id", "order", "createdAt", "deletedAt", "updatedAt"
-- Entry columns, using the "data." prefix (e.g. "data.Email")
-
-The order direction is either "ASC" for ascending ordering or "DESC" for descending ordering.
-
-The "order" array accepts a list of arrays, where each includes the column and sorting order:
-
-// Sort records by their created time (first records are newer)
-connection.find({
-  where: { Office: 'London' },
-  order: [
-    ['createdAt', 'DESC']
-  ]
-}).then(function (records) {
-  // ...
-});
-
-// Sort records alphabetically by their last name first and then first name
-connection.find({
-  where: { Office: 'London' },
-  order: [
-    ['data.LastName', 'ASC'],
-    ['data.FirstName', 'ASC']
-  ]
-}).then(function (records) {
-  // ...
-});
-
-### Find a specific record
-
-The "findOne" method allows you to look for up to one record, limiting the amount of entries returned if you're only looking for one specific entry.
-
-connection.findOne({
-  where: { name: 'John' }
-}).then(function (record) {
-  // record is either the found entry"object" or"undefined"
-});
-
-### Find a record by its ID
-
-This is a code snippet for finding a record in a specific Data Source by its ID.
-
-The "findById()" method accepts a single parameter, which is the ID of the entry to search for in the Data Source. Once the entry has been found, it will be returned as a record object in the response, and the code inside the promise callback function will be executed.
-
-connection.findById(1).then(function (record) {
-  // records is the found object
-});
-
-### Commit changes at once to a data source
-
-Use "connection.commit(Array)" to commit more than one change at once to a data source. You can use this to insert, update and delete entries at the same time with a single request. This makes it very efficient in terms of both minimizing the network requests and computation required from both sides.
-
-List of input parameters:
-  - "entries": (required array): the list of entries to insert or update ("{ data }" for insert and "{ id, data }" for updates).
-  - "append": (optional boolean, defaults to false): set to "true" to keep existing remote entries not sent in the updates to be made. When this is set to "false" you will essentially be replacing the whole data source with just the data you are sending.
-  - "delete": (optional array): the list of entry IDs to remove (when used in combination with "append: true").
-  - "extend" (optional boolean, defaults to false): set to "true" to enable merging the local columns you are sending with any existing columns for the affected data source entries.
-  - "runHooks" (optional array) the list of hooks ("insert" or "update") to run on the data source during the operation.
-  - "returnEntries" (optional boolean, defaults to true): set to "false" to stop the API from returning all the entries in the data source
-
-The following sample request applies the following changes to the data source:
-  - inserts a new entry
-  - updates the entry with ID 123 merging its data with the new added column(s)
-  - deletes the entry with ID 456
-
-connection.commit({
-  entries: [
-    // Insert a new entry
-    { data: { foo: 'bar' } },
-
-    // Update the entry with ID 123
-    { id: 123, data: { foo: 'barbaz' } }
-  ],
-
-  // Delete the entry with ID 456
-  delete: [456],
-
-  // Ensure existing entries are unaffected
-  append: true,
-
-  // Keep remote columns not sent with
-  // the updates of entry ID 123
-  extend: true,
-
-  // Do not return the whole data source after updating the data.
-  // Keep this as"false" to speed up the response.
-  returnEntries: false
-});
-
----
-
-### Insert a single record into the data source
-
-To insert a record into a data source, use the "connection.insert" method by passing the data to be inserted as a **JSON** object or a **FormData** object.
-
-// Using a JSON object
-connection.insert({
-  id: 3,
-  name: 'Bill'
-});
-
-// Using a FormData object
-connection.insert(FormData);
-
-**Note**: the "dataSourceId" and "dataSourceEntryId" are **reserved keys** and should not be used in the input JSON.
-
-The second parameter of the "connection.insert" function accepts various options as described below:
-
-  - [folderId](#options-folderId) (Number)
-  - [ack](#options-ack) (Boolean)
-
-#### **Options: folderId**
-
-When "FormData" is used as first parameter, your record gets uploaded using a multipart request. If your FormData contains files, you can specify the **MediaFolder** where files should be stored to using the "folderId" parameter:
-
-connection.insert(FormData, {
-  folderId: 123
-});
-
-#### **Options: ack**
-
-If you want to make sure the local (offline) database on the device also gets updated as soon as the server receives your record you can use the "ack" (which abbreviates the word **acknowledge**) parameter:
-
-connection.insert({ foo: 'bar' }, {
-  // this ensure the local database gets updated straight away, without
-  // waiting for silent updates (which can take up to 30 seconds to be received).
-  ack: true
-});
-
----
-
-### Update a record (entry)
-
-Updating a data source entry is done via the "connection.insert" method by providing its ID and the update to be applied.
-
-connection.update(123, {
-  name: 'Bill'
-});
-
-You can also pass a "FormData" object to upload files using a multipart request. When uploading files, you can also specify the MediaFolder where files should be stored to:
-
-connection.update(123, FormData, {
-  mediaFolderId: 456
-});
-
-### Remove a record by its ID
-
-Use the "removeById" method to remove a entry from a data source given its ID.
-
-connection.removeById(1).then(function onRemove() {});
-
-### Remove entries matching a query
-
-Set "type" to "delete" and specify a where clause. This will query the data source and delete any matching entries.
-
-connection.query({
-  type: 'delete',
-  where: { Email: 'test@fliplet.com' }
-});
-
-### Get unique values for a column
-
-Use the "getIndex" method to get unique values for a given column of the Data Source:
-
-connection.getIndex('name').then(function onSuccess(values) {
-  // array of unique values
-});
-
-### Get unique values for multiple columns at once
-
-Use the "getIndexes" method to get unique values for a given array of columns of the Data Source:
-
-connection.getIndexes(['name','email']).then(function onSuccess(values) {
-  // an object having key representing each index and the value being the array of values
-  // e.g. { name: ['a', 'b'], email: ['c', 'd'] }
-});
+console.log('Department statistics:', departmentStats);
+// Example output: [
+//   { _id: 'Engineering', avgAge: 29.5, userCount: 4 },
+//   { _id: 'Design', avgAge: 27.2, userCount: 3 }
+// ]
+ 
 
 ### Format of data returned from JS API
 
@@ -803,9 +989,60 @@ IMPORTANT: When generating code:
    - ❌ WRONG: ['data["First Name"]', 'ASC']
 5. Never use dot notation for spaced columns when accessing: record.data.Column Name ❌
 
-If you are asked to build a feature that requires navigating the user to another screen use the navigate JS API to do this:
+## Navigation JS APIs
 
-Fliplet.Navigate.screen('Menu') where it accepts the screen name as a parameter.
+If you are asked to build a feature that requires navigating the user to another screen, use the Navigate JS API.
+
+### Navigate to a screen
+
+Navigate to a specific screen in your app by providing the screen name:
+
+Fliplet.Navigate.screen('Menu');
+
+Navigate with query parameters:
+
+You can pass query parameters when navigating to another screen. These parameters will be available on the target screen:
+
+Fliplet.Navigate.screen('Home', { query: '?foo=bar&baz=qux' });
+
+To read the query parameters on the target screen, use Fliplet.Navigate.query:
+
+var fooValue = Fliplet.Navigate.query.foo; // Returns 'bar'
+var bazValue = Fliplet.Navigate.query.baz; // Returns 'qux'
+
+Example use case - passing a user ID to a profile screen:
+
+// Navigate to UserProfile screen with user ID
+Fliplet.Navigate.screen('UserProfile', { query: '?userId=123' });
+
+// On the UserProfile screen, read the user ID
+var userId = Fliplet.Navigate.query.userId;
+console.log('Loading profile for user:', userId);
+
+### Navigate back to previous screen
+
+Navigate back to the previous page or screen of the app:
+
+Fliplet.Navigate.back();
+
+Example - Back button implementation:
+
+document.getElementById('back-button').addEventListener('click', function() {
+  Fliplet.Navigate.back();
+});
+
+### Navigate to a URL
+
+Navigate the app to an external URL or web page:
+
+Fliplet.Navigate.url('http://fliplet.com');
+
+Example - Opening external links:
+
+Fliplet.Navigate.url('https://www.google.com');
+
+// Navigate to a specific web page with parameters
+Fliplet.Navigate.url('https://example.com/page?id=123&category=news');
 
 If you want to show a message to the end user do not use alerts but use our toast message library; The JS API is Fliplet.UI.Toast(message) where message is the text you want to show the user.
 
@@ -820,6 +1057,20 @@ Fliplet.User.getCachedSession().then(function (session) {
   // contains all columns found on the connected dataSource entry for user.Email
   console.log(user);
 });
+
+### Authenticate encrypted files
+
+If you are asked to authenticate a file then use the following JS API:
+
+var authenticatedUrl = Fliplet.Media.authenticate(mediaFile.url);
+
+Note: You do not need to use the then() method to chain the promise.
+
+If youre using Handlebars to print out your URLs, you can use our built-in auth helper:
+
+<img src="{{{auth someFileUrl}}}" />
+
+This must be done for all files uploaded to Fliplet Media. If this is not done then the file will not be displayed in the app or in the live app. 
 
 If you are asked to join data across multiple data sources then use the below JS API:
 
@@ -1181,30 +1432,37 @@ Use the following endpoint to query OpenAI.
 
 ### Fliplet.AI.createCompletion()
 
-This low-level method provides direct access to OpenAI's completion capabilities, supporting both traditional prompt-based completions (e.g., with text-davinci-003) and chat-based completions (e.g., with 'gpt-4o').
+This low-level method provides direct access to AI completion capabilities, supporting both OpenAI models and Google's Gemini models. For OpenAI, it supports both traditional prompt-based completions (e.g., with text-davinci-003) and chat-based completions (e.g., with 'gpt-4o'). For Gemini, it provides direct proxy integration with Google's Gemini API.
 
 **'CompletionOptions' Object Properties:**
 
-You can use most parameters available in the OpenAI Completions API reference (for 'prompt'-based calls) or the OpenAI Chat Completions API reference for 'messages'-based calls).
+You can use most parameters available in the OpenAI Completions API reference (for 'prompt'-based calls) or the OpenAI Chat Completions API reference for 'messages'-based calls). When using Gemini models, the payload must conform to the Gemini API's request body structure.
 
 **Key 'CompletionOptions' include:**
 
 | Parameter     | Type                        | Optional | Default        | Description                                                                                                                                                                                             |
 |---------------|-----------------------------|----------|----------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| model       | String                    | Yes      | See below      | ID of the model to use. For chat models (using messages), defaults to 'gpt-3.5-turbo'. For older completion models (using prompt), a model like 'text-davinci-003' must be specified.           |
-| messages    | Array<MessageObject>      | Yes      | undefined    | An array of message objects (see [Conversation Message Structure](#conversation-message-structure)) for chat-based completions. Use this for models like gpt-3.5-turbo.                                |
-| prompt      | String or Array<String> | Yes      | undefined    | The prompt(s) to generate completions for. Use this for older completion models like text-davinci-003.                                                                                                |
+| aiProvider  | String                    | Yes      | 'openai'     | The AI provider to use. Set to 'gemini' to use Google's Gemini models, or omit/set to 'openai' for OpenAI models.                                                                                      |
+| model       | String                    | Yes      | See below      | ID of the model to use. For OpenAI chat models (using messages), defaults to 'gpt-3.5-turbo'. For older completion models (using prompt), a model like 'text-davinci-003' must be specified. For Gemini, specify models like 'gemini-1.5-flash' or 'gemini-2.5-flash'. See https://ai.google.dev/gemini-api/docs/models for available Gemini models. |
+| messages    | Array<MessageObject>      | Yes      | undefined    | An array of message objects (see [Conversation Message Structure](#conversation-message-structure)) for chat-based completions. Use this for OpenAI models like gpt-3.5-turbo.                         |
+| prompt      | String or Array<String> | Yes      | undefined    | The prompt(s) to generate completions for. Use this for older OpenAI completion models like text-davinci-003.                                                                                         |
+| contents    | Array<ContentObject>      | Yes      | undefined    | An array of content objects for Gemini models. Each object should have 'role' and 'parts' properties. Required when using aiProvider: 'gemini'.                                                        |
+| tools       | Array<ToolObject>         | Yes      | undefined    | An array of tool/function declarations for Gemini models. Used to enable function calling capabilities with Gemini.                                                                                     |
 | temperature | Number                    | Yes      | 1 (OpenAI)   | Sampling temperature (0-2).                                                                                                                                                                               |
 
 **Important:**
-*   You must provide *either* 'messages'
-*   If 'model is not provided when using 'messages', it defaults to 'gpt-3.5-turbo' but try to use at least gpt-4o
+*   For OpenAI: You must provide *either* 'messages' (for chat models) *or* 'prompt' (for completion models), but not both.
+*   For Gemini: You must provide 'contents' and set 'aiProvider' to 'gemini'.
+*   If 'model' is not provided when using OpenAI 'messages', it defaults to 'gpt-3.5-turbo' but try to use at least gpt-4o.
+*   For Gemini models, always specify the model (e.g., 'gemini-1.5-flash' or 'gemini-2.5-flash').
 
 **Returns:**
 
-A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends on whether it's a chat completion or a standard completion, generally following OpenAI's response format. Refer to the OpenAI documentation for the detailed structure of the completion object.
+A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends on the provider and completion type:
+*   For OpenAI: The response follows OpenAI's format (chat completion or standard completion). Refer to the OpenAI documentation for detailed structure.
+*   For Gemini: The response is the direct response from the Gemini API. Refer to https://ai.google.dev/gemini-api/docs for detailed structure.
 
-**Example (Chat Completion):**
+**Example (OpenAI Chat Completion):**
 
 /**
  * @typedef {Object} MessageObject
@@ -1229,6 +1487,132 @@ A 'Promise' that resolves to a 'CompletionResponseObject'. The structure depends
  * @property {boolean} [stream=false]
  * // ... other OpenAI completion parameters
  */
+
+/**
+ * @typedef {Object} ContentPartObject
+ * @property {string} text - Text content for the message part.
+ */
+
+/**
+ * @typedef {Object} ContentObject
+ * @property {string} role - Role of the message sender (e.g., 'user', 'model').
+ * @property {ContentPartObject[]} parts - Array of content parts.
+ */
+
+/**
+ * @typedef {Object} FunctionParameterProperty
+ * @property {string} type - Parameter type (e.g., 'string', 'number').
+ * @property {string} description - Parameter description.
+ */
+
+/**
+ * @typedef {Object} FunctionParameters
+ * @property {string} type - Type of the parameters object (typically 'object').
+ * @property {Object.<string, FunctionParameterProperty>} properties - Parameter definitions.
+ * @property {string[]} required - Array of required parameter names.
+ */
+
+/**
+ * @typedef {Object} FunctionDeclaration
+ * @property {string} name - Function name.
+ * @property {string} description - Function description.
+ * @property {FunctionParameters} parameters - Function parameters schema.
+ */
+
+/**
+ * @typedef {Object} ToolObject
+ * @property {FunctionDeclaration[]} functionDeclarations - Array of function declarations.
+ */
+
+/**
+ * @typedef {Object} CompletionOptionsGemini
+ * @property {string} aiProvider - Must be set to 'gemini' to use Gemini models.
+ * @property {string} model - Gemini model ID (e.g., 'gemini-1.5-flash', 'gemini-2.5-flash'). Required. See https://ai.google.dev/gemini-api/docs/models
+ * @property {ContentObject[]} contents - Array of content objects with role and parts.
+ * @property {ToolObject[]} [tools] - Optional array of tool/function declarations for function calling.
+ */
+
+#### Using Gemini Models
+
+To use Google's Gemini models, specify 'aiProvider: "gemini"' in your request. The request will be routed directly to the Gemini API, allowing you to leverage its full capabilities, including function calling.
+
+**Key differences when using Gemini:**
+*   Set 'aiProvider' to 'gemini'
+*   Use 'contents' instead of 'messages'
+*   Content objects use 'parts' array with 'text' property
+*   Function calling is enabled via the 'tools' parameter
+*   Response structure follows Gemini API format
+
+For more information about Gemini models and capabilities, see: https://ai.google.dev/gemini-api/docs/models
+
+**Example (Gemini with Function Calling):**
+
+/**
+ * Demonstrates using Gemini API via Fliplet's proxy with function calling.
+ * This example shows how to use Gemini's function calling feature to get weather information.
+ * 
+ * @async
+ * @function runGeminiCompletion
+ * @returns {Promise<void>}
+ * @throws {Error} If the API call fails
+ */
+async function runGeminiCompletion() {
+  try {
+    // Define the parameters for Gemini API call
+    // Using gemini-2.5-flash model with function calling capabilities
+    const params = {
+      aiProvider: 'gemini', // Specify Gemini as the AI provider
+      model: 'gemini-2.5-flash', // For available models, see: https://ai.google.dev/gemini-api/docs/models
+      contents: [
+        {
+          role: 'user',
+          parts: [{ text: 'What is the weather in London?' }]
+        }
+      ],
+      // Define tools/functions that Gemini can call
+      tools: [
+        {
+          functionDeclarations: [
+            {
+              name: 'get_current_temperature',
+              description: 'Gets the current temperature for a given location.',
+              parameters: {
+                type: 'object',
+                properties: {
+                  location: {
+                    type: 'string',
+                    description: 'The city name, e.g. San Francisco'
+                  }
+                },
+                required: ['location']
+              }
+            }
+          ]
+        }
+      ]
+    };
+    
+    console.log('Input for createCompletion (Gemini):', params);
+    
+    // Make the API call to Gemini via Fliplet's proxy
+    const result = await Fliplet.AI.createCompletion(params);
+    
+    // Log the complete response from Gemini API
+    console.log('createCompletion Response (Gemini):', JSON.stringify(result, null, 2));
+    
+    // Check if Gemini wants to call a function
+    if (result.candidates && result.candidates[0].content.parts[0].functionCall) {
+      const functionCall = result.candidates[0].content.parts[0].functionCall;
+      console.log('Gemini requested function call:', functionCall.name);
+      console.log('Function arguments:', functionCall.args);
+    }
+  } catch (error) {
+    console.error('Error in createCompletion (Gemini):', error);
+  }
+}
+runGeminiCompletion();
+
+**Example (OpenAI Chat Completion):**
 
 async function runChatCompletion() {
   try {
@@ -1255,6 +1639,8 @@ You MUST respond with a JSON object in one of two formats depending on the user'
 1. CODE GENERATION (when user wants to create/modify HTML, CSS, JavaScript):
 Use the string replacement format for maximum reliability and precision.
 CRITICAL: As a selectors in css and javascript always use the .ai-feature-${componentGuid} as a parent selector to ensure the code is specific to the component.
+CRITICAL: NEVER add external dependencies as comments in the code. If external libraries are needed, communicate this to the user via chat message (answer type), NOT as code comments.
+CRITICAL: When generating Handlebars or Vue templates in HTML, ALWAYS escape template tags with a backslash (e.g., \{{ variable }} instead of {{ variable }}) because all HTML is processed through Handlebars compilation.
 
 2. INFORMATIONAL RESPONSES (when user asks questions, needs explanations, or requests information):
 Use the answer format to provide helpful information without code.
@@ -1391,6 +1777,13 @@ Rules for String Replacements (CODE GENERATION only):
      * No need to send CSS/JS instructions if those aren't changing
    - If exact match fails, the system will show you what it was looking for
    - Always preserve existing functionality when making modifications
+   - NEVER include external dependency references (script tags, CDN links, library imports) as comments in the code
+     * If external dependencies are needed, use "answer" type response to inform the user
+     * Do NOT generate code with TODO comments about adding scripts or libraries
+   - For HTML with Handlebars or Vue templates: ALWAYS escape template tags with backslash
+     * Use \{{ variable }} instead of {{ variable }}
+     * Use \{{#each}} instead of {{#each}}
+     * All HTML is processed through Handlebars compilation, so templates must be escaped to save correctly
 
 Rules for Informational Responses (ANSWER format):
    - Use "type": "answer" when the user is asking questions or needs explanations

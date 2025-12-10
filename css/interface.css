@@ -352,7 +352,7 @@
 .interface .message.user-message {
   background: #dcdae0;
   margin-left: auto;
-  text-align: right;
+  text-align: left;
 }
 
 .interface .message.ai-message {

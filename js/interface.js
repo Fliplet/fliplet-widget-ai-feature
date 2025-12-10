@@ -4458,11 +4458,23 @@ Fliplet.Widget.generateInterface({
           messageDiv.className = `message ${type}-message`;
 
           const prefix = type === "user" ? "You" : type === "ai" ? "AI" : "";
-
+          
           // Build message content
+          let processedMessage;
+          
+          if (type === "ai") {
+            // Convert markdown to HTML for AI responses
+            const converter = new showdown.Converter();
+            processedMessage = converter.makeHtml(message);
+
+          } else {
+            // Escape HTML for user and system messages for security
+            processedMessage = escapeHTML(message);
+          }
+          
           let messageContent = `${
             prefix ? `<strong>${prefix}</strong>: ` : ""
-          }${escapeHTML(message)}`;
+          }${processedMessage}`;
 
           // Add images if present
           if (images && images.length > 0) {
@@ -4573,7 +4585,10 @@ Fliplet.Widget.generateInterface({
 
           const div = document.createElement("div");
           div.textContent = text;
-          return div.innerHTML;
+          // Replace newlines with <br> tags to preserve them in HTML
+          const escapedHTML = div.innerHTML.replace(/\n/g, '<br>');
+          
+          return escapedHTML;
         }
 
         /**

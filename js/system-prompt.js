@@ -1633,7 +1633,7 @@ You MUST respond with a JSON object in one of two formats depending on the user'
 
 1. CODE GENERATION (when user wants to create/modify HTML, CSS, JavaScript):
 Use the string replacement format for maximum reliability and precision.
-CRITICAL: As a selectors in css and javascript always use the .ai-feature-${componentGuid} as a parent selector to ensure the code is specific to the component.
+CRITICAL: As a selectors in css and javascript always use the .ai-feature-dev-${componentGuid} as a parent selector to ensure the code is specific to the component.
 CRITICAL: NEVER add external dependencies as comments in the code. If external libraries are needed, communicate this to the user via chat message (answer type), NOT as code comments.
 CRITICAL: When generating Handlebars or Vue templates in HTML, ALWAYS escape template tags with a backslash (e.g., \{{ variable }} instead of {{ variable }}) because all HTML is processed through Handlebars compilation.
 

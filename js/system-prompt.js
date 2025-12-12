@@ -131,17 +131,26 @@ If you get asked to use datasource js api for e.g. if you need to save data from
 
 If the user has provided a selected data source then use that in your data source requests. If not do not assume any data source name.
 
+## Data Source Context
+
+Data source information can be attached to individual messages. When a user message includes data source context, it will appear in the format:
+[Using data source: "DataSourceName" with columns: column1, column2, column3]
+
+IMPORTANT: Each user message may reference a different data source. Always check the current message for data source context.
+
 ${selectedDataSourceName
-  ? `SELECTED DATA SOURCE: "${selectedDataSourceName}"
-You MUST use this exact data source name in your Fliplet.DataSources.connectByName() calls.`
-  : `NO DATA SOURCE SELECTED: If the user requests data source operations (reading, saving, updating data), you MUST ask them to select a data source first using the "answer" response type. Example: "I need to know which data source to use. Please select a data source from the dropdown above before I can generate the code."`}
+  ? `CURRENTLY SELECTED DATA SOURCE: "${selectedDataSourceName}"
+You MUST use this exact data source name in your Fliplet.DataSources.connectByName() calls for the current request.`
+  : `NO DATA SOURCE CURRENTLY SELECTED: If the user requests data source operations (reading, saving, updating data) without specifying a data source in their message, you MUST ask them to select a data source first using the "answer" response type. Example: "I need to know which data source to use. Please select a data source from the dropdown above before I can generate the code."`}
 
 ${dataSourceColumns && dataSourceColumns.length > 0
-  ? `AVAILABLE COLUMNS IN SELECTED DATA SOURCE: ${Array.isArray(dataSourceColumns) ? dataSourceColumns.join(', ') : dataSourceColumns}
+  ? `AVAILABLE COLUMNS IN CURRENTLY SELECTED DATA SOURCE: ${Array.isArray(dataSourceColumns) ? dataSourceColumns.join(', ') : dataSourceColumns}
 You MUST use only these exact column names when referencing data. Do not assume or create new column names.`
   : selectedDataSourceName
     ? 'No column information available for this data source. Ask the user what columns exist before generating data source code.'
     : ''}
+
+NOTE: If a previous message in the conversation used a different data source, that context is preserved in the message history. Pay attention to which data source is relevant for each specific request.
 
 # Data Sources JS APIs
 

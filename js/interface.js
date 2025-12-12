@@ -3140,7 +3140,15 @@ Fliplet.Widget.generateInterface({
                 historyItem.images.length > 0
               ) {
                 // User message with images - use OpenAI's image format
-                const content = [{ type: "text", text: historyItem.message }];
+                // Add data source context if available
+                let messageText = historyItem.message;
+                if (historyItem.dataSourceName) {
+                  const columnsText = historyItem.dataSourceColumns && historyItem.dataSourceColumns.length > 0
+                    ? ` with columns: ${historyItem.dataSourceColumns.join(', ')}`
+                    : '';
+                  messageText = `[Using data source: "${historyItem.dataSourceName}"${columnsText}]\n\n${historyItem.message}`;
+                }
+                const content = [{ type: "text", text: messageText }];
 
                 // Add all images from this history item
                 historyItem.images.forEach((img) => {
@@ -3169,12 +3177,20 @@ Fliplet.Widget.generateInterface({
                 );
               } else {
                 // Assistant message or user message without images - use text format
+                let messageText = historyItem.message;
+                // Add data source context for user messages even without images
+                if (role === "user" && historyItem.dataSourceName) {
+                  const columnsText = historyItem.dataSourceColumns && historyItem.dataSourceColumns.length > 0
+                    ? ` with columns: ${historyItem.dataSourceColumns.join(', ')}`
+                    : '';
+                  messageText = `[Using data source: "${historyItem.dataSourceName}"${columnsText}]\n\n${historyItem.message}`;
+                }
                 messages.push({
                   role: role,
-                  content: historyItem.message,
+                  content: messageText,
                 });
                 debugLog(
-                  `📝 [AI] Added ${role} history message: ${historyItem.message.substring(
+                  `📝 [AI] Added ${role} history message: ${messageText.substring(
                     0,
                     50
                   )}...`
@@ -3184,7 +3200,15 @@ Fliplet.Widget.generateInterface({
           });
 
           // Add current user message - always check for images (current or historical)
-          const content = [{ type: "text", text: userMessage }];
+          // Add data source context to current message if available
+          let currentMessageText = userMessage;
+          if (selectedDataSourceName) {
+            const columnsText = dataSourceColumns && dataSourceColumns.length > 0
+              ? ` with columns: ${dataSourceColumns.join(', ')}`
+              : '';
+            currentMessageText = `[Using data source: "${selectedDataSourceName}"${columnsText}]\n\n${userMessage}`;
+          }
+          const content = [{ type: "text", text: currentMessageText }];
 
           // First, add any current images
           if (finalCurrentImages && finalCurrentImages.length > 0) {
@@ -4546,6 +4570,9 @@ Fliplet.Widget.generateInterface({
               type,
               timestamp: new Date().toISOString(),
               images: imagesCopy, // Store copy of images in history
+              dataSourceId: selectedDataSourceId,
+              dataSourceName: selectedDataSourceName,
+              dataSourceColumns: dataSourceColumns ? [...dataSourceColumns] : []
             };
 
             AppState.chatHistory.push(historyItem);

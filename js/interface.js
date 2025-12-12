@@ -61,6 +61,10 @@ Fliplet.Widget.generateInterface({
       name: "openaiModel",
       label: "OpenAI Model",
       options: [
+        "gpt-5.2-reasoning-none",
+        "gpt-5.2-reasoning-low",
+        "gpt-5.2-reasoning-medium",
+        "gpt-5.2-reasoning-high",
         "gpt-5.1-reasoning-none",
         "gpt-5.1-reasoning-low",
         "gpt-5.1-reasoning-medium",
@@ -68,7 +72,7 @@ Fliplet.Widget.generateInterface({
         "gpt-5.1-codex",
         "gpt-5.1-codex-mini"
       ],
-      default: "gpt-5.1-reasoning-none",
+      default: "gpt-5.2-reasoning-none",
       required: true
     },
     {
@@ -3158,7 +3162,15 @@ Fliplet.Widget.generateInterface({
                 historyItem.images.length > 0
               ) {
                 // User message with images - use Responses API format (input_text, input_image)
-                const content = [{ type: "input_text", text: historyItem.message }];
+                // Add data source context if available
+                let messageText = historyItem.message;
+                if (historyItem.dataSourceName) {
+                  const columnsText = historyItem.dataSourceColumns && historyItem.dataSourceColumns.length > 0
+                    ? ` with columns: ${historyItem.dataSourceColumns.join(', ')}`
+                    : '';
+                  messageText = `[Using data source: "${historyItem.dataSourceName}"${columnsText}]\n\n${historyItem.message}`;
+                }
+                const content = [{ type: "input_text", text: messageText }];
 
                 // Add all images from this history item
                 historyItem.images.forEach((img) => {
@@ -3187,12 +3199,20 @@ Fliplet.Widget.generateInterface({
                 );
               } else {
                 // Assistant message or user message without images - use text format
+                let messageText = historyItem.message;
+                // Add data source context for user messages even without images
+                if (role === "user" && historyItem.dataSourceName) {
+                  const columnsText = historyItem.dataSourceColumns && historyItem.dataSourceColumns.length > 0
+                    ? ` with columns: ${historyItem.dataSourceColumns.join(', ')}`
+                    : '';
+                  messageText = `[Using data source: "${historyItem.dataSourceName}"${columnsText}]\n\n${historyItem.message}`;
+                }
                 messages.push({
                   role: role,
-                  content: historyItem.message,
+                  content: messageText,
                 });
                 debugLog(
-                  `📝 [AI] Added ${role} history message: ${historyItem.message.substring(
+                  `📝 [AI] Added ${role} history message: ${messageText.substring(
                     0,
                     50
                   )}...`
@@ -3202,12 +3222,21 @@ Fliplet.Widget.generateInterface({
           });
 
           // Add current user message - check if we have images to determine format
+          // Add data source context to current message if available
+          let currentMessageText = userMessage;
+          if (selectedDataSourceName) {
+            const columnsText = dataSourceColumns && dataSourceColumns.length > 0
+              ? ` with columns: ${dataSourceColumns.join(', ')}`
+              : '';
+            currentMessageText = `[Using data source: "${selectedDataSourceName}"${columnsText}]\n\n${userMessage}`;
+          }
+
           let content;
 
           // First, check if we have current images
           if (finalCurrentImages && finalCurrentImages.length > 0) {
             // If we have images, use Responses API array format with input_text and input_image
-            content = [{ type: "input_text", text: userMessage }];
+            content = [{ type: "input_text", text: currentMessageText }];
 
             finalCurrentImages.forEach((img) => {
               if (img.flipletUrl) {
@@ -3228,7 +3257,7 @@ Fliplet.Widget.generateInterface({
             );
           } else {
             // If no images, use simple string format
-            content = userMessage;
+            content = currentMessageText;
             debugLog(
               "📤 [AI] User message has no images, using string format"
             );
@@ -4613,6 +4642,9 @@ Fliplet.Widget.generateInterface({
               type,
               timestamp: new Date().toISOString(),
               images: imagesCopy, // Store copy of images in history
+              dataSourceId: selectedDataSourceId,
+              dataSourceName: selectedDataSourceName,
+              dataSourceColumns: dataSourceColumns ? [...dataSourceColumns] : []
             };
 
             AppState.chatHistory.push(historyItem);

@@ -3454,6 +3454,7 @@ Fliplet.Widget.generateInterface({
             input: messages,
             // max_tokens: CONFIG.MAX_TOKENS,
             text: {
+              verbosity: "low",
               format: {
                 type: "json_schema",
                 name: "ai_response",

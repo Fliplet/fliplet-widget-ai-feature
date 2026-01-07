@@ -3006,6 +3006,57 @@ Fliplet.Widget.generateInterface({
         }
 
         /**
+         * Extract text from Responses API format
+         * Handles both streaming and non-streaming responses
+         * @param {Object} response - Response object from Fliplet.AI
+         * @param {string} accumulatedText - Text accumulated during streaming (optional)
+         * @returns {string} Extracted AI response text
+         */
+        function extractTextFromResponsesAPI(response, accumulatedText = '') {
+          debugLog("🔍 [AI] Extracting text from Responses API format...");
+
+          // Validate response structure
+          if (!response || !response.output) {
+            throw new Error(`AI API error: No valid response received`);
+          }
+
+          if (!Array.isArray(response.output) || response.output.length === 0) {
+            throw new Error("Invalid response format from AI API");
+          }
+
+          let aiResponse = '';
+
+          // Find the message object in the output array
+          // (reasoning models have "reasoning" object first, then "message" object)
+          const messageOutput = response.output.find(item => item.type === 'message');
+
+          if (messageOutput && messageOutput.content && Array.isArray(messageOutput.content)) {
+            const textContent = messageOutput.content.find(item => item.type === 'output_text');
+            if (textContent && textContent.text) {
+              aiResponse = textContent.text;
+            }
+          }
+
+          // Fallback to accumulated text if extraction fails
+          if (!aiResponse && accumulatedText) {
+            debugWarn("⚠️ [AI] Could not extract from output structure, using accumulated text");
+            aiResponse = accumulatedText;
+          }
+
+          if (!aiResponse) {
+            debugError("❌ [AI] Failed to extract text from response. Output structure:", response.output);
+            throw new Error("Could not extract text from response output");
+          }
+
+          debugLog("📥 [AI] Response extracted successfully:", {
+            length: aiResponse.length,
+            preview: aiResponse.substring(0, 200) + "..."
+          });
+
+          return aiResponse;
+        }
+
+        /**
          * Call AI with new architecture and optimized context
          * @param {string} userMessage - User's message
          * @param {Object} context - Built context
@@ -3523,6 +3574,7 @@ Fliplet.Widget.generateInterface({
               },
             },
             useResponses: true,
+            stream: true,
           };
 
           // Add reasoning if it's configured (for reasoning models)
@@ -3559,16 +3611,151 @@ Fliplet.Widget.generateInterface({
             )?.content,
           });
 
+          // Initialize streaming variables
           let response;
+          let accumulatedText = '';
+          let eventCount = 0;
+          let streamCompleted = false;
+          let usageInfo = null;
+          const streamStartTime = Date.now();
+
           try {
-            response = await Fliplet.AI.createCompletion(requestBody);
+            debugLog("🌊 [AI] Starting streaming API call...");
+
+            // Make streaming API call
+            response = await Fliplet.AI.createCompletion(requestBody)
+              .stream(function onEvent(event) {
+                eventCount++;
+
+                // Log event details for debugging
+                debugLog(`📦 [AI] Event #${eventCount}:`, {
+                  type: event.type,
+                  hasItemId: !!event.item_id,
+                  hasDelta: !!event.delta,
+                  outputIndex: event.output_index,
+                  contentIndex: event.content_index,
+                  timestamp: Date.now() - streamStartTime
+                });
+
+                // Extract content from response.output_text.delta events
+                // Responses API uses SSE events with type field, not choices array
+                if (event.type === 'response.output_text.delta') {
+                  accumulatedText += event.delta;
+                  debugLog(`📝 [AI] Accumulated ${event.delta.length} chars. Total: ${accumulatedText.length}`);
+                }
+
+                // Log other useful events
+                if (event.type === 'response.output_item.added') {
+                  debugLog(`📋 [AI] Output item added:`, {
+                    itemId: event.item_id,
+                    itemType: event.item?.type,
+                    itemRole: event.item?.role
+                  });
+                }
+
+                if (event.type === 'response.content_part.added') {
+                  debugLog(`📄 [AI] Content part added:`, {
+                    itemId: event.item_id,
+                    partType: event.part?.type
+                  });
+                }
+
+                // Track when output item is done (text generation complete)
+                if (event.type === 'response.output_item.done') {
+                  debugLog(`✅ [AI] Output item done:`, {
+                    outputIndex: event.output_index,
+                    item: event.item
+                  });
+                }
+
+                // Track when entire response is done and capture usage info
+                if (event.type === 'response.done') {
+                  streamCompleted = true;
+                  if (event.response && event.response.usage) {
+                    usageInfo = event.response.usage;
+                  }
+                  debugLog(`🎯 [AI] Response done event received:`, {
+                    hasUsage: !!usageInfo,
+                    responseId: event.response?.id
+                  });
+                }
+
+                // Log progress every 10 text delta events
+                if (event.type === 'response.output_text.delta' && eventCount % 10 === 0) {
+                  debugLog(`⏱️ [AI] Stream progress: ${eventCount} events, ${accumulatedText.length} chars, ${Date.now() - streamStartTime}ms`);
+                }
+              })
+              .then(function onComplete(finalResponse) {
+                const streamDuration = Date.now() - streamStartTime;
+
+                debugLog("✅ [AI] Stream completed:", {
+                  totalEvents: eventCount,
+                  accumulatedLength: accumulatedText.length,
+                  duration: streamDuration,
+                  avgEventTime: eventCount > 0 ? (streamDuration / eventCount).toFixed(2) + 'ms' : 'N/A',
+                  streamCompletedFlag: streamCompleted,
+                  hasUsageInfo: !!usageInfo,
+                  hasFinalResponse: !!finalResponse
+                });
+
+                // Log reasoning tokens if available (for reasoning models)
+                // Use usageInfo captured from response.done event
+                if (usageInfo &&
+                    usageInfo.output_tokens_details &&
+                    usageInfo.output_tokens_details.reasoning_tokens) {
+                  debugLog(
+                    "🧠 [AI] Reasoning tokens used:",
+                    usageInfo.output_tokens_details.reasoning_tokens
+                  );
+                }
+
+                return finalResponse;
+              })
+              .catch(function onStreamError(error) {
+                debugError("❌ [AI] Stream error occurred:", {
+                  errorName: error.name,
+                  errorMessage: error.message,
+                  eventsReceived: eventCount,
+                  accumulatedLength: accumulatedText.length,
+                  duration: Date.now() - streamStartTime
+                });
+
+                throw error;
+              });
+
+            // For streaming, use accumulated text directly since finalResponse may be undefined
+            // The Fliplet.AI streaming API doesn't return a complete response object in .then()
+            let aiResponse;
+            if (response && response.output) {
+              // If we have a complete response object, extract from it
+              aiResponse = extractTextFromResponsesAPI(response, accumulatedText);
+            } else if (accumulatedText) {
+              // Otherwise use the accumulated text from streaming
+              debugLog("📥 [AI] Using accumulated text from streaming (finalResponse was undefined)");
+              aiResponse = accumulatedText;
+            } else {
+              throw new Error("No response received from streaming API");
+            }
+
+            debugLog("📥 [AI] Final response ready for parsing:", {
+              length: aiResponse.length,
+              preview: aiResponse.substring(0, 200) + "..."
+            });
+
+            return aiResponse;
+
           } catch (error) {
-            // Check for timeout errors (AbortError is the standard for timeout)
+            // Existing timeout detection
             if (error.name === "AbortError") {
-              debugError("⚠️ Timeout!");
+              debugError("⚠️ Timeout!", {
+                eventsReceived: eventCount,
+                partialLength: accumulatedText.length,
+                duration: Date.now() - streamStartTime
+              });
               throw new Error("AI error occurred, please try again.");
             }
-            // Also check for other common timeout patterns as fallback
+
+            // Other timeout patterns
             if (
               error.message &&
               (error.message.toLowerCase().includes("timeout") ||
@@ -3577,55 +3764,16 @@ Fliplet.Widget.generateInterface({
                 error.code === "ETIMEDOUT" ||
                 error.code === "TIMEOUT")
             ) {
+              debugError("⚠️ Timeout detected:", {
+                eventsReceived: eventCount,
+                partialLength: accumulatedText.length
+              });
               throw new Error("AI error occurred, please try again.");
             }
-            // Re-throw other errors as-is
+
+            // Re-throw other errors
             throw error;
           }
-
-          // Validate Responses API response structure
-          if (!response || !response.output) {
-            throw new Error(`AI API error: No valid response received`);
-          }
-
-          if (!Array.isArray(response.output) || response.output.length === 0) {
-            throw new Error("Invalid response format from AI API");
-          }
-
-          // Extract text from output array
-          let aiResponse = '';
-
-          // Find the message object in the output array
-          // (reasoning models may have a "reasoning" object first, then the "message" object)
-          const messageOutput = response.output.find(item => item.type === 'message');
-
-          if (messageOutput && messageOutput.content && Array.isArray(messageOutput.content)) {
-            // Find the output_text content item
-            const textContent = messageOutput.content.find(item => item.type === 'output_text');
-            if (textContent && textContent.text) {
-              aiResponse = textContent.text;
-            }
-          }
-
-          if (!aiResponse) {
-            debugError("❌ [AI] Failed to extract text from response. Output structure:", response.output);
-            throw new Error("Could not extract text from response output");
-          }
-
-          debugLog(
-            "📥 [AI] Response received:",
-            aiResponse.substring(0, 200) + "..."
-          );
-
-          // Log additional Responses API metadata if available
-          if (response.usage && response.usage.output_tokens_details && response.usage.output_tokens_details.reasoning_tokens) {
-            debugLog(
-              "🧠 [AI] Reasoning tokens used:",
-              response.usage.output_tokens_details.reasoning_tokens
-            );
-          }
-
-          return aiResponse;
         }
 
         /**

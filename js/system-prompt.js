@@ -46,7 +46,7 @@ This escaping prevents the system from processing the templates during save and 
 
 Ensure there are no syntax errors in the code and that column names with spaced in them are wrapped with square brackets.
 Add inline comments for the code so technical users can make edits to the code.
-Add try catch blocks in the code to catch any errors and log the errors to the console and show them to the user user via Fliplet.UI.Toast(message).
+CRITICAL: Add error handling to ALL code, especially data source operations. Use try-catch for async/await or .catch() for promises. Every error MUST be: (1) logged with console.error() and (2) shown to users with Fliplet.UI.Toast.error(). See "CRITICAL: Data Source Error Handling Requirements" section below for mandatory patterns.
 Ensure you chain all the promises correctly with return statements.
 
 CRITICAL - External Dependencies:
@@ -182,24 +182,137 @@ Use the "create" method to programmatically create a new data source with specif
 
 **All Fliplet Data Sources API methods return Promises and must be chained using  .then()  or used with  async/await .**
 
- 
-// Using async/await (recommended)
+
+// Using async/await with try-catch (recommended)
 async function example() {
-  const connection = await Fliplet.DataSources.connect(dataSourceId);
-  const records = await connection.find();
-  return records;
+  try {
+    const connection = await Fliplet.DataSources.connect(dataSourceId);
+    const records = await connection.find();
+    return records;
+  } catch (error) {
+    console.error('Error loading data:', error);
+    Fliplet.UI.Toast.error(error, {
+      message: 'Error loading data'
+    });
+  }
 }
 
-// Using .then() chaining
+// Using .then()/.catch() chaining
 Fliplet.DataSources.connect(dataSourceId)
   .then(connection => connection.find())
   .then(records => {
     // Process records
   })
   .catch(error => {
-    // Handle errors
+    console.error('Error loading data:', error);
+    Fliplet.UI.Toast.error(error, {
+      message: 'Error loading data'
+    });
   });
- 
+
+
+## ⚠️ CRITICAL: Data Source Error Handling Requirements
+
+**MANDATORY RULES for all generated data source code:**
+
+1. **NEVER leave data source operations without error handling**
+   - Use try-catch for async/await patterns
+   - Use .catch() for .then() chain patterns
+
+2. **ALL errors MUST include BOTH:**
+   - console.error() with technical details for debugging
+   - Fliplet.UI.Toast.error() with user-friendly message
+
+3. **Common error scenarios to handle:**
+   - Data source not found (invalid name/ID)
+   - Permission denied (security rules not configured)
+   - Network failures
+   - Invalid query syntax
+
+**Error Handling Template:**
+
+
+// Template for all data source operations:
+.catch(function(error) {
+  console.error('Error [operation description]:', error);
+  Fliplet.UI.Toast.error(error, {
+    message: 'Error [user-friendly description]'
+  });
+});
+
+
+**Complete Examples:**
+
+
+Example 1: Find with error handling
+Fliplet.DataSources.connectByName('Users')
+  .then(function(connection) {
+    return connection.find();
+  })
+  .then(function(users) {
+    console.log('Loaded users:', users);
+  })
+  .catch(function(error) {
+    console.error('Error loading users:', error);
+    Fliplet.UI.Toast.error(error, {
+      message: 'Error loading data'
+    });
+  });
+
+Example 2: Insert with error handling
+Fliplet.DataSources.connectByName('Users')
+  .then(function(connection) {
+    return connection.insert({
+      Name: 'John Doe',
+      Email: 'john@example.com'
+    });
+  })
+  .then(function(newUser) {
+    console.log('User created:', newUser);
+    Fliplet.UI.Toast('User saved successfully');
+  })
+  .catch(function(error) {
+    console.error('Error saving user:', error);
+    Fliplet.UI.Toast.error(error, {
+      message: 'Error saving user'
+    });
+  });
+
+Example 3: Async/await with try-catch
+async function loadUserData() {
+  try {
+    const connection = await Fliplet.DataSources.connectByName('Users');
+    const users = await connection.find({
+      where: { Status: 'Active' }
+    });
+
+    console.log('Active users:', users);
+    return users;
+  } catch (error) {
+    console.error('Error loading users:', error);
+    Fliplet.UI.Toast.error(error, {
+      message: 'Error loading users'
+    });
+  }
+}
+
+Example 4: Handling permission/security errors gracefully
+Fliplet.DataSources.connect(1604998)
+  .then(function (connection) {
+    return connection.find();
+  })
+  .then(function(records) {
+    console.log('Records loaded:', records);
+  })
+  .catch(function (error) {
+    console.error('Data source error:', error);
+    Fliplet.UI.Toast.error(error, {
+      message: 'Error loading data'
+    });
+  });
+
+
+**Note:** Empty results (user not found, no matching records) are NOT errors - handle them with if-checks, not error handlers.
 
 ---
 

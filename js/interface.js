@@ -11,6 +11,71 @@ Fliplet.Widget.setCancelButtonLabel("Close");
 Fliplet.Widget.generateInterface({
   fields: [
     {
+      type: "hidden",
+      name: "chatGUID",
+      label: "Chat GUID",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "guid",
+      label: "GUID",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "chatHistory",
+      label: "Chat History",
+      default: "",
+      rows: 12,
+    },
+    {
+      type: "hidden",
+      name: "css",
+      label: "CSS",
+      default: "",
+      rows: 12,
+    },
+    {
+      type: "hidden",
+      name: "javascript",
+      label: "JavaScript",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "layoutHTML",
+      label: "Layout",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "regenerateCode",
+      label: "Regenerate code",
+      description: "Regenerate code",
+      toggleLabel: "Regenerate",
+      default: false,
+    },
+    {
+      type: "dropdown",
+      name: "openaiModel",
+      label: "OpenAI Model",
+      options: [
+        "gpt-5.2-reasoning-none",
+        "gpt-5.2-reasoning-low",
+        "gpt-5.2-reasoning-medium",
+        "gpt-5.2-reasoning-high",
+        "gpt-5.1-reasoning-none",
+        "gpt-5.1-reasoning-low",
+        "gpt-5.1-reasoning-medium",
+        "gpt-5.1-reasoning-high",
+        "gpt-5.1-codex",
+        "gpt-5.1-codex-mini"
+      ],
+      default: "gpt-5.2-reasoning-none",
+      required: true
+    },
+    {
       type: "html",
       html: `
         <div class="panel-group" id="accordion-1">
@@ -66,7 +131,7 @@ Fliplet.Widget.generateInterface({
         </div>
     </div>
       `,
-      ready: function () {
+      ready: async function () {
         /**
          * AI Coding Tool Test Application
          * Uses Fliplet.AI.createCompletion for code generation with diff processing and code merging
@@ -162,9 +227,8 @@ Fliplet.Widget.generateInterface({
          */
 
         ("use strict");
-
         // Debug mode configuration - set to true to show console logs
-        const debugMode = false;
+        const debugMode = true;
 
         // Debug utility function to conditionally log console messages
         function debugLog(...args) {
@@ -185,22 +249,17 @@ Fliplet.Widget.generateInterface({
           }
         }
 
+        if (!Fliplet.Helper.field("guid").get()) {
+          Fliplet.Helper.field("guid").set(Fliplet.guid());
+          await Fliplet.Widget.save(Fliplet.Widget.getData().fields);
+          // Fliplet.Studio.emit("widget-interface-reload");
+        }
+
         // Make debug functions globally available
         window.debugMode = debugMode;
         window.debugLog = debugLog;
         window.debugError = debugError;
         window.debugWarn = debugWarn;
-        /**
-         * CONFIGURATION - Modify these settings as needed
-         * @type {Object}
-         */
-        const CONFIG = {
-          /** @type {string} AI Model - Options: gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
-          OPENAI_MODEL: "gpt-4.1",
-          TEMPERATURE: 0.7,
-          MAX_TOKENS: 10000,
-        };
-
         /**
          * Application state management
          * @type {Object}
@@ -234,6 +293,19 @@ Fliplet.Widget.generateInterface({
           pastedImages: [],
           /** @type {Set} Set of processed file signatures to prevent duplicates */
           processedFileSignatures: new Set(),
+          /** @type {boolean} Whether AI is currently processing a request */
+          isProcessing: false,
+          /** @type {boolean} Whether the current request has been cancelled */
+          isCancelled: false,
+          /** @type {Object} Current streaming state */
+          streamingState: {
+            accumulatedText: '',
+            currentPhase: 'initializing',
+            startTime: null,
+            streamingDiv: null
+          },
+          /** @type {Promise|null} Reference to current streaming promise for cancellation */
+          currentStreamingPromise: null,
         };
 
         /**
@@ -596,7 +668,7 @@ Fliplet.Widget.generateInterface({
             };
 
             debugLog("✅ [ContextBuilder] Context built:", context);
-            return this.optimizeForTokens(context);
+            return context
           }
 
           /**
@@ -768,19 +840,6 @@ Fliplet.Widget.generateInterface({
           getRecentChanges(changeHistory, limit = 3) {
             return changeHistory.slice(-limit);
           }
-
-          /**
-           * Optimize context for token limits
-           * @param {Object} context - Context object
-           * @returns {Object} Optimized context
-           */
-          optimizeForTokens(context) {
-            debugLog("⚡ [ContextBuilder] Optimizing context for tokens...");
-
-            // For now, return as-is. In production, implement token counting
-            // and intelligent truncation
-            return context;
-          }
         }
 
         /**
@@ -795,10 +854,6 @@ Fliplet.Widget.generateInterface({
            */
           parseResponse(response) {
             debugLog("📝 [ProtocolParser] Parsing LLM response...");
-            debugLog(
-              "📄 [ProtocolParser] Raw response preview:",
-              response.substring(0, 200) + "..."
-            );
 
             try {
               // With structured outputs, this should always be valid JSON
@@ -1221,11 +1276,6 @@ Fliplet.Widget.generateInterface({
               "🔧 [StringReplacement] Instructions received:",
               JSON.stringify(instructions, null, 2)
             );
-            debugLog("🔧 [StringReplacement] Current code lengths:", {
-              html: currentCode.html.length,
-              css: currentCode.css.length,
-              js: currentCode.js.length,
-            });
 
             const updatedCode = {
               html: currentCode.html,
@@ -1308,135 +1358,138 @@ Fliplet.Widget.generateInterface({
               instruction
             );
 
-            const validation = this.validateInstruction(instruction);
+            const validation = this.validateInstruction(instruction, currentCode);
             if (!validation.valid) {
               return { success: false, error: validation.error };
             }
 
             const targetCode = currentCode[instruction.target_type] ?? "";
-            const oldString = instruction.old_string ?? "";
-            const newString = instruction.new_string ?? "";
+            const oldString = instruction.old_string;
+            const newString = instruction.new_string;
 
-            // Special case: new/empty files
-            const emptyMarkers = {
-              html: "<!-- EMPTY -->",
-              css: "/* EMPTY */",
-              js: "// EMPTY",
-            };
-            const expectedEmptyMarker = emptyMarkers[instruction.target_type];
-            if (oldString === expectedEmptyMarker && targetCode.trim() === "") {
+            // DIAGNOSTIC: Log detailed state before blank detection
+            debugLog("🔍 [StringReplacement] DIAGNOSTIC - Target code analysis:", {
+              targetType: instruction.target_type,
+              targetCodeLength: targetCode.length,
+              targetCodeTrimmedLength: targetCode.trim().length,
+              targetCodePreview: targetCode.substring(0, 200) + "...",
+              targetCodeEnd: "..." + targetCode.substring(targetCode.length - 100),
+              isEmptyString: targetCode === "",
+              isWhitespaceOnly: targetCode.trim() === "",
+              currentCodeKeys: Object.keys(currentCode),
+              allCodeLengths: {
+                html: currentCode.html?.length || 0,
+                css: currentCode.css?.length || 0,
+                js: currentCode.js?.length || 0,
+              },
+            });
+
+            // CASE 1: Blank screen detection (auto-detect, no markers needed)
+            const isBlankCode = targetCode.trim() === "";
+
+            if (isBlankCode) {
               debugLog(
-                `🆕 [StringReplacement] Handling empty ${instruction.target_type} code case for new project`
+                `🆕 [StringReplacement] Blank ${instruction.target_type} detected, inserting new code directly`
               );
+              debugLog("⚠️ [StringReplacement] WARNING: Blank detected - verify currentCode was passed correctly!");
               return {
                 success: true,
                 newCode: newString,
                 location: "entire content (new)",
-              };
-            }
-
-            // 1) Try exact literal match first (after normalizing EOLs on both sides)
-            const tNorm = normalizeEols(targetCode);
-            const oNorm = normalizeEols(oldString);
-
-            let occurrences = 0;
-            let newCode;
-            let location;
-
-            if (tNorm.includes(oNorm)) {
-              // exact literal branch
-              const literalPattern = new RegExp(escapeRegExp(oNorm), "gms");
-              occurrences = (tNorm.match(literalPattern) || []).length;
-
-              if (occurrences > 1 && !instruction.replace_all) {
-                return {
-                  success: false,
-                  error: `Multiple occurrences found (${occurrences}). Use replace_all: true or provide more specific old_string`,
-                };
-              }
-
-              if (instruction.replace_all) {
-                // Do replacement on original (not normalized) to preserve original EOLs
-                newCode = targetCode.split(oldString).join(newString);
-                location = `${occurrences} locations`;
-              } else {
-                const idx = tNorm.indexOf(oNorm);
-                // translate index back to original by re-finding in original
-                const originalIdx = targetCode.indexOf(oldString);
-                const start = originalIdx > -1 ? originalIdx : idx; // fallback if EOLs differ
-                newCode =
-                  targetCode.slice(0, start) +
-                  newString +
-                  targetCode.slice(start + oldString.length);
-                location = `character ${start}`;
-              }
-
-              return {
-                success: true,
-                newCode,
-                location,
                 oldLength: targetCode.length,
-                newLength: newCode.length,
+                newLength: newString.length,
               };
             }
 
-            // 2) Fallback: whitespace-tolerant regex (handles different indentation / trailing newline / CRLF)
-            const flexRe = buildFlexibleRegexFromLiteral(oldString);
-            const matches =
-              targetCode.match(new RegExp(flexRe.source, flexRe.flags + "g")) ||
-              [];
-            occurrences = matches.length;
+            // CASE 2: Exact string matching using indexOf()
+            let index = 0;
+            let count = 0;
+            const positions = [];
 
-            if (occurrences === 0) {
+            while ((index = targetCode.indexOf(oldString, index)) !== -1) {
+              positions.push(index);
+              count++;
+              index += oldString.length;
+            }
+
+            if (count === 0) {
               return {
                 success: false,
-                error: `Old string not found in ${
+                error: this.buildNoMatchError(
+                  oldString,
+                  targetCode,
                   instruction.target_type
-                }: "${oldString.substring(0, 50)}..."`,
+                ),
               };
             }
 
-            if (occurrences > 1 && !instruction.replace_all) {
+            if (count > 1 && !instruction.replace_all) {
               return {
                 success: false,
-                error: `Multiple occurrences found (${occurrences}). Use replace_all: true or provide more specific old_string`,
+                error: `Found ${count} exact matches. Set "replace_all": true or provide more specific old_string.`,
               };
             }
 
-            if (instruction.replace_all) {
-              newCode = targetCode.replace(
-                new RegExp(flexRe.source, flexRe.flags + "g"),
-                newString
-              );
-              location = `${occurrences} locations`;
-            } else {
-              // single replacement (no /g/, only first hit)
-              newCode = targetCode.replace(flexRe, newString);
-              // best-effort index for reporting (post-replace index inaccurate otherwise)
-              const firstMatch = targetCode.search(flexRe);
-              location = `character ${firstMatch}`;
-            }
+            // Perform replacement
+            const newCode = instruction.replace_all
+              ? targetCode.split(oldString).join(newString)
+              : targetCode.substring(0, positions[0]) +
+                newString +
+                targetCode.substring(positions[0] + oldString.length);
 
             return {
               success: true,
               newCode,
-              location,
+              location: `${count} location(s)`,
               oldLength: targetCode.length,
               newLength: newCode.length,
             };
           }
 
           /**
+           * Build detailed error message when string match fails
+           * @param {string} oldString - The string that was searched for
+           * @param {string} targetCode - The code that was searched
+           * @param {string} targetType - The type of code (html/css/js)
+           * @returns {string} Detailed error message
+           */
+          buildNoMatchError(oldString, targetCode, targetType) {
+            const oldPreview =
+              oldString.length > 100
+                ? oldString.substring(0, 100) + "..."
+                : oldString;
+
+            const codePreview =
+              targetCode.length > 300
+                ? targetCode.substring(0, 300) + "..."
+                : targetCode;
+
+            let error = `Could not find exact match in ${targetType}.\n\n`;
+            error += `Looking for:\n"${oldPreview}"\n\n`;
+
+            if (targetCode.trim() === "") {
+              error += `Current ${targetType} is empty. The system auto-detects blank screens - this error should not occur for empty code.`;
+            } else {
+              error += `Current ${targetType} preview:\n"${codePreview}"\n\n`;
+              error += `💡 Tip: Make sure old_string matches exactly (including spacing, quotes, and line breaks).`;
+            }
+
+            return error;
+          }
+
+          /**
            * Validate replacement instruction format
            * @param {Object} instruction - Instruction to validate
+           * @param {Object} currentCode - Current code state
            * @returns {Object} Validation result
            */
-          validateInstruction(instruction) {
+          validateInstruction(instruction, currentCode) {
             debugLog(
               "✅ [StringReplacement] Validating instruction:",
               JSON.stringify(instruction, null, 2)
             );
 
+            // Check target_type
             if (
               !instruction.target_type ||
               !["html", "css", "js"].includes(instruction.target_type)
@@ -1447,28 +1500,35 @@ Fliplet.Widget.generateInterface({
               };
             }
 
+            // Check old_string exists and is a string
             if (
-              !instruction.old_string ||
-              typeof instruction.old_string !== "string" ||
-              instruction.old_string.trim() === ""
+              instruction.old_string === undefined ||
+              instruction.old_string === null ||
+              typeof instruction.old_string !== "string"
             ) {
-              debugLog("❌ [StringReplacement] old_string validation failed:", {
-                exists: !!instruction.old_string,
-                type: typeof instruction.old_string,
-                value: instruction.old_string,
-                isEmpty: instruction.old_string === "",
-                isOnlyWhitespace:
-                  typeof instruction.old_string === "string" &&
-                  instruction.old_string.trim() === "",
-              });
               return {
                 valid: false,
-                error: "old_string is required and must be a non-empty string",
+                error: "old_string is required and must be a string",
               };
             }
 
+            // For blank screens, old_string is ignored (can be anything, including empty string)
+            const targetCode = currentCode[instruction.target_type] ?? "";
+            const isBlankScreen = targetCode.trim() === "";
+
+            // For non-blank screens, old_string must have content
+            if (!isBlankScreen && instruction.old_string.trim() === "") {
+              return {
+                valid: false,
+                error:
+                  "old_string cannot be empty for modifying existing code. For blank screens, empty string is allowed (system auto-detects).",
+              };
+            }
+
+            // Check new_string exists
             if (
-              !instruction.new_string ||
+              instruction.new_string === undefined ||
+              instruction.new_string === null ||
               typeof instruction.new_string !== "string"
             ) {
               return {
@@ -1477,7 +1537,11 @@ Fliplet.Widget.generateInterface({
               };
             }
 
-            if (instruction.old_string === instruction.new_string) {
+            // Check not identical (unless blank screen)
+            if (
+              !isBlankScreen &&
+              instruction.old_string === instruction.new_string
+            ) {
               return {
                 valid: false,
                 error: "old_string and new_string cannot be identical",
@@ -2274,18 +2338,6 @@ Fliplet.Widget.generateInterface({
         const stringReplacementEngine = new StringReplacementEngine();
 
         /**
-         * AI Configuration for Fliplet.AI.createCompletion
-         * @type {Object}
-         */
-        const AIConfig = {
-          /** @type {string} Model to use for code generation */
-          model: CONFIG.OPENAI_MODEL,
-          /** @type {number} Temperature for response randomness */
-          temperature: CONFIG.TEMPERATURE,
-          max_tokens: CONFIG.MAX_TOKENS,
-        };
-
-        /**
          * DOM element references
          * @type {Object}
          */
@@ -2306,6 +2358,8 @@ Fliplet.Widget.generateInterface({
          * Initialize the application
          */
         async function initializeApp() {
+          var data = Fliplet.Widget.getData();
+          await Fliplet.Widget.save(data.fields);
           debugLog("🚀 Initializing AI Coding Tool Test App");
 
           // Get DOM element references
@@ -2320,12 +2374,7 @@ Fliplet.Widget.generateInterface({
           // Initialize textarea styling and behavior
           setTimeout(() => {
             if (DOM.userInput) {
-              debugLog("🔧 Initializing textarea...");
               initializeTextarea();
-              debugLog(
-                "🔧 Textarea initialized with height:",
-                DOM.userInput.style.height
-              );
             } else {
               debugError("❌ Textarea element not found during initialization");
             }
@@ -2364,7 +2413,7 @@ Fliplet.Widget.generateInterface({
           setupEventListeners();
 
           // Load chat history from Fliplet field
-          const historyLoaded = loadChatHistoryFromStorage();
+          const historyLoaded = loadChatHistory();
           if (!historyLoaded) {
             // If no history loaded, the existing system message in HTML template is sufficient
             // No need to add another system message since there's already one in the HTML
@@ -2417,19 +2466,11 @@ Fliplet.Widget.generateInterface({
 
           // Auto-resize textarea as user types (jQuery)
           $(DOM.userInput).on("input", function () {
-            debugLog(
-              "🔧 Input event triggered (jQuery), current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
           // Auto-resize textarea as user types (native event as backup)
           DOM.userInput.addEventListener("input", function () {
-            debugLog(
-              "🔧 Input event triggered (native), current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
@@ -2467,19 +2508,11 @@ Fliplet.Widget.generateInterface({
 
           // Handle all text changes including programmatic changes
           DOM.userInput.addEventListener("change", function () {
-            debugLog(
-              "🔧 Change event triggered, current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
           // Handle composition events for IME input (useful for international keyboards)
           DOM.userInput.addEventListener("compositionend", function () {
-            debugLog(
-              "🔧 Composition end event triggered, current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
@@ -2490,11 +2523,6 @@ Fliplet.Widget.generateInterface({
           $(document).on("click", ".remove-image-btn", function (event) {
             event.preventDefault();
             const imageId = this.dataset.imageId;
-            debugLog("🗑️ Remove button clicked!");
-            debugLog("🗑️ Button element:", this);
-            debugLog("🗑️ Button dataset:", this.dataset);
-            debugLog("🗑️ Extracted imageId:", imageId);
-            debugLog("🗑️ Type of imageId:", typeof imageId);
 
             if (imageId) {
               debugLog("🗑️ Remove button clicked for image ID:", imageId);
@@ -2550,23 +2578,377 @@ Fliplet.Widget.generateInterface({
           debugLog("🔓 User controls re-enabled - AI finished thinking");
         }
 
+        // ============================================================================
+        // STREAMING UI & QUEUE MODE FUNCTIONS
+        // ============================================================================
+
         /**
-         * Handle sending a message to the AI
+         * Status phase messages for the streaming UI
+         * Event-based phases have arrays of messages for variation
+         * Content-detection phases also have arrays for variety
          */
-        function handleSendMessage() {
-          // Check if send button is disabled and return early if so
-          if (DOM.sendBtn && DOM.sendBtn.disabled) {
-            debugLog("🚫 Send button is disabled, ignoring click");
+        const STREAMING_PHASES = {
+          initializing: [
+            "Analyzing your request...",
+            "Understanding your requirements...",
+            "Processing your input...",
+            "Reviewing your request...",
+            "Getting started..."
+          ],
+          thinking: [
+            "Thinking through the approach...",
+            "Considering the best solution...",
+            "Planning the implementation...",
+            "Working out the details...",
+            "Evaluating options...",
+            "Reasoning through the problem..."
+          ],
+          generating: [
+            "Generating response...",
+            "Writing the code...",
+            "Building your solution...",
+            "Crafting the response...",
+            "Putting it together..."
+          ],
+          html: [
+            "Writing HTML structure...",
+            "Building the layout...",
+            "Creating the markup...",
+            "Structuring the content..."
+          ],
+          css: [
+            "Adding styles...",
+            "Styling the interface...",
+            "Applying visual design...",
+            "Making it look good..."
+          ],
+          js: [
+            "Adding functionality...",
+            "Writing the logic...",
+            "Implementing behavior...",
+            "Adding interactivity..."
+          ],
+          completing: [
+            "Finalizing...",
+            "Wrapping up...",
+            "Almost done...",
+            "Finishing touches...",
+            "Completing the response..."
+          ],
+          cancelled: ["Request cancelled"],
+          error: ["Something went wrong"]
+        };
+
+        /**
+         * Get a random message from a phase's message array
+         * @param {string} phase - The phase key from STREAMING_PHASES
+         * @returns {string} A random message for that phase
+         */
+        function getPhaseMessage(phase) {
+          const messages = STREAMING_PHASES[phase];
+          if (!messages) return '';
+          if (Array.isArray(messages)) {
+            return messages[Math.floor(Math.random() * messages.length)];
+          }
+          return messages;
+        }
+
+        /**
+         * Create the streaming UI div element
+         * @returns {HTMLElement} The streaming div element
+         */
+        function createStreamingDiv() {
+          const streamingDiv = document.createElement("div");
+          streamingDiv.className = "message ai-message streaming-message";
+          streamingDiv.innerHTML = `
+            <div class="streaming-header">
+              <div class="streaming-status">
+                <div class="loading"></div>
+                <span class="status-text">${getPhaseMessage('initializing')}</span>
+              </div>
+              <div class="streaming-actions">
+                <button class="toggle-thinking-btn" title="Show details" style="display: none;">
+                  <i class="fa fa-chevron-down"></i>
+                </button>
+              </div>
+            </div>
+            <div class="thinking-content collapsed">
+              <div class="thinking-text"></div>
+            </div>
+          `;
+
+          // Add event listeners
+          const toggleBtn = streamingDiv.querySelector('.toggle-thinking-btn');
+          const thinkingContent = streamingDiv.querySelector('.thinking-content');
+
+          toggleBtn.addEventListener('click', function(event) {
+            event.stopPropagation();
+            event.preventDefault();
+            thinkingContent.classList.toggle('collapsed');
+            toggleBtn.classList.toggle('expanded');
+
+            // Scroll chat messages to bottom when expanding (new content visible)
+            if (!thinkingContent.classList.contains('collapsed')) {
+              scrollToBottom();
+              // Reset sticky to true when expanding (start following)
+              AppState.streamingState.thinkingScrollSticky = true;
+            }
+          });
+
+          // Smart scroll tracking: detect when user scrolls away from bottom
+          thinkingContent.addEventListener('scroll', function() {
+            const scrollTop = thinkingContent.scrollTop;
+            const scrollHeight = thinkingContent.scrollHeight;
+            const clientHeight = thinkingContent.clientHeight;
+            // Consider "at bottom" if within 10px of the bottom
+            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
+
+            AppState.streamingState.thinkingScrollSticky = isAtBottom;
+          });
+
+          // Store reference and append to chat
+          AppState.streamingState.streamingDiv = streamingDiv;
+          AppState.streamingState.startTime = Date.now();
+          AppState.streamingState.accumulatedText = '';
+          AppState.streamingState.currentPhase = 'initializing';
+          AppState.streamingState.thinkingScrollSticky = true; // Start with auto-scroll enabled
+          DOM.chatMessages.appendChild(streamingDiv);
+          scrollToBottom();
+
+          return streamingDiv;
+        }
+
+        /**
+         * Update the streaming status text
+         * @param {string} phase - The phase key from STREAMING_PHASES
+         */
+        function updateStreamingStatus(phase) {
+          // Don't update if cancelled or if phase hasn't changed
+          if (AppState.isCancelled || AppState.streamingState.currentPhase === phase) {
             return;
           }
 
-          // Disable user controls while AI is processing
-          disableUserControls();
+          AppState.streamingState.currentPhase = phase;
+          const streamingDiv = AppState.streamingState.streamingDiv;
+          if (!streamingDiv) return;
+
+          const statusText = streamingDiv.querySelector('.status-text');
+          if (statusText && STREAMING_PHASES[phase]) {
+            statusText.textContent = getPhaseMessage(phase);
+            debugLog(`📊 [Streaming] Phase updated: ${phase}`);
+          }
+        }
+
+        /**
+         * Update the thinking content with new streaming text
+         * @param {string} delta - The new text chunk to append
+         */
+        function updateThinkingContent(delta) {
+          const streamingDiv = AppState.streamingState.streamingDiv;
+          if (!streamingDiv) return;
+
+          const thinkingContent = streamingDiv.querySelector('.thinking-content');
+          const thinkingText = streamingDiv.querySelector('.thinking-text');
+          const toggleBtn = streamingDiv.querySelector('.toggle-thinking-btn');
+
+          if (thinkingText) {
+            // Escape HTML for security and append
+            const escapedDelta = delta.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            thinkingText.innerHTML += escapedDelta;
+
+            // Show the toggle button once we have content to show
+            if (toggleBtn && toggleBtn.style.display === 'none') {
+              toggleBtn.style.display = '';
+            }
+
+            // Auto-scroll to bottom if thinking content is expanded AND user hasn't scrolled away
+            if (thinkingContent && !thinkingContent.classList.contains('collapsed') && AppState.streamingState.thinkingScrollSticky) {
+              thinkingContent.scrollTop = thinkingContent.scrollHeight;
+            }
+          }
+        }
+
+        /**
+         * Remove the streaming div and clean up state
+         */
+        function removeStreamingDiv() {
+          const streamingDiv = AppState.streamingState.streamingDiv;
+          if (streamingDiv && streamingDiv.parentNode) {
+            streamingDiv.parentNode.removeChild(streamingDiv);
+          }
+          AppState.streamingState.streamingDiv = null;
+          AppState.streamingState.accumulatedText = '';
+          AppState.streamingState.currentPhase = 'initializing';
+          AppState.streamingState.startTime = null;
+          AppState.streamingState.thinkingScrollSticky = true;
+        }
+
+        /**
+         * Cancel the current AI request
+         */
+        function cancelCurrentRequest() {
+          if (!AppState.isProcessing) return;
+
+          debugLog("⚠️ [Cancel] User cancelled the request");
+
+          // Set cancelled flag to ignore remaining events
+          AppState.isCancelled = true;
+
+          // Call server-side cancellation if streaming promise is available
+          if (AppState.currentStreamingPromise && typeof AppState.currentStreamingPromise.cancel === 'function') {
+            AppState.currentStreamingPromise.cancel()
+              .then(function(result) {
+                debugLog("🛑 [Cancel] Server-side cancellation result:", result);
+              })
+              .catch(function(err) {
+                debugLog("⚠️ [Cancel] Server-side cancellation error:", err);
+              });
+            AppState.currentStreamingPromise = null;
+          } else {
+            // Fallback: Disconnect socket to stop receiving events
+            if (typeof Fliplet !== 'undefined' && Fliplet.Socket) {
+              try {
+                Fliplet.Socket.disconnect();
+                debugLog("🔌 [Cancel] Socket disconnected (fallback)");
+              } catch (e) {
+                debugLog("⚠️ [Cancel] Could not disconnect socket:", e);
+              }
+            }
+          }
+
+          // Update UI to cancelled state
+          showCancelledState();
+
+          // Clear processing state
+          AppState.isProcessing = false;
+
+          // Exit queue mode (keep queued message if any)
+          exitProcessingMode();
+        }
+
+        /**
+         * Show the cancelled state in the streaming UI
+         */
+        function showCancelledState() {
+          const streamingDiv = AppState.streamingState.streamingDiv;
+          if (!streamingDiv) return;
+
+          // Remove spinner
+          const loader = streamingDiv.querySelector('.loading');
+          if (loader) loader.remove();
+
+          // Update status text
+          const statusText = streamingDiv.querySelector('.status-text');
+          if (statusText) {
+            statusText.textContent = getPhaseMessage('cancelled');
+            statusText.classList.add('cancelled');
+          }
+
+          // Add cancelled styling to container
+          streamingDiv.classList.add('cancelled');
+        }
+
+        /**
+         * Show error state in the streaming UI
+         * @param {string} errorMessage - Optional error message to display
+         */
+        function showErrorState(errorMessage) {
+          const streamingDiv = AppState.streamingState.streamingDiv;
+          if (!streamingDiv) return;
+
+          // Remove spinner
+          const loader = streamingDiv.querySelector('.loading');
+          if (loader) loader.remove();
+
+          // Update status text
+          const statusText = streamingDiv.querySelector('.status-text');
+          if (statusText) {
+            statusText.textContent = errorMessage || getPhaseMessage('error');
+            statusText.classList.add('error');
+          }
+
+          // Add error styling to container
+          streamingDiv.classList.add('error');
+        }
+
+        /**
+         * Enter processing mode - change send button to stop button
+         */
+        function enterProcessingMode() {
+          AppState.isProcessing = true;
+          AppState.isCancelled = false;
+
+          if (DOM.userInput) {
+            DOM.userInput.placeholder = 'Type your next message...';
+            DOM.userInput.disabled = false;
+            DOM.userInput.style.opacity = "1";
+            DOM.userInput.style.cursor = "text";
+          }
+
+          if (DOM.sendBtn) {
+            DOM.sendBtn.classList.add('stop-mode');
+            DOM.sendBtn.disabled = false;
+            DOM.sendBtn.style.opacity = "1";
+            DOM.sendBtn.style.cursor = "pointer";
+            DOM.sendBtn.innerHTML = '<i class="fa fa-stop"></i>';
+            DOM.sendBtn.title = 'Stop generating';
+          }
+
+          debugLog("⏳ [Processing] Entered processing mode");
+        }
+
+        /**
+         * Exit processing mode - restore send button
+         */
+        function exitProcessingMode() {
+          AppState.isProcessing = false;
+
+          if (DOM.userInput) {
+            DOM.userInput.placeholder = 'Describe what you want...';
+          }
+
+          if (DOM.sendBtn) {
+            DOM.sendBtn.classList.remove('stop-mode');
+            DOM.sendBtn.innerHTML = '<i class="fa fa-paper-plane"></i>';
+            DOM.sendBtn.title = 'Send';
+          }
+
+          debugLog("✅ [Processing] Exited processing mode");
+        }
+
+        /**
+         * Detect the current phase from streaming text content
+         * @param {string} text - The accumulated streaming text
+         * @returns {string|null} The detected phase or null
+         */
+        function detectPhaseFromContent(text) {
+          // Simple heuristics to detect what's being generated
+          if (text.includes('"target_type":"html"') || text.includes('"target_type": "html"')) {
+            return 'html';
+          }
+          if (text.includes('"target_type":"css"') || text.includes('"target_type": "css"')) {
+            return 'css';
+          }
+          if (text.includes('"target_type":"js"') || text.includes('"target_type": "js"')) {
+            return 'js';
+          }
+          return null;
+        }
+
+        /**
+         * Handle sending a message to the AI (or stopping if processing)
+         */
+        function handleSendMessage() {
+          // If AI is currently processing, clicking the button stops it
+          if (AppState.isProcessing) {
+            debugLog("⏹️ [Stop] User clicked stop button");
+            cancelCurrentRequest();
+            return;
+          }
 
           const userMessage = DOM.userInput.value.trim();
 
           // IMPORTANT: Always get the current state of images at the moment of sending
-          // This ensures we don't send stale image data if images were removed
           const currentImages = AppState.pastedImages.filter(
             (img) =>
               img &&
@@ -2578,7 +2960,6 @@ Fliplet.Widget.generateInterface({
           // Input validation
           if (!userMessage && currentImages.length === 0) {
             debugLog("⚠️ Empty message and no images ignored");
-            enableUserControls();
             return;
           }
 
@@ -2598,9 +2979,10 @@ Fliplet.Widget.generateInterface({
           // Clear input and reset textarea height
           resetTextarea(DOM.userInput);
 
+          // Enter processing mode (change send button to stop button)
+          enterProcessingMode();
+
           // Process the message with current valid images
-          // Note: We're not passing the potentially stale pastedImages parameter
-          // processUserMessage will get the current state directly
           processUserMessage(userMessage, currentImages, AppState);
         }
 
@@ -2628,21 +3010,48 @@ Fliplet.Widget.generateInterface({
             `🚀 [Main] Processing request #${AppState.requestCount}: "${userMessage}"`
           );
 
-          // Add loading indicator (don't add to chat history - just show in UI)
-          const loadingDiv = document.createElement("div");
-          loadingDiv.className = "message ai-message loading-message";
-          loadingDiv.innerHTML =
-            '<div class="loading"></div><span>AI is working on your request...</span>';
-          DOM.chatMessages.appendChild(loadingDiv);
-          scrollToBottom();
+          // Create streaming UI with status line, toggle, and cancel button
+          createStreamingDiv();
 
-          AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
-          AppState.css = Fliplet.Helper.field("css").get() || "";
-          AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+          try {
+            // CRITICAL: Always fetch fresh code from the page before each AI call
+            // This ensures we have the latest state even after navigation
+            debugLog("🔄 [Main] Fetching current code from page...");
+            await populateCurrentPageContent();
 
-          AppState.currentHTML = AppState.layoutHTML;
-          AppState.currentCSS = AppState.css;
-          AppState.currentJS = AppState.javascript;
+            // Now read from Helper fields (just populated by populateCurrentPageContent)
+            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+            AppState.css = Fliplet.Helper.field("css").get() || "";
+            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+
+            AppState.currentHTML = AppState.layoutHTML;
+            AppState.currentCSS = AppState.css;
+            AppState.currentJS = AppState.javascript;
+
+            debugLog("📊 [Main] Loaded current code state:", {
+              htmlLength: AppState.currentHTML.length,
+              cssLength: AppState.currentCSS.length,
+              jsLength: AppState.currentJS.length,
+              htmlPreview: AppState.currentHTML.substring(0, 200) || "(empty)",
+              htmlIsEmpty: AppState.currentHTML.trim() === "",
+            });
+          } catch (fetchError) {
+            debugError("⚠️ [Main] Error fetching current page content:", fetchError);
+            // Fallback to existing Helper field values
+            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+            AppState.css = Fliplet.Helper.field("css").get() || "";
+            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+
+            AppState.currentHTML = AppState.layoutHTML;
+            AppState.currentCSS = AppState.css;
+            AppState.currentJS = AppState.javascript;
+
+            debugLog("📊 [Main] Fallback to Helper fields:", {
+              htmlLength: AppState.currentHTML.length,
+              cssLength: AppState.currentCSS.length,
+              jsLength: AppState.currentJS.length,
+            });
+          }
 
           try {
             // Step 1: Build intelligent context
@@ -2758,6 +3167,15 @@ Fliplet.Widget.generateInterface({
               currentImages
             );
 
+            // Check if the request was cancelled (aiResponse will be null)
+            if (aiResponse === null) {
+              debugLog("🛑 [Main] Request was cancelled, stopping processing");
+              // The UI has already been updated by cancelCurrentRequest()
+              // Just exit processing mode and return
+              exitProcessingMode();
+              return;
+            }
+
             // Step 3: Parse response using protocol parser
             const changeRequest = protocolParser.parseResponse(aiResponse);
             debugLog("📋 [Main] Parsed change request:", changeRequest);
@@ -2790,6 +3208,13 @@ Fliplet.Widget.generateInterface({
               changeRequest.instructions.length > 0
             ) {
               debugLog("🎯 [Main] Using string replacement engine...");
+              debugLog("📋 [Main] DIAGNOSTIC - currentCode being passed:", {
+                htmlLength: currentCode.html?.length || 0,
+                cssLength: currentCode.css?.length || 0,
+                jsLength: currentCode.js?.length || 0,
+                htmlPreview: currentCode.html?.substring(0, 200) || "(empty)",
+                instructionCount: changeRequest.instructions?.length || 0,
+              });
               applicationResult =
                 await stringReplacementEngine.applyReplacements(
                   changeRequest.instructions,
@@ -2849,20 +3274,8 @@ Fliplet.Widget.generateInterface({
             // Step 6b: User message already added to chat history by addMessageToChat() in handleSendMessage()
             // No need to add it again here
 
-            // Step 7: Update code and save fields
-            if (!isAnswerType) {
-              updateCode();
-            } else {
-              // For answer type, we still need to save the fields even without code changes
-              saveGeneratedCode({
-                html: AppState.currentHTML || "",
-                css: AppState.currentCSS || "",
-                javascript: AppState.currentJS || "",
-              });
-            }
-
-            // Remove loading indicator
-            DOM.chatMessages.removeChild(loadingDiv);
+            // Remove streaming UI
+            removeStreamingDiv();
 
             // Add AI response to chat
             let aiResponseText;
@@ -2893,15 +3306,32 @@ Fliplet.Widget.generateInterface({
             // Clear pasted images after successful processing (preserve chat history)
             clearPastedImages(true, DOM, AppState);
 
-            // Re-enable user controls after successful AI response
-            enableUserControls();
+            // Exit processing mode (restore send button)
+            exitProcessingMode();
+
+            // Step 7: Update code and save fields
+            if (!isAnswerType) {
+              updateCode();
+            } else {
+              // For answer type, we still need to save the fields even without code changes
+              saveGeneratedCode({
+                html: AppState.currentHTML || "",
+                css: AppState.currentCSS || "",
+                javascript: AppState.currentJS || "",
+              });
+            }
 
             debugLog(
               `✅ [Main] Request #${AppState.requestCount} completed successfully`
             );
           } catch (error) {
-            // Remove loading indicator
-            DOM.chatMessages.removeChild(loadingDiv);
+            // Show error state in streaming UI (if visible) then remove it
+            showErrorState(error.message || "Something went wrong");
+
+            // Small delay to let user see the error state before removing
+            setTimeout(() => {
+              removeStreamingDiv();
+            }, 1500);
 
             debugError(
               `❌ [Main] Request #${AppState.requestCount} failed:`,
@@ -2946,9 +3376,60 @@ Fliplet.Widget.generateInterface({
             // Clear pasted images even on error to prevent stale state (preserve chat history)
             clearPastedImages(true, DOM, AppState);
 
-            // Re-enable user controls even on error
-            enableUserControls();
+            // Exit queue mode on error (clears queued message and resets UI)
+            exitProcessingMode();
           }
+        }
+
+        /**
+         * Extract text from Responses API format
+         * Handles both streaming and non-streaming responses
+         * @param {Object} response - Response object from Fliplet.AI
+         * @param {string} accumulatedText - Text accumulated during streaming (optional)
+         * @returns {string} Extracted AI response text
+         */
+        function extractTextFromResponsesAPI(response, accumulatedText = '') {
+          debugLog("🔍 [AI] Extracting text from Responses API format...");
+
+          // Validate response structure
+          if (!response || !response.output) {
+            throw new Error(`AI API error: No valid response received`);
+          }
+
+          if (!Array.isArray(response.output) || response.output.length === 0) {
+            throw new Error("Invalid response format from AI API");
+          }
+
+          let aiResponse = '';
+
+          // Find the message object in the output array
+          // (reasoning models have "reasoning" object first, then "message" object)
+          const messageOutput = response.output.find(item => item.type === 'message');
+
+          if (messageOutput && messageOutput.content && Array.isArray(messageOutput.content)) {
+            const textContent = messageOutput.content.find(item => item.type === 'output_text');
+            if (textContent && textContent.text) {
+              aiResponse = textContent.text;
+            }
+          }
+
+          // Fallback to accumulated text if extraction fails
+          if (!aiResponse && accumulatedText) {
+            debugWarn("⚠️ [AI] Could not extract from output structure, using accumulated text");
+            aiResponse = accumulatedText;
+          }
+
+          if (!aiResponse) {
+            debugError("❌ [AI] Failed to extract text from response. Output structure:", response.output);
+            throw new Error("Could not extract text from response output");
+          }
+
+          debugLog("📥 [AI] Response extracted successfully:", {
+            length: aiResponse.length,
+            preview: aiResponse.substring(0, 200) + "..."
+          });
+
+          return aiResponse;
         }
 
         /**
@@ -2963,6 +3444,30 @@ Fliplet.Widget.generateInterface({
           pastedImages = []
         ) {
           debugLog("🌐 [AI] Making API call with optimized context...");
+
+          // Get current model selection from dropdown
+          const selectedModel = Fliplet.Helper.field("openaiModel").get() || "gpt-5.1-reasoning-none";
+
+          // Parse model name and reasoning level
+          let modelName = selectedModel;
+          let reasoningEffort = null;
+
+          if (selectedModel.includes("-reasoning-")) {
+            const parts = selectedModel.split("-reasoning-");
+            modelName = parts[0]; // e.g., "gpt-5.1"
+            reasoningEffort = parts[1]; // e.g., "medium", "low", "high", "none"
+
+            // If reasoning is "none", don't include it in the request
+            if (reasoningEffort === "none") {
+              reasoningEffort = null;
+            }
+          }
+
+          debugLog("🔧 [AI] Current model configuration:", {
+            selectedModel: selectedModel,
+            parsedModelName: modelName,
+            reasoningEffort: reasoningEffort,
+          });
 
           // CRITICAL: ALWAYS use AppState.pastedImages as the source of truth for current images
           // The passed pastedImages parameter might be stale if images were removed
@@ -3045,7 +3550,8 @@ Fliplet.Widget.generateInterface({
             finalCurrentImages,
             AppState,
             dataSourceColumns,
-            selectedDataSourceName
+            selectedDataSourceName,
+            getGuidFromComponent()
           );
 
           // Build complete conversation history
@@ -3082,15 +3588,23 @@ Fliplet.Widget.generateInterface({
                 historyItem.images &&
                 historyItem.images.length > 0
               ) {
-                // User message with images - use OpenAI's image format
-                const content = [{ type: "text", text: historyItem.message }];
+                // User message with images - use Responses API format (input_text, input_image)
+                // Add data source context if available
+                let messageText = historyItem.message;
+                if (historyItem.dataSourceName) {
+                  const columnsText = historyItem.dataSourceColumns && historyItem.dataSourceColumns.length > 0
+                    ? ` with columns: ${historyItem.dataSourceColumns.join(', ')}`
+                    : '';
+                  messageText = `[Using data source: "${historyItem.dataSourceName}"${columnsText}]\n\n${historyItem.message}`;
+                }
+                const content = [{ type: "input_text", text: messageText }];
 
                 // Add all images from this history item
                 historyItem.images.forEach((img) => {
                   if (img.flipletUrl) {
                     content.push({
-                      type: "image_url",
-                      image_url: { url: img.flipletUrl },
+                      type: "input_image",
+                      image_url: img.flipletUrl, // Direct string, not nested object
                     });
                   } else {
                     debugWarn(
@@ -3108,16 +3622,24 @@ Fliplet.Widget.generateInterface({
                 debugLog(
                   `📝 [AI] Added user history message with ${
                     historyItem.images.length
-                  } images: ${historyItem.message.substring(0, 50)}...`
+                  } images (Responses API format): ${historyItem.message.substring(0, 50)}...`
                 );
               } else {
                 // Assistant message or user message without images - use text format
+                let messageText = historyItem.message;
+                // Add data source context for user messages even without images
+                if (role === "user" && historyItem.dataSourceName) {
+                  const columnsText = historyItem.dataSourceColumns && historyItem.dataSourceColumns.length > 0
+                    ? ` with columns: ${historyItem.dataSourceColumns.join(', ')}`
+                    : '';
+                  messageText = `[Using data source: "${historyItem.dataSourceName}"${columnsText}]\n\n${historyItem.message}`;
+                }
                 messages.push({
                   role: role,
-                  content: historyItem.message,
+                  content: messageText,
                 });
                 debugLog(
-                  `📝 [AI] Added ${role} history message: ${historyItem.message.substring(
+                  `📝 [AI] Added ${role} history message: ${messageText.substring(
                     0,
                     50
                   )}...`
@@ -3126,16 +3648,28 @@ Fliplet.Widget.generateInterface({
             }
           });
 
-          // Add current user message - always check for images (current or historical)
-          const content = [{ type: "text", text: userMessage }];
+          // Add current user message - check if we have images to determine format
+          // Add data source context to current message if available
+          let currentMessageText = userMessage;
+          if (selectedDataSourceName) {
+            const columnsText = dataSourceColumns && dataSourceColumns.length > 0
+              ? ` with columns: ${dataSourceColumns.join(', ')}`
+              : '';
+            currentMessageText = `[Using data source: "${selectedDataSourceName}"${columnsText}]\n\n${userMessage}`;
+          }
 
-          // First, add any current images
+          let content;
+
+          // First, check if we have current images
           if (finalCurrentImages && finalCurrentImages.length > 0) {
+            // If we have images, use Responses API array format with input_text and input_image
+            content = [{ type: "input_text", text: currentMessageText }];
+
             finalCurrentImages.forEach((img) => {
               if (img.flipletUrl) {
                 content.push({
-                  type: "image_url",
-                  image_url: { url: img.flipletUrl },
+                  type: "input_image",
+                  image_url: img.flipletUrl, // Direct string, not nested object
                 });
               } else {
                 debugWarn(
@@ -3145,8 +3679,14 @@ Fliplet.Widget.generateInterface({
               }
             });
             debugLog(
-              "📤 [AI] Added current images to user message:",
+              "📤 [AI] Added current images to user message (Responses API format):",
               finalCurrentImages.length
+            );
+          } else {
+            // If no images, use simple string format
+            content = currentMessageText;
+            debugLog(
+              "📤 [AI] User message has no images, using string format"
             );
           }
 
@@ -3157,12 +3697,12 @@ Fliplet.Widget.generateInterface({
             "📤 [AI] Current user message will only contain current images, not historical ones"
           );
 
-          // Always send the user message with content array (even if no images)
+          // Add the user message with appropriate content format
           messages.push({ role: "user", content: content });
 
-          const totalImagesInMessage = content.filter(
-            (c) => c.type === "image_url"
-          ).length;
+          const totalImagesInMessage = Array.isArray(content)
+            ? content.filter((c) => c.type === "input_image").length
+            : 0;
           debugLog("📤 [AI] Sending current user message:", {
             textLength: userMessage.length,
             currentImageCount: finalCurrentImages
@@ -3176,19 +3716,25 @@ Fliplet.Widget.generateInterface({
           });
 
           // Log the final content structure
-          debugLog("📤 [AI] Current user message content structure:", {
-            contentLength: content.length,
-            textContent: content.find((c) => c.type === "text")?.text,
-            imageContents: content
-              .filter((c) => c.type === "image_url")
-              .map((img) => ({
-                url: img.image_url.url,
-                name: img.image_url.url.split("/").pop(), // Extract filename from URL
-              })),
-          });
+          if (Array.isArray(content)) {
+            debugLog("📤 [AI] Current user message content structure (array):", {
+              contentLength: content.length,
+              textContent: content.find((c) => c.type === "input_text")?.text,
+              imageContents: content
+                .filter((c) => c.type === "input_image")
+                .map((img) => ({
+                  url: img.image_url,
+                  name: img.image_url.split("/").pop(), // Extract filename from URL
+                })),
+            });
+          } else {
+            debugLog("📤 [AI] Current user message content structure (string):", {
+              textLength: content.length,
+              text: content
+            });
+          }
 
           debugLog("📤 [AI] Request messages with history:", messages);
-          debugLog("📤 [AI] Final message count:", messages.length);
 
           // Summary of what we're sending
           const userMessagesWithImages = messages.filter(
@@ -3331,14 +3877,13 @@ Fliplet.Widget.generateInterface({
           }
 
           const requestBody = {
-            model: AIConfig.model,
-            messages: messages,
-            temperature: AIConfig.temperature,
+            model: modelName,
+            input: messages,
             // max_tokens: CONFIG.MAX_TOKENS,
-            // reasoning_effort: "low",
-            response_format: {
-              type: "json_schema",
-              json_schema: {
+            text: {
+              verbosity: "low",
+              format: {
+                type: "json_schema",
                 name: "ai_response",
                 strict: true,
                 schema: {
@@ -3404,42 +3949,240 @@ Fliplet.Widget.generateInterface({
                 },
               },
             },
+            useResponses: true,
+            stream: true,
           };
 
+          // Add reasoning if it's configured (for reasoning models)
+          if (reasoningEffort) {
+            requestBody.reasoning = {
+              effort: reasoningEffort
+            };
+          }
+
           // Log the final request body to verify what's being sent
-          debugLog("🚀 [AI] Final request body being sent to API:", {
+          debugLog("🚀 [AI] Final request body being sent to API (Responses API):", {
             model: requestBody.model,
-            messageCount: requestBody.messages.length,
-            hasImages: requestBody.messages.some(
+            reasoning: requestBody.reasoning,
+            useResponses: requestBody.useResponses,
+            inputCount: requestBody.input.length,
+            hasTextFormat: !!requestBody.text,
+            hasImages: requestBody.input.some(
               (msg) =>
                 msg.role === "user" &&
                 Array.isArray(msg.content) &&
-                msg.content.some((c) => c.type === "image_url")
+                msg.content.some((c) => c.type === "input_image")
             ),
-            imageCount: requestBody.messages.reduce((count, msg) => {
+            imageCount: requestBody.input.reduce((count, msg) => {
               if (msg.role === "user" && Array.isArray(msg.content)) {
                 return (
                   count +
-                  msg.content.filter((c) => c.type === "image_url").length
+                  msg.content.filter((c) => c.type === "input_image").length
                 );
               }
               return count;
             }, 0),
-            userMessageContent: requestBody.messages.find(
+            userMessageContent: requestBody.input.find(
               (msg) => msg.role === "user"
             )?.content,
           });
 
+          // Initialize streaming variables
           let response;
+          let accumulatedText = '';
+          let eventCount = 0;
+          let streamCompleted = false;
+          let usageInfo = null;
+          const streamStartTime = Date.now();
+
           try {
-            response = await Fliplet.AI.createCompletion(requestBody);
+            debugLog("🌊 [AI] Starting streaming API call...");
+
+            // Make streaming API call - store promise for cancellation
+            const streamingPromise = Fliplet.AI.createCompletion(requestBody)
+              .stream(function onEvent(event) {
+                // Skip processing if request was cancelled
+                if (AppState.isCancelled) {
+                  debugLog("⏹️ [AI] Skipping event - request cancelled");
+                  return;
+                }
+
+                eventCount++;
+
+                // Log event details for debugging
+                debugLog(`📦 [AI] Event #${eventCount}:`, {
+                  type: event.type,
+                  hasItemId: !!event.item_id,
+                  hasDelta: !!event.delta,
+                  outputIndex: event.output_index,
+                  contentIndex: event.content_index,
+                  timestamp: Date.now() - streamStartTime
+                });
+
+                // Detect phase from output item type (for reasoning models)
+                if (event.type === 'response.output_item.added') {
+                  debugLog(`📋 [AI] Output item added:`, {
+                    itemId: event.item_id,
+                    itemType: event.item?.type,
+                    itemRole: event.item?.role
+                  });
+
+                  // Update streaming status based on item type
+                  if (event.item?.type === 'reasoning') {
+                    updateStreamingStatus('thinking');
+                  } else if (event.item?.type === 'message') {
+                    updateStreamingStatus('generating');
+                  }
+                }
+
+                // Extract content from response.output_text.delta events
+                // Responses API uses SSE events with type field, not choices array
+                if (event.type === 'response.output_text.delta') {
+                  accumulatedText += event.delta;
+                  AppState.streamingState.accumulatedText = accumulatedText;
+
+                  // Detect phase from content patterns
+                  const detectedPhase = detectPhaseFromContent(accumulatedText);
+                  if (detectedPhase) {
+                    updateStreamingStatus(detectedPhase);
+                  }
+
+                  // Update thinking content (if expanded)
+                  updateThinkingContent(event.delta);
+
+                  debugLog(`📝 [AI] Accumulated ${event.delta.length} chars. Total: ${accumulatedText.length}`);
+                }
+
+                if (event.type === 'response.content_part.added') {
+                  debugLog(`📄 [AI] Content part added:`, {
+                    itemId: event.item_id,
+                    partType: event.part?.type
+                  });
+                }
+
+                // Track when output item is done (text generation complete)
+                if (event.type === 'response.output_item.done') {
+                  debugLog(`✅ [AI] Output item done:`, {
+                    outputIndex: event.output_index,
+                    item: event.item
+                  });
+                  // Update to completing phase when output is done
+                  updateStreamingStatus('completing');
+                }
+
+                // Track when entire response is done and capture usage info
+                if (event.type === 'response.done') {
+                  streamCompleted = true;
+                  if (event.response && event.response.usage) {
+                    usageInfo = event.response.usage;
+                  }
+                  debugLog(`🎯 [AI] Response done event received:`, {
+                    hasUsage: !!usageInfo,
+                    responseId: event.response?.id
+                  });
+                }
+
+                // Log progress every 10 text delta events
+                if (event.type === 'response.output_text.delta' && eventCount % 10 === 0) {
+                  debugLog(`⏱️ [AI] Stream progress: ${eventCount} events, ${accumulatedText.length} chars, ${Date.now() - streamStartTime}ms`);
+                }
+              });
+
+            // Store the streaming promise for cancellation support
+            AppState.currentStreamingPromise = streamingPromise;
+
+            // Await completion with success/error handlers
+            response = await streamingPromise
+              .then(function onComplete(finalResponse) {
+                const streamDuration = Date.now() - streamStartTime;
+
+                debugLog("✅ [AI] Stream completed:", {
+                  totalEvents: eventCount,
+                  accumulatedLength: accumulatedText.length,
+                  duration: streamDuration,
+                  avgEventTime: eventCount > 0 ? (streamDuration / eventCount).toFixed(2) + 'ms' : 'N/A',
+                  streamCompletedFlag: streamCompleted,
+                  hasUsageInfo: !!usageInfo,
+                  hasFinalResponse: !!finalResponse
+                });
+
+                // Log reasoning tokens if available (for reasoning models)
+                // Use usageInfo captured from response.done event
+                if (usageInfo &&
+                    usageInfo.output_tokens_details &&
+                    usageInfo.output_tokens_details.reasoning_tokens) {
+                  debugLog(
+                    "🧠 [AI] Reasoning tokens used:",
+                    usageInfo.output_tokens_details.reasoning_tokens
+                  );
+                }
+
+                // Clear streaming promise reference on completion
+                AppState.currentStreamingPromise = null;
+
+                return finalResponse;
+              })
+              .catch(function onStreamError(error) {
+                debugError("❌ [AI] Stream error occurred:", {
+                  errorName: error.name,
+                  errorMessage: error.message,
+                  eventsReceived: eventCount,
+                  accumulatedLength: accumulatedText.length,
+                  duration: Date.now() - streamStartTime
+                });
+
+                // Clear streaming promise reference on error
+                AppState.currentStreamingPromise = null;
+
+                throw error;
+              });
+
+            // Check if the request was cancelled
+            if (response && response.cancelled === true) {
+              debugLog("🛑 [AI] Request was cancelled by user, skipping response processing");
+              // Return null to indicate cancellation - the UI has already been updated by cancelCurrentRequest()
+              return null;
+            }
+
+            // Also check AppState.isCancelled in case the cancel happened during processing
+            if (AppState.isCancelled) {
+              debugLog("🛑 [AI] AppState indicates cancellation, skipping response processing");
+              return null;
+            }
+
+            // For streaming, use accumulated text directly since finalResponse may be undefined
+            // The Fliplet.AI streaming API doesn't return a complete response object in .then()
+            let aiResponse;
+            if (response && response.output) {
+              // If we have a complete response object, extract from it
+              aiResponse = extractTextFromResponsesAPI(response, accumulatedText);
+            } else if (accumulatedText) {
+              // Otherwise use the accumulated text from streaming
+              debugLog("📥 [AI] Using accumulated text from streaming (finalResponse was undefined)");
+              aiResponse = accumulatedText;
+            } else {
+              throw new Error("No response received from streaming API");
+            }
+
+            debugLog("📥 [AI] Final response ready for parsing:", {
+              length: aiResponse.length,
+              preview: aiResponse.substring(0, 200) + "..."
+            });
+
+            return aiResponse;
+
           } catch (error) {
-            // Check for timeout errors (AbortError is the standard for timeout)
+            // Existing timeout detection
             if (error.name === "AbortError") {
-              debugError("⚠️ Timeout!");
+              debugError("⚠️ Timeout!", {
+                eventsReceived: eventCount,
+                partialLength: accumulatedText.length,
+                duration: Date.now() - streamStartTime
+              });
               throw new Error("AI error occurred, please try again.");
             }
-            // Also check for other common timeout patterns as fallback
+
+            // Other timeout patterns
             if (
               error.message &&
               (error.message.toLowerCase().includes("timeout") ||
@@ -3448,31 +4191,16 @@ Fliplet.Widget.generateInterface({
                 error.code === "ETIMEDOUT" ||
                 error.code === "TIMEOUT")
             ) {
+              debugError("⚠️ Timeout detected:", {
+                eventsReceived: eventCount,
+                partialLength: accumulatedText.length
+              });
               throw new Error("AI error occurred, please try again.");
             }
-            // Re-throw other errors as-is
+
+            // Re-throw other errors
             throw error;
           }
-
-          if (!response || !response.choices || !response.choices[0]) {
-            throw new Error(`AI API error: No valid response received`);
-          }
-
-          if (
-            !response.choices ||
-            !response.choices[0] ||
-            !response.choices[0].message
-          ) {
-            throw new Error("Invalid response format from AI API");
-          }
-
-          const aiResponse = response.choices[0].message.content;
-          debugLog(
-            "📥 [AI] Response received:",
-            aiResponse.substring(0, 200) + "..."
-          );
-
-          return aiResponse;
         }
 
         /**
@@ -4198,18 +4926,9 @@ Fliplet.Widget.generateInterface({
           debugLog("🖼️ Updating code");
 
           try {
-            // Check if we have any code to update
-            // if (
-            //   !AppState.currentHTML &&
-            //   !AppState.currentCSS &&
-            //   !AppState.currentJS
-            // ) {
-            //   return;
-            // }
-
             // Build complete HTML document
             const rawHTMLContent =
-              AppState.currentHTML || "<p>No HTML content</p>";
+              AppState.currentHTML || "";
             const htmlContent = sanitizeHTML(rawHTMLContent);
             const cssContent = AppState.currentCSS || "";
             const jsContent = AppState.currentJS || "";
@@ -4265,7 +4984,7 @@ Fliplet.Widget.generateInterface({
         /**
          * Load chat history from Fliplet field
          */
-        function loadChatHistoryFromStorage() {
+        function loadChatHistory() {
           try {
             const history = Fliplet.Helper.field("chatHistory").get();
             debugLog("💾 Loading chat history from Fliplet field:", history);
@@ -4387,22 +5106,6 @@ Fliplet.Widget.generateInterface({
         }
 
         /**
-         * Clear chat history from Fliplet field
-         */
-        function clearChatHistoryFromStorage() {
-          try {
-            // Clear the Fliplet field
-            Fliplet.Helper.field("chatHistory").set("");
-            debugLog("✅ Chat history cleared from Fliplet field");
-          } catch (error) {
-            debugError(
-              "Failed to clear chat history from Fliplet field:",
-              error
-            );
-          }
-        }
-
-        /**
          * Add message to chat interface
          * @param {string} message - The message content
          * @param {string} type - Message type ('user', 'ai', 'system')
@@ -4427,11 +5130,24 @@ Fliplet.Widget.generateInterface({
           messageDiv.className = `message ${type}-message`;
 
           const prefix = type === "user" ? "You" : type === "ai" ? "AI" : "";
-
+          
           // Build message content
+          let processedMessage;
+          
+          if (type === "ai") {
+            // Convert markdown to HTML for AI responses
+            const converter = new showdown.Converter();
+            processedMessage = converter.makeHtml(message);
+            // Remove trailing <br> tags that Showdown adds from LLM output newlines
+            processedMessage = processedMessage.replace(/(<br\s*\/?>)+$/gi, '');
+          } else {
+            // Escape HTML for user and system messages for security
+            processedMessage = escapeHTML(message);
+          }
+          
           let messageContent = `${
             prefix ? `<strong>${prefix}</strong>: ` : ""
-          }${escapeHTML(message)}`;
+          }${processedMessage}`;
 
           // Add images if present
           if (images && images.length > 0) {
@@ -4503,6 +5219,9 @@ Fliplet.Widget.generateInterface({
               type,
               timestamp: new Date().toISOString(),
               images: imagesCopy, // Store copy of images in history
+              dataSourceId: selectedDataSourceId,
+              dataSourceName: selectedDataSourceName,
+              dataSourceColumns: dataSourceColumns ? [...dataSourceColumns] : []
             };
 
             AppState.chatHistory.push(historyItem);
@@ -4542,7 +5261,10 @@ Fliplet.Widget.generateInterface({
 
           const div = document.createElement("div");
           div.textContent = text;
-          return div.innerHTML;
+          // Replace newlines with <br> tags to preserve them in HTML
+          const escapedHTML = div.innerHTML.replace(/\n/g, '<br>');
+          
+          return escapedHTML;
         }
 
         /**
@@ -4579,9 +5301,6 @@ Fliplet.Widget.generateInterface({
             debugLog("🔄 Resetting session");
 
             // Reset application state
-            AppState.previousHTML = "";
-            AppState.previousCSS = "";
-            AppState.previousJS = "";
             AppState.chatHistory = [];
             AppState.isFirstGeneration = true;
             AppState.requestCount = 0;
@@ -4600,9 +5319,6 @@ Fliplet.Widget.generateInterface({
 
             AppState.chatGUID = Fliplet.guid();
             Fliplet.Helper.field("chatGUID").set(AppState.chatGUID);
-
-            // Clear Fliplet field
-            clearChatHistoryFromStorage();
 
             // Clear pasted images
             clearPastedImages(false, DOM, AppState);
@@ -4626,7 +5342,16 @@ Fliplet.Widget.generateInterface({
             }
 
             // Reset
-            updateCode();
+            var data = Fliplet.Widget.getData();
+            data.fields.chatHistory = "";
+            data.fields.chatGUID = Fliplet.guid();
+            data.fields.dataSourceId = "";
+            data.fields.dataSourceName = "";
+
+            return Fliplet.Widget.save(data.fields).then(function () {
+              // Fliplet.Studio.emit("reload-widget-instance", widgetId);
+              Fliplet.Studio.emit("reload-page-preview");
+            });
           });
           return; // Stop execution here
         }
@@ -4678,13 +5403,6 @@ Fliplet.Widget.generateInterface({
           if (scrollTop > 0) {
             textarea.scrollTop = scrollTop;
           }
-
-          debugLog("🔧 Textarea resized:", {
-            scrollHeight: scrollHeight,
-            newHeight: newHeight,
-            contentLength: textarea.value.length,
-            currentHeight: textarea.style.height,
-          });
         }
 
         /**
@@ -4696,12 +5414,6 @@ Fliplet.Widget.generateInterface({
           textarea.value = "";
           textarea.style.height = "75px"; // Match CSS min-height
           textarea.style.overflowY = "hidden";
-
-          debugLog(
-            "🔧 Textarea reset to minimum height:",
-            textarea.style.height
-          );
-
           textarea.focus();
         }
 
@@ -4851,46 +5563,6 @@ Fliplet.Widget.generateInterface({
         return value && value.id;
       },
     },
-    {
-      type: "hidden",
-      name: "chatGUID",
-      label: "Chat GUID",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "chatHistory",
-      label: "Chat History",
-      default: "",
-      rows: 12,
-    },
-    {
-      type: "hidden",
-      name: "css",
-      label: "CSS",
-      default: "",
-      rows: 12,
-    },
-    {
-      type: "hidden",
-      name: "javascript",
-      label: "JavaScript",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "layoutHTML",
-      label: "Layout",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "regenerateCode",
-      label: "Regenerate code",
-      description: "Regenerate code",
-      toggleLabel: "Regenerate",
-      default: false,
-    },
   ],
 });
 
@@ -4918,25 +5590,59 @@ async function getCurrentPageSettings() {
 
 async function populateCurrentPageContent() {
   try {
+    debugLog("🔍 [populateCurrentPageContent] Starting to fetch page content...");
     const currentSettings = await getCurrentPageSettings();
 
     if (currentSettings && currentSettings.page) {
-      // Extract widget-specific HTML content
-      const htmlContent = extractHtmlContent(
+      // Extract widget-specific HTML content from richLayout
+      const htmlFromPage = extractHtmlContent(
         currentSettings.page.richLayout || ""
       );
 
+      // CRITICAL FIX: If extractHtmlContent returns empty, use the stored Helper field value
+      // This handles the case where the HTML hasn't been rendered to the page yet
+      const existingHtmlInHelper = Fliplet.Helper.field("layoutHTML").get() || "";
+
+      const htmlContent = htmlFromPage || existingHtmlInHelper;
+
+      debugLog("🔍 [populateCurrentPageContent] HTML extraction results:", {
+        htmlFromPageLength: htmlFromPage.length,
+        existingHelperLength: existingHtmlInHelper.length,
+        finalHtmlLength: htmlContent.length,
+        usingFallback: htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
+      });
+
       // Extract widget-specific CSS content
-      const cssContent = extractCodeBetweenDelimiters(
+      const cssFromPage = extractCodeBetweenDelimiters(
         "css",
         currentSettings.page.settings.customSCSS || ""
       );
 
+      // CRITICAL FIX: Fallback to Helper field if extraction returns empty
+      const existingCssInHelper = Fliplet.Helper.field("css").get() || "";
+      const cssContent = cssFromPage || existingCssInHelper;
+
       // Extract widget-specific JavaScript content
-      const jsContent = extractCodeBetweenDelimiters(
+      const jsFromPage = extractCodeBetweenDelimiters(
         "js",
         currentSettings.page.settings.customJS || ""
       );
+
+      // CRITICAL FIX: Fallback to Helper field if extraction returns empty
+      const existingJsInHelper = Fliplet.Helper.field("javascript").get() || "";
+      const jsContent = jsFromPage || existingJsInHelper;
+
+      debugLog("🔍 [populateCurrentPageContent] Extraction complete:", {
+        htmlFromPageLength: htmlFromPage.length,
+        htmlFinalLength: htmlContent.length,
+        cssFromPageLength: cssFromPage.length,
+        cssFinalLength: cssContent.length,
+        jsFromPageLength: jsFromPage.length,
+        jsFinalLength: jsContent.length,
+        htmlUsingFallback: htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
+        cssUsingFallback: cssFromPage.length === 0 && existingCssInHelper.length > 0,
+        jsUsingFallback: jsFromPage.length === 0 && existingJsInHelper.length > 0,
+      });
 
       // Populate the Helper fields with widget-specific content
       Fliplet.Helper.field("layoutHTML").set(htmlContent);
@@ -4944,9 +5650,13 @@ async function populateCurrentPageContent() {
       Fliplet.Helper.field("javascript").set(jsContent);
     }
   } catch (error) {
-    debugError("Error populating current page content:", error);
+    debugError("❌ [populateCurrentPageContent] Error:", error);
     Fliplet.UI.Toast("Error loading current page content: " + error);
   }
+}
+
+function getGuidFromComponent() {
+  return Fliplet.Helper.field("guid").get();
 }
 
 function extractHtmlContent(richLayout) {
@@ -4954,7 +5664,7 @@ function extractHtmlContent(richLayout) {
   let $wrapper = $("<div>").html(richLayout);
 
   // Find the widget-specific container and extract its content
-  const $widgetContainer = $wrapper.find(`.ai-feature-${widgetId}`);
+  const $widgetContainer = $wrapper.find(`.ai-feature-dev-${getGuidFromComponent()}`);
 
   if ($widgetContainer.length > 0) {
     return $widgetContainer.html() || "";
@@ -4967,11 +5677,11 @@ function extractCodeBetweenDelimiters(type, code) {
   let start, end;
 
   if (type === "js") {
-    start = `// start-ai-feature ${widgetId}`;
-    end = `// end-ai-feature ${widgetId}`;
+    start = `// start-ai-feature-dev ${getGuidFromComponent()}`;
+    end = `// end-ai-feature-dev ${getGuidFromComponent()}`;
   } else if (type === "css") {
-    start = `/* start-ai-feature ${widgetId} */`;
-    end = `/* end-ai-feature ${widgetId} */`;
+    start = `/* start-ai-feature-dev ${getGuidFromComponent()} */`;
+    end = `/* end-ai-feature-dev ${getGuidFromComponent()} */`;
   }
 
   // Find the start and end positions
@@ -4988,25 +5698,10 @@ function extractCodeBetweenDelimiters(type, code) {
   return "";
 }
 
-// helper: normalize \r\n and \r to \n
-function normalizeEols(s) {
-  return s.replace(/\r\n?/g, "\n");
-}
-
 // helper: escape literal for regex
+// Note: Still used for exact occurrence counting in StringReplacementEngine
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-// helper: build a whitespace-tolerant regex from a literal string
-// turns any run of whitespace in the literal into \s+
-// and allows optional leading/trailing whitespace
-function buildFlexibleRegexFromLiteral(literal) {
-  // keep original literal’s *semantic* tokens, ignore exact spacing
-  const tokens = literal.split(/\s+/).map(escapeRegExp).filter(Boolean);
-  const body = tokens.join("\\s+");
-  // allow optional surrounding whitespace and dotAll/multiline
-  return new RegExp(`\\s*${body}\\s*`, "ms");
 }
 
 function saveGeneratedCode(parsedContent) {
@@ -5014,6 +5709,7 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("css").set(parsedContent.css);
   Fliplet.Helper.field("javascript").set(parsedContent.javascript);
   Fliplet.Helper.field("regenerateCode").set(true);
+  Fliplet.Helper.field("dataSourceId").set("");
 
   var data = Fliplet.Widget.getData();
   data.fields.dataSourceId = "";
@@ -5022,15 +5718,11 @@ function saveGeneratedCode(parsedContent) {
   data.fields.css = parsedContent.css;
   data.fields.javascript = parsedContent.javascript;
   data.fields.regenerateCode = true;
-  Fliplet.Helper.field("dataSourceId").set("");
+  data.fields.guid = Fliplet.Helper.field("guid").get();
+  data.fields.chatHistory = Fliplet.Helper.field("chatHistory").get();
 
   return Fliplet.Widget.save(data.fields).then(function () {
-    Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    // toggleLoaderCodeGeneration(false);
-    setTimeout(function () {
-      Fliplet.Helper.field("regenerateCode").set(false);
-      data.fields.regenerateCode = false;
-      Fliplet.Widget.save(data.fields);
-    }, 1000);
+    // Fliplet.Studio.emit("reload-widget-instance", widgetId);
+    Fliplet.Studio.emit("reload-page-preview");
   });
 }

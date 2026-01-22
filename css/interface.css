@@ -347,17 +347,17 @@
   padding: 12px 15px;
   border-radius: 8px;
   max-width: 80%;
+  font-size: 13px;
 }
 
 .interface .message.user-message {
   background: #dcdae0;
   margin-left: auto;
-  text-align: right;
+  text-align: left;
 }
 
 .interface .message.ai-message {
   padding: 0;
-  margin: 20px 0;
 }
 
 .interface .message.system-message {
@@ -983,4 +983,156 @@
   font-size: 14px;
   line-height: 1.5;
   font-weight: 400;
+}
+
+/* ==========================================
+   STREAMING UI STYLES
+   Real-time AI processing visibility
+   ========================================== */
+
+/* Streaming message container */
+.interface .streaming-message {
+  background: none;
+  border: none;
+  padding: 8px 12px 8px 14px;
+  margin-bottom: 15px;
+}
+
+/* Streaming header with status and actions */
+.interface .streaming-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+}
+
+.interface .streaming-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 8px;
+}
+
+.interface .streaming-status .loading {
+  width: 14px;
+  height: 14px;
+  border-width: 2px;
+  flex-shrink: 0;
+}
+
+.interface .status-text {
+  font-weight: 500;
+  font-size: 12px;
+  color: #999;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.interface .status-text.cancelled {
+  color: #6c757d;
+}
+
+.interface .status-text.error {
+  color: #dc3545;
+}
+
+/* Streaming action buttons - minimal icon style */
+.interface .streaming-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.interface .toggle-thinking-btn {
+  background: transparent;
+  border: none;
+  border-radius: 3px;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  cursor: pointer;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  color: #6c757d;
+}
+
+.interface .toggle-thinking-btn:hover {
+  background: #f1f3f4;
+  color: #495057;
+}
+
+.interface .toggle-thinking-btn.expanded {
+  background: #e8f4f8;
+  color: #00abd1;
+}
+
+/* Collapsible thinking content */
+.interface .thinking-content {
+  max-height: 120px;
+  overflow-y: auto;
+  background: #f8f9fa;
+  border-radius: 3px;
+  padding: 8px 10px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 10px;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #64748b;
+}
+
+.interface .thinking-content.collapsed {
+  display: none;
+}
+
+/* Expanded thinking content - full width for easier reading */
+.interface .streaming-message:has(.thinking-content:not(.collapsed)) {
+  max-width: 100%;
+}
+
+.interface .thinking-content:not(.collapsed) {
+  max-height: 260px;
+}
+
+.interface .thinking-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.interface .thinking-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.interface .thinking-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+/* ==========================================
+   STOP MODE STYLES
+   Send button becomes stop button while AI processes
+   ========================================== */
+
+/* Stop mode send button */
+.interface #send-btn.stop-mode {
+  background: #dc3545;
+  color: white;
+}
+
+.interface #send-btn.stop-mode:hover {
+  background: #c82333;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }

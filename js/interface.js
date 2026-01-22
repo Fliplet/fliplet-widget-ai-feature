@@ -293,6 +293,19 @@ Fliplet.Widget.generateInterface({
           pastedImages: [],
           /** @type {Set} Set of processed file signatures to prevent duplicates */
           processedFileSignatures: new Set(),
+          /** @type {boolean} Whether AI is currently processing a request */
+          isProcessing: false,
+          /** @type {boolean} Whether the current request has been cancelled */
+          isCancelled: false,
+          /** @type {Object} Current streaming state */
+          streamingState: {
+            accumulatedText: '',
+            currentPhase: 'initializing',
+            startTime: null,
+            streamingDiv: null
+          },
+          /** @type {Promise|null} Reference to current streaming promise for cancellation */
+          currentStreamingPromise: null,
         };
 
         /**
@@ -2565,23 +2578,300 @@ Fliplet.Widget.generateInterface({
           debugLog("🔓 User controls re-enabled - AI finished thinking");
         }
 
+        // ============================================================================
+        // STREAMING UI & QUEUE MODE FUNCTIONS
+        // ============================================================================
+
         /**
-         * Handle sending a message to the AI
+         * Status phase messages for the streaming UI
          */
-        function handleSendMessage() {
-          // Check if send button is disabled and return early if so
-          if (DOM.sendBtn && DOM.sendBtn.disabled) {
-            debugLog("🚫 Send button is disabled, ignoring click");
+        const STREAMING_PHASES = {
+          initializing: "Analyzing your request...",
+          thinking: "Thinking through the approach...",
+          generating: "Generating response...",
+          html: "Writing HTML structure...",
+          css: "Adding styles...",
+          js: "Adding functionality...",
+          completing: "Finalizing...",
+          cancelled: "Request cancelled",
+          error: "Something went wrong"
+        };
+
+        /**
+         * Create the streaming UI div element
+         * @returns {HTMLElement} The streaming div element
+         */
+        function createStreamingDiv() {
+          const streamingDiv = document.createElement("div");
+          streamingDiv.className = "message ai-message streaming-message";
+          streamingDiv.innerHTML = `
+            <div class="streaming-header">
+              <div class="streaming-status">
+                <div class="loading"></div>
+                <span class="status-text">${STREAMING_PHASES.initializing}</span>
+              </div>
+              <div class="streaming-actions">
+                <button class="toggle-thinking-btn" title="Show details">
+                  <i class="fa fa-chevron-down"></i>
+                </button>
+              </div>
+            </div>
+            <div class="thinking-content collapsed">
+              <div class="thinking-text"></div>
+            </div>
+          `;
+
+          // Add event listeners
+          const toggleBtn = streamingDiv.querySelector('.toggle-thinking-btn');
+          const thinkingContent = streamingDiv.querySelector('.thinking-content');
+
+          toggleBtn.addEventListener('click', function(event) {
+            event.stopPropagation();
+            event.preventDefault();
+            thinkingContent.classList.toggle('collapsed');
+            toggleBtn.classList.toggle('expanded');
+
+            // Scroll chat messages to bottom when expanding (new content visible)
+            if (!thinkingContent.classList.contains('collapsed')) {
+              scrollToBottom();
+            }
+          });
+
+          // Store reference and append to chat
+          AppState.streamingState.streamingDiv = streamingDiv;
+          AppState.streamingState.startTime = Date.now();
+          AppState.streamingState.accumulatedText = '';
+          AppState.streamingState.currentPhase = 'initializing';
+          DOM.chatMessages.appendChild(streamingDiv);
+          scrollToBottom();
+
+          return streamingDiv;
+        }
+
+        /**
+         * Update the streaming status text
+         * @param {string} phase - The phase key from STREAMING_PHASES
+         */
+        function updateStreamingStatus(phase) {
+          // Don't update if cancelled or if phase hasn't changed
+          if (AppState.isCancelled || AppState.streamingState.currentPhase === phase) {
             return;
           }
 
-          // Disable user controls while AI is processing
-          disableUserControls();
+          AppState.streamingState.currentPhase = phase;
+          const streamingDiv = AppState.streamingState.streamingDiv;
+          if (!streamingDiv) return;
+
+          const statusText = streamingDiv.querySelector('.status-text');
+          if (statusText && STREAMING_PHASES[phase]) {
+            statusText.textContent = STREAMING_PHASES[phase];
+            debugLog(`📊 [Streaming] Phase updated: ${phase}`);
+          }
+        }
+
+        /**
+         * Update the thinking content with new streaming text
+         * @param {string} delta - The new text chunk to append
+         */
+        function updateThinkingContent(delta) {
+          const streamingDiv = AppState.streamingState.streamingDiv;
+          if (!streamingDiv) return;
+
+          const thinkingContent = streamingDiv.querySelector('.thinking-content');
+          const thinkingText = streamingDiv.querySelector('.thinking-text');
+
+          if (thinkingText) {
+            // Escape HTML for security and append
+            const escapedDelta = delta.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            thinkingText.innerHTML += escapedDelta;
+
+            // Auto-scroll to bottom if thinking content is expanded
+            if (thinkingContent && !thinkingContent.classList.contains('collapsed')) {
+              thinkingContent.scrollTop = thinkingContent.scrollHeight;
+            }
+          }
+        }
+
+        /**
+         * Remove the streaming div and clean up state
+         */
+        function removeStreamingDiv() {
+          const streamingDiv = AppState.streamingState.streamingDiv;
+          if (streamingDiv && streamingDiv.parentNode) {
+            streamingDiv.parentNode.removeChild(streamingDiv);
+          }
+          AppState.streamingState.streamingDiv = null;
+          AppState.streamingState.accumulatedText = '';
+          AppState.streamingState.currentPhase = 'initializing';
+          AppState.streamingState.startTime = null;
+        }
+
+        /**
+         * Cancel the current AI request
+         */
+        function cancelCurrentRequest() {
+          if (!AppState.isProcessing) return;
+
+          debugLog("⚠️ [Cancel] User cancelled the request");
+
+          // Set cancelled flag to ignore remaining events
+          AppState.isCancelled = true;
+
+          // Call server-side cancellation if streaming promise is available
+          if (AppState.currentStreamingPromise && typeof AppState.currentStreamingPromise.cancel === 'function') {
+            AppState.currentStreamingPromise.cancel()
+              .then(function(result) {
+                debugLog("🛑 [Cancel] Server-side cancellation result:", result);
+              })
+              .catch(function(err) {
+                debugLog("⚠️ [Cancel] Server-side cancellation error:", err);
+              });
+            AppState.currentStreamingPromise = null;
+          } else {
+            // Fallback: Disconnect socket to stop receiving events
+            if (typeof Fliplet !== 'undefined' && Fliplet.Socket) {
+              try {
+                Fliplet.Socket.disconnect();
+                debugLog("🔌 [Cancel] Socket disconnected (fallback)");
+              } catch (e) {
+                debugLog("⚠️ [Cancel] Could not disconnect socket:", e);
+              }
+            }
+          }
+
+          // Update UI to cancelled state
+          showCancelledState();
+
+          // Clear processing state
+          AppState.isProcessing = false;
+
+          // Exit queue mode (keep queued message if any)
+          exitProcessingMode();
+        }
+
+        /**
+         * Show the cancelled state in the streaming UI
+         */
+        function showCancelledState() {
+          const streamingDiv = AppState.streamingState.streamingDiv;
+          if (!streamingDiv) return;
+
+          // Remove spinner
+          const loader = streamingDiv.querySelector('.loading');
+          if (loader) loader.remove();
+
+          // Update status text
+          const statusText = streamingDiv.querySelector('.status-text');
+          if (statusText) {
+            statusText.textContent = STREAMING_PHASES.cancelled;
+            statusText.classList.add('cancelled');
+          }
+
+          // Add cancelled styling to container
+          streamingDiv.classList.add('cancelled');
+        }
+
+        /**
+         * Show error state in the streaming UI
+         * @param {string} errorMessage - Optional error message to display
+         */
+        function showErrorState(errorMessage) {
+          const streamingDiv = AppState.streamingState.streamingDiv;
+          if (!streamingDiv) return;
+
+          // Remove spinner
+          const loader = streamingDiv.querySelector('.loading');
+          if (loader) loader.remove();
+
+          // Update status text
+          const statusText = streamingDiv.querySelector('.status-text');
+          if (statusText) {
+            statusText.textContent = errorMessage || STREAMING_PHASES.error;
+            statusText.classList.add('error');
+          }
+
+          // Add error styling to container
+          streamingDiv.classList.add('error');
+        }
+
+        /**
+         * Enter processing mode - change send button to stop button
+         */
+        function enterProcessingMode() {
+          AppState.isProcessing = true;
+          AppState.isCancelled = false;
+
+          if (DOM.userInput) {
+            DOM.userInput.placeholder = 'Type your next message...';
+            DOM.userInput.disabled = false;
+            DOM.userInput.style.opacity = "1";
+            DOM.userInput.style.cursor = "text";
+          }
+
+          if (DOM.sendBtn) {
+            DOM.sendBtn.classList.add('stop-mode');
+            DOM.sendBtn.disabled = false;
+            DOM.sendBtn.style.opacity = "1";
+            DOM.sendBtn.style.cursor = "pointer";
+            DOM.sendBtn.innerHTML = '<i class="fa fa-stop"></i>';
+            DOM.sendBtn.title = 'Stop generating';
+          }
+
+          debugLog("⏳ [Processing] Entered processing mode");
+        }
+
+        /**
+         * Exit processing mode - restore send button
+         */
+        function exitProcessingMode() {
+          AppState.isProcessing = false;
+
+          if (DOM.userInput) {
+            DOM.userInput.placeholder = 'Describe what you want...';
+          }
+
+          if (DOM.sendBtn) {
+            DOM.sendBtn.classList.remove('stop-mode');
+            DOM.sendBtn.innerHTML = '<i class="fa fa-paper-plane"></i>';
+            DOM.sendBtn.title = 'Send';
+          }
+
+          debugLog("✅ [Processing] Exited processing mode");
+        }
+
+        /**
+         * Detect the current phase from streaming text content
+         * @param {string} text - The accumulated streaming text
+         * @returns {string|null} The detected phase or null
+         */
+        function detectPhaseFromContent(text) {
+          // Simple heuristics to detect what's being generated
+          if (text.includes('"target_type":"html"') || text.includes('"target_type": "html"')) {
+            return 'html';
+          }
+          if (text.includes('"target_type":"css"') || text.includes('"target_type": "css"')) {
+            return 'css';
+          }
+          if (text.includes('"target_type":"js"') || text.includes('"target_type": "js"')) {
+            return 'js';
+          }
+          return null;
+        }
+
+        /**
+         * Handle sending a message to the AI (or stopping if processing)
+         */
+        function handleSendMessage() {
+          // If AI is currently processing, clicking the button stops it
+          if (AppState.isProcessing) {
+            debugLog("⏹️ [Stop] User clicked stop button");
+            cancelCurrentRequest();
+            return;
+          }
 
           const userMessage = DOM.userInput.value.trim();
 
           // IMPORTANT: Always get the current state of images at the moment of sending
-          // This ensures we don't send stale image data if images were removed
           const currentImages = AppState.pastedImages.filter(
             (img) =>
               img &&
@@ -2593,7 +2883,6 @@ Fliplet.Widget.generateInterface({
           // Input validation
           if (!userMessage && currentImages.length === 0) {
             debugLog("⚠️ Empty message and no images ignored");
-            enableUserControls();
             return;
           }
 
@@ -2613,9 +2902,10 @@ Fliplet.Widget.generateInterface({
           // Clear input and reset textarea height
           resetTextarea(DOM.userInput);
 
+          // Enter processing mode (change send button to stop button)
+          enterProcessingMode();
+
           // Process the message with current valid images
-          // Note: We're not passing the potentially stale pastedImages parameter
-          // processUserMessage will get the current state directly
           processUserMessage(userMessage, currentImages, AppState);
         }
 
@@ -2643,13 +2933,8 @@ Fliplet.Widget.generateInterface({
             `🚀 [Main] Processing request #${AppState.requestCount}: "${userMessage}"`
           );
 
-          // Add loading indicator (don't add to chat history - just show in UI)
-          const loadingDiv = document.createElement("div");
-          loadingDiv.className = "message ai-message loading-message";
-          loadingDiv.innerHTML =
-            '<div class="loading"></div><span>AI is working on your request...</span>';
-          DOM.chatMessages.appendChild(loadingDiv);
-          scrollToBottom();
+          // Create streaming UI with status line, toggle, and cancel button
+          createStreamingDiv();
 
           try {
             // CRITICAL: Always fetch fresh code from the page before each AI call
@@ -2805,6 +3090,15 @@ Fliplet.Widget.generateInterface({
               currentImages
             );
 
+            // Check if the request was cancelled (aiResponse will be null)
+            if (aiResponse === null) {
+              debugLog("🛑 [Main] Request was cancelled, stopping processing");
+              // The UI has already been updated by cancelCurrentRequest()
+              // Just exit processing mode and return
+              exitProcessingMode();
+              return;
+            }
+
             // Step 3: Parse response using protocol parser
             const changeRequest = protocolParser.parseResponse(aiResponse);
             debugLog("📋 [Main] Parsed change request:", changeRequest);
@@ -2903,8 +3197,8 @@ Fliplet.Widget.generateInterface({
             // Step 6b: User message already added to chat history by addMessageToChat() in handleSendMessage()
             // No need to add it again here
 
-            // Remove loading indicator
-            DOM.chatMessages.removeChild(loadingDiv);
+            // Remove streaming UI
+            removeStreamingDiv();
 
             // Add AI response to chat
             let aiResponseText;
@@ -2935,8 +3229,8 @@ Fliplet.Widget.generateInterface({
             // Clear pasted images after successful processing (preserve chat history)
             clearPastedImages(true, DOM, AppState);
 
-            // Re-enable user controls after successful AI response
-            enableUserControls();
+            // Exit processing mode (restore send button)
+            exitProcessingMode();
 
             // Step 7: Update code and save fields
             if (!isAnswerType) {
@@ -2954,8 +3248,13 @@ Fliplet.Widget.generateInterface({
               `✅ [Main] Request #${AppState.requestCount} completed successfully`
             );
           } catch (error) {
-            // Remove loading indicator
-            DOM.chatMessages.removeChild(loadingDiv);
+            // Show error state in streaming UI (if visible) then remove it
+            showErrorState(error.message || "Something went wrong");
+
+            // Small delay to let user see the error state before removing
+            setTimeout(() => {
+              removeStreamingDiv();
+            }, 1500);
 
             debugError(
               `❌ [Main] Request #${AppState.requestCount} failed:`,
@@ -3000,8 +3299,8 @@ Fliplet.Widget.generateInterface({
             // Clear pasted images even on error to prevent stale state (preserve chat history)
             clearPastedImages(true, DOM, AppState);
 
-            // Re-enable user controls even on error
-            enableUserControls();
+            // Exit queue mode on error (clears queued message and resets UI)
+            exitProcessingMode();
           }
         }
 
@@ -3622,9 +3921,15 @@ Fliplet.Widget.generateInterface({
           try {
             debugLog("🌊 [AI] Starting streaming API call...");
 
-            // Make streaming API call
-            response = await Fliplet.AI.createCompletion(requestBody)
+            // Make streaming API call - store promise for cancellation
+            const streamingPromise = Fliplet.AI.createCompletion(requestBody)
               .stream(function onEvent(event) {
+                // Skip processing if request was cancelled
+                if (AppState.isCancelled) {
+                  debugLog("⏹️ [AI] Skipping event - request cancelled");
+                  return;
+                }
+
                 eventCount++;
 
                 // Log event details for debugging
@@ -3637,20 +3942,38 @@ Fliplet.Widget.generateInterface({
                   timestamp: Date.now() - streamStartTime
                 });
 
-                // Extract content from response.output_text.delta events
-                // Responses API uses SSE events with type field, not choices array
-                if (event.type === 'response.output_text.delta') {
-                  accumulatedText += event.delta;
-                  debugLog(`📝 [AI] Accumulated ${event.delta.length} chars. Total: ${accumulatedText.length}`);
-                }
-
-                // Log other useful events
+                // Detect phase from output item type (for reasoning models)
                 if (event.type === 'response.output_item.added') {
                   debugLog(`📋 [AI] Output item added:`, {
                     itemId: event.item_id,
                     itemType: event.item?.type,
                     itemRole: event.item?.role
                   });
+
+                  // Update streaming status based on item type
+                  if (event.item?.type === 'reasoning') {
+                    updateStreamingStatus('thinking');
+                  } else if (event.item?.type === 'message') {
+                    updateStreamingStatus('generating');
+                  }
+                }
+
+                // Extract content from response.output_text.delta events
+                // Responses API uses SSE events with type field, not choices array
+                if (event.type === 'response.output_text.delta') {
+                  accumulatedText += event.delta;
+                  AppState.streamingState.accumulatedText = accumulatedText;
+
+                  // Detect phase from content patterns
+                  const detectedPhase = detectPhaseFromContent(accumulatedText);
+                  if (detectedPhase) {
+                    updateStreamingStatus(detectedPhase);
+                  }
+
+                  // Update thinking content (if expanded)
+                  updateThinkingContent(event.delta);
+
+                  debugLog(`📝 [AI] Accumulated ${event.delta.length} chars. Total: ${accumulatedText.length}`);
                 }
 
                 if (event.type === 'response.content_part.added') {
@@ -3666,6 +3989,8 @@ Fliplet.Widget.generateInterface({
                     outputIndex: event.output_index,
                     item: event.item
                   });
+                  // Update to completing phase when output is done
+                  updateStreamingStatus('completing');
                 }
 
                 // Track when entire response is done and capture usage info
@@ -3684,7 +4009,13 @@ Fliplet.Widget.generateInterface({
                 if (event.type === 'response.output_text.delta' && eventCount % 10 === 0) {
                   debugLog(`⏱️ [AI] Stream progress: ${eventCount} events, ${accumulatedText.length} chars, ${Date.now() - streamStartTime}ms`);
                 }
-              })
+              });
+
+            // Store the streaming promise for cancellation support
+            AppState.currentStreamingPromise = streamingPromise;
+
+            // Await completion with success/error handlers
+            response = await streamingPromise
               .then(function onComplete(finalResponse) {
                 const streamDuration = Date.now() - streamStartTime;
 
@@ -3709,6 +4040,9 @@ Fliplet.Widget.generateInterface({
                   );
                 }
 
+                // Clear streaming promise reference on completion
+                AppState.currentStreamingPromise = null;
+
                 return finalResponse;
               })
               .catch(function onStreamError(error) {
@@ -3720,8 +4054,24 @@ Fliplet.Widget.generateInterface({
                   duration: Date.now() - streamStartTime
                 });
 
+                // Clear streaming promise reference on error
+                AppState.currentStreamingPromise = null;
+
                 throw error;
               });
+
+            // Check if the request was cancelled
+            if (response && response.cancelled === true) {
+              debugLog("🛑 [AI] Request was cancelled by user, skipping response processing");
+              // Return null to indicate cancellation - the UI has already been updated by cancelCurrentRequest()
+              return null;
+            }
+
+            // Also check AppState.isCancelled in case the cancel happened during processing
+            if (AppState.isCancelled) {
+              debugLog("🛑 [AI] AppState indicates cancellation, skipping response processing");
+              return null;
+            }
 
             // For streaming, use accumulated text directly since finalResponse may be undefined
             // The Fliplet.AI streaming API doesn't return a complete response object in .then()

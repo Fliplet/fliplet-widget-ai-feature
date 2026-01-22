@@ -2611,7 +2611,7 @@ Fliplet.Widget.generateInterface({
                 <span class="status-text">${STREAMING_PHASES.initializing}</span>
               </div>
               <div class="streaming-actions">
-                <button class="toggle-thinking-btn" title="Show details">
+                <button class="toggle-thinking-btn" title="Show details" style="display: none;">
                   <i class="fa fa-chevron-down"></i>
                 </button>
               </div>
@@ -2679,11 +2679,17 @@ Fliplet.Widget.generateInterface({
 
           const thinkingContent = streamingDiv.querySelector('.thinking-content');
           const thinkingText = streamingDiv.querySelector('.thinking-text');
+          const toggleBtn = streamingDiv.querySelector('.toggle-thinking-btn');
 
           if (thinkingText) {
             // Escape HTML for security and append
             const escapedDelta = delta.replace(/</g, '&lt;').replace(/>/g, '&gt;');
             thinkingText.innerHTML += escapedDelta;
+
+            // Show the toggle button once we have content to show
+            if (toggleBtn && toggleBtn.style.display === 'none') {
+              toggleBtn.style.display = '';
+            }
 
             // Auto-scroll to bottom if thinking content is expanded
             if (thinkingContent && !thinkingContent.classList.contains('collapsed')) {

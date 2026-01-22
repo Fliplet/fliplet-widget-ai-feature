@@ -1090,6 +1090,15 @@
   display: none;
 }
 
+/* Expanded thinking content - full width for easier reading */
+.interface .streaming-message:has(.thinking-content:not(.collapsed)) {
+  max-width: 100%;
+}
+
+.interface .thinking-content:not(.collapsed) {
+  max-height: 260px;
+}
+
 .interface .thinking-content::-webkit-scrollbar {
   width: 6px;
 }

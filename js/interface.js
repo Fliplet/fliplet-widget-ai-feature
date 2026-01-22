@@ -5138,7 +5138,8 @@ Fliplet.Widget.generateInterface({
             // Convert markdown to HTML for AI responses
             const converter = new showdown.Converter();
             processedMessage = converter.makeHtml(message);
-
+            // Remove trailing <br> tags that Showdown adds from LLM output newlines
+            processedMessage = processedMessage.replace(/(<br\s*\/?>)+$/gi, '');
           } else {
             // Escape HTML for user and system messages for security
             processedMessage = escapeHTML(message);

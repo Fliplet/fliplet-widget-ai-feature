@@ -2584,18 +2584,74 @@ Fliplet.Widget.generateInterface({
 
         /**
          * Status phase messages for the streaming UI
+         * Event-based phases have arrays of messages for variation
+         * Content-detection phases also have arrays for variety
          */
         const STREAMING_PHASES = {
-          initializing: "Analyzing your request...",
-          thinking: "Thinking through the approach...",
-          generating: "Generating response...",
-          html: "Writing HTML structure...",
-          css: "Adding styles...",
-          js: "Adding functionality...",
-          completing: "Finalizing...",
-          cancelled: "Request cancelled",
-          error: "Something went wrong"
+          initializing: [
+            "Analyzing your request...",
+            "Understanding your requirements...",
+            "Processing your input...",
+            "Reviewing your request...",
+            "Getting started..."
+          ],
+          thinking: [
+            "Thinking through the approach...",
+            "Considering the best solution...",
+            "Planning the implementation...",
+            "Working out the details...",
+            "Evaluating options...",
+            "Reasoning through the problem..."
+          ],
+          generating: [
+            "Generating response...",
+            "Writing the code...",
+            "Building your solution...",
+            "Crafting the response...",
+            "Putting it together..."
+          ],
+          html: [
+            "Writing HTML structure...",
+            "Building the layout...",
+            "Creating the markup...",
+            "Structuring the content..."
+          ],
+          css: [
+            "Adding styles...",
+            "Styling the interface...",
+            "Applying visual design...",
+            "Making it look good..."
+          ],
+          js: [
+            "Adding functionality...",
+            "Writing the logic...",
+            "Implementing behavior...",
+            "Adding interactivity..."
+          ],
+          completing: [
+            "Finalizing...",
+            "Wrapping up...",
+            "Almost done...",
+            "Finishing touches...",
+            "Completing the response..."
+          ],
+          cancelled: ["Request cancelled"],
+          error: ["Something went wrong"]
         };
+
+        /**
+         * Get a random message from a phase's message array
+         * @param {string} phase - The phase key from STREAMING_PHASES
+         * @returns {string} A random message for that phase
+         */
+        function getPhaseMessage(phase) {
+          const messages = STREAMING_PHASES[phase];
+          if (!messages) return '';
+          if (Array.isArray(messages)) {
+            return messages[Math.floor(Math.random() * messages.length)];
+          }
+          return messages;
+        }
 
         /**
          * Create the streaming UI div element
@@ -2608,7 +2664,7 @@ Fliplet.Widget.generateInterface({
             <div class="streaming-header">
               <div class="streaming-status">
                 <div class="loading"></div>
-                <span class="status-text">${STREAMING_PHASES.initializing}</span>
+                <span class="status-text">${getPhaseMessage('initializing')}</span>
               </div>
               <div class="streaming-actions">
                 <button class="toggle-thinking-btn" title="Show details" style="display: none;">
@@ -2634,7 +2690,20 @@ Fliplet.Widget.generateInterface({
             // Scroll chat messages to bottom when expanding (new content visible)
             if (!thinkingContent.classList.contains('collapsed')) {
               scrollToBottom();
+              // Reset sticky to true when expanding (start following)
+              AppState.streamingState.thinkingScrollSticky = true;
             }
+          });
+
+          // Smart scroll tracking: detect when user scrolls away from bottom
+          thinkingContent.addEventListener('scroll', function() {
+            const scrollTop = thinkingContent.scrollTop;
+            const scrollHeight = thinkingContent.scrollHeight;
+            const clientHeight = thinkingContent.clientHeight;
+            // Consider "at bottom" if within 10px of the bottom
+            const isAtBottom = scrollTop + clientHeight >= scrollHeight - 10;
+
+            AppState.streamingState.thinkingScrollSticky = isAtBottom;
           });
 
           // Store reference and append to chat
@@ -2642,6 +2711,7 @@ Fliplet.Widget.generateInterface({
           AppState.streamingState.startTime = Date.now();
           AppState.streamingState.accumulatedText = '';
           AppState.streamingState.currentPhase = 'initializing';
+          AppState.streamingState.thinkingScrollSticky = true; // Start with auto-scroll enabled
           DOM.chatMessages.appendChild(streamingDiv);
           scrollToBottom();
 
@@ -2664,7 +2734,7 @@ Fliplet.Widget.generateInterface({
 
           const statusText = streamingDiv.querySelector('.status-text');
           if (statusText && STREAMING_PHASES[phase]) {
-            statusText.textContent = STREAMING_PHASES[phase];
+            statusText.textContent = getPhaseMessage(phase);
             debugLog(`📊 [Streaming] Phase updated: ${phase}`);
           }
         }
@@ -2691,8 +2761,8 @@ Fliplet.Widget.generateInterface({
               toggleBtn.style.display = '';
             }
 
-            // Auto-scroll to bottom if thinking content is expanded
-            if (thinkingContent && !thinkingContent.classList.contains('collapsed')) {
+            // Auto-scroll to bottom if thinking content is expanded AND user hasn't scrolled away
+            if (thinkingContent && !thinkingContent.classList.contains('collapsed') && AppState.streamingState.thinkingScrollSticky) {
               thinkingContent.scrollTop = thinkingContent.scrollHeight;
             }
           }
@@ -2710,6 +2780,7 @@ Fliplet.Widget.generateInterface({
           AppState.streamingState.accumulatedText = '';
           AppState.streamingState.currentPhase = 'initializing';
           AppState.streamingState.startTime = null;
+          AppState.streamingState.thinkingScrollSticky = true;
         }
 
         /**
@@ -2769,7 +2840,7 @@ Fliplet.Widget.generateInterface({
           // Update status text
           const statusText = streamingDiv.querySelector('.status-text');
           if (statusText) {
-            statusText.textContent = STREAMING_PHASES.cancelled;
+            statusText.textContent = getPhaseMessage('cancelled');
             statusText.classList.add('cancelled');
           }
 
@@ -2792,7 +2863,7 @@ Fliplet.Widget.generateInterface({
           // Update status text
           const statusText = streamingDiv.querySelector('.status-text');
           if (statusText) {
-            statusText.textContent = errorMessage || STREAMING_PHASES.error;
+            statusText.textContent = errorMessage || getPhaseMessage('error');
             statusText.classList.add('error');
           }
 

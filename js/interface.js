@@ -3408,12 +3408,12 @@ Fliplet.Widget.generateInterface({
 
           debugLog("📤 [AI] Request messages with history:", messages);
 
-          // Summary of what we're sending
+          // Summary of what we're sending (using Responses API format)
           const userMessagesWithImages = messages.filter(
             (msg) =>
               msg.role === "user" &&
               Array.isArray(msg.content) &&
-              msg.content.some((c) => c.type === "image_url"),
+              msg.content.some((c) => c.type === "input_image"), // ✅ Responses API format
           );
           const userMessagesTextOnly = messages.filter(
             (msg) => msg.role === "user" && typeof msg.content === "string",
@@ -3432,24 +3432,24 @@ Fliplet.Widget.generateInterface({
               if (msg.role === "user" && Array.isArray(msg.content)) {
                 return (
                   count +
-                  msg.content.filter((c) => c.type === "image_url").length
+                  msg.content.filter((c) => c.type === "input_image").length // ✅ Responses API format
                 );
               }
               return count;
             }, 0),
           });
 
-          // Log each message for debugging
+          // Log each message for debugging (using Responses API format)
           messages.forEach((msg, index) => {
             if (msg.role === "user" && Array.isArray(msg.content)) {
               debugLog(`📤 [AI] Message ${index} (user with images):`, {
-                textContent: msg.content.find((c) => c.type === "text")?.text,
-                imageCount: msg.content.filter((c) => c.type === "image_url")
-                  .length,
+                textContent: msg.content.find((c) => c.type === "input_text")?.text, // ✅ Responses API format
+                imageCount: msg.content.filter((c) => c.type === "input_image")
+                  .length, // ✅ Responses API format
                 images: msg.content
-                  .filter((c) => c.type === "image_url")
+                  .filter((c) => c.type === "input_image") // ✅ Responses API format
                   .map((img) => ({
-                    url: img.image_url.url,
+                    url: img.image_url, // ✅ Direct string in Responses API
                     type: img.type,
                   })),
               });
@@ -3467,7 +3467,7 @@ Fliplet.Widget.generateInterface({
             "🎯 [AI] Using structured outputs for reliable JSON responses",
           );
 
-          // Final validation of what we're about to send to the AI
+          // Final validation of what we're about to send to the AI (using Responses API format)
           debugLog("🚀 [AI] Final request body validation:", {
             messageCount: messages.length,
             userMessageIndex: messages.findIndex((msg) => msg.role === "user"),
@@ -3477,24 +3477,24 @@ Fliplet.Widget.generateInterface({
               (msg) =>
                 msg.role === "user" &&
                 Array.isArray(msg.content) &&
-                msg.content.some((c) => c.type === "image_url"),
+                msg.content.some((c) => c.type === "input_image"), // ✅ Responses API format
             ),
             imageCount: messages.reduce((count, msg) => {
               if (msg.role === "user" && Array.isArray(msg.content)) {
                 return (
                   count +
-                  msg.content.filter((c) => c.type === "image_url").length
+                  msg.content.filter((c) => c.type === "input_image").length // ✅ Responses API format
                 );
               }
               return count;
             }, 0),
           });
 
-          // FINAL VALIDATION: Double-check that no removed images are in the request
+          // FINAL VALIDATION: Double-check that no removed images are in the request (using Responses API format)
           const finalImageValidation = messages.reduce((count, msg) => {
             if (msg.role === "user" && Array.isArray(msg.content)) {
               return (
-                count + msg.content.filter((c) => c.type === "image_url").length
+                count + msg.content.filter((c) => c.type === "input_image").length // ✅ Responses API format
               );
             }
             return count;
@@ -3506,7 +3506,7 @@ Fliplet.Widget.generateInterface({
               (msg) =>
                 msg.role === "user" &&
                 Array.isArray(msg.content) &&
-                msg.content.some((c) => c.type === "image_url"),
+                msg.content.some((c) => c.type === "input_image"), // ✅ Responses API format
             ).length,
             currentAppStateImages: AppState.pastedImages.length,
             currentValidImages: AppState.pastedImages.filter(
@@ -3536,10 +3536,10 @@ Fliplet.Widget.generateInterface({
               "❌ [AI] This should never happen - images were removed after filtering",
             );
 
-            // Force remove all images from the request
+            // Force remove all images from the request (using Responses API format)
             messages.forEach((msg) => {
               if (msg.role === "user" && Array.isArray(msg.content)) {
-                msg.content = msg.content.filter((c) => c.type !== "image_url");
+                msg.content = msg.content.filter((c) => c.type !== "input_image"); // ✅ Responses API format
               }
             });
 
@@ -3633,6 +3633,22 @@ Fliplet.Widget.generateInterface({
           }
 
           // Log the final request body to verify what's being sent
+          const hasImages = requestBody.input.some(
+            (msg) =>
+              msg.role === "user" &&
+              Array.isArray(msg.content) &&
+              msg.content.some((c) => c.type === "input_image"),
+          );
+          const imageCount = requestBody.input.reduce((count, msg) => {
+            if (msg.role === "user" && Array.isArray(msg.content)) {
+              return (
+                count +
+                msg.content.filter((c) => c.type === "input_image").length
+              );
+            }
+            return count;
+          }, 0);
+
           debugLog(
             "🚀 [AI] Final request body being sent to API (Responses API):",
             {
@@ -3641,26 +3657,25 @@ Fliplet.Widget.generateInterface({
               useResponses: requestBody.useResponses,
               inputCount: requestBody.input.length,
               hasTextFormat: !!requestBody.text,
-              hasImages: requestBody.input.some(
-                (msg) =>
-                  msg.role === "user" &&
-                  Array.isArray(msg.content) &&
-                  msg.content.some((c) => c.type === "input_image"),
-              ),
-              imageCount: requestBody.input.reduce((count, msg) => {
-                if (msg.role === "user" && Array.isArray(msg.content)) {
-                  return (
-                    count +
-                    msg.content.filter((c) => c.type === "input_image").length
-                  );
-                }
-                return count;
-              }, 0),
+              hasJsonSchema: !!requestBody.text?.format?.schema,
+              hasImages: hasImages,
+              imageCount: imageCount,
+              streamEnabled: requestBody.stream,
               userMessageContent: requestBody.input.find(
                 (msg) => msg.role === "user",
               )?.content,
             },
           );
+
+          // ⚠️ CRITICAL WARNING: Structured outputs (json_schema) + images may have streaming issues
+          if (hasImages && requestBody.text?.format?.type === "json_schema") {
+            debugWarn(
+              "⚠️ [AI] WARNING: Using structured outputs (json_schema) WITH images. Streaming behavior may be affected.",
+            );
+            debugWarn(
+              "⚠️ [AI] If streaming doesn't work, the response will be received as a complete object instead.",
+            );
+          }
 
           // Initialize streaming variables
           let response;
@@ -3789,11 +3804,43 @@ Fliplet.Widget.generateInterface({
             // For streaming, use accumulated text directly since finalResponse may be undefined
             // The Fliplet.AI streaming API doesn't return a complete response object in .then()
             let aiResponse;
+
+            // DIAGNOSTIC: Check if we got any streaming events
+            debugLog("📊 [AI] Stream completion diagnostics:", {
+              eventCount: eventCount,
+              accumulatedTextLength: accumulatedText.length,
+              hasResponseObject: !!response,
+              hasResponseOutput: !!(response && response.output),
+              streamCompleted: streamCompleted,
+              hasImages: hasImages,
+              imageCount: imageCount,
+            });
+
+            // If we didn't get ANY events but have a response object, it means streaming didn't work
+            if (eventCount === 0 && response && response.output) {
+              debugWarn(
+                "⚠️ [AI] No streaming events received, but got complete response object.",
+              );
+              debugWarn(
+                "⚠️ [AI] This suggests the API returned the full response at once instead of streaming.",
+              );
+              debugWarn(
+                "⚠️ [AI] This is expected when using json_schema + images together.",
+              );
+            }
+
             if (response && response.output) {
               // If we have a complete response object, extract from it
               aiResponse = extractTextFromResponsesAPI(
                 response,
                 accumulatedText,
+              );
+              debugLog(
+                "📥 [AI] Extracted response from complete response object:",
+                {
+                  source: "response.output",
+                  length: aiResponse.length,
+                },
               );
             } else if (accumulatedText) {
               // Otherwise use the accumulated text from streaming
@@ -3802,12 +3849,26 @@ Fliplet.Widget.generateInterface({
               );
               aiResponse = accumulatedText;
             } else {
+              // This is the problematic case - no response at all
+              debugError(
+                "❌ [AI] CRITICAL: No response received - neither streaming nor complete response!",
+              );
+              debugError("❌ [AI] Stream stats:", {
+                eventCount: eventCount,
+                hasResponse: !!response,
+                hasAccumulatedText: !!accumulatedText,
+                streamCompleted: streamCompleted,
+                hasImages: hasImages,
+              });
               throw new Error("No response received from streaming API");
             }
 
             debugLog("📥 [AI] Final response ready for parsing:", {
               length: aiResponse.length,
               preview: aiResponse.substring(0, 200) + "...",
+              eventCount: eventCount,
+              wasStreamed: eventCount > 0,
+              wasComplete: eventCount === 0 && !!response,
             });
 
             return aiResponse;

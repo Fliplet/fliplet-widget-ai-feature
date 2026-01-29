@@ -1867,7 +1867,7 @@ CRITICAL WHITESPACE MATCHING RULES (READ CAREFULLY):
 
 When creating old_string for MODIFICATIONS:
 1. Copy the text EXACTLY from "CURRENT COMPLETE [HTML/CSS/JAVASCRIPT]" shown above
-2. Always use a unique block of code as "old_string" — never generic tags like "</div>". 
+2. Always use a unique block of code as "old_string" — never generic tags like "</div>".
 Expand the selection until it matches only one place in the file, using surrounding context, classes, IDs, or multiple lines to ensure uniqueness.
 3. Preserve ALL whitespace characters:
    - Spaces vs tabs (don't convert one to the other)
@@ -1877,6 +1877,30 @@ Expand the selection until it matches only one place in the file, using surround
 4. If unsure about exact whitespace, include MORE surrounding context to ensure unique match
 5. Line endings matter: Don't assume LF when code uses CRLF or vice versa
 6. When the match fails, the error message will show you exactly what you searched for vs what exists
+
+CRITICAL - DO NOT INCLUDE DELIMITERS:
+⚠️ NEVER include delimiter comments in your old_string or new_string!
+
+The system uses special delimiter comments when injecting code into the page:
+- CSS: /* start-ai-feature GUID */ and /* end-ai-feature GUID */
+- JavaScript: // start-ai-feature GUID and // end-ai-feature GUID
+
+These delimiters are NOT stored in the widget code fields - they are ONLY added during injection.
+The "CURRENT COMPLETE [HTML/CSS/JAVASCRIPT]" code shown above does NOT contain these delimiters.
+
+❌ WRONG - Including delimiters:
+{
+  "target_type": "css",
+  "old_string": "/* start-ai-feature abc-123 */\n.my-class { color: red; }\n/* end-ai-feature abc-123 */",
+  "new_string": "/* start-ai-feature abc-123 */\n.my-class { color: blue; }\n/* end-ai-feature abc-123 */"
+}
+
+✅ CORRECT - No delimiters:
+{
+  "target_type": "css",
+  "old_string": ".my-class { color: red; }",
+  "new_string": ".my-class { color: blue; }"
+}
 Example of whitespace sensitivity:
 ❌ WRONG (added extra space):
 "old_string": "test.<div  class=\\"form\\">"

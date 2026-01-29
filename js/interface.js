@@ -1359,8 +1359,19 @@ Fliplet.Widget.generateInterface({
             }
 
             const targetCode = currentCode[instruction.target_type] ?? "";
-            const oldString = instruction.old_string;
-            const newString = instruction.new_string;
+
+            // Strip delimiters from old_string and new_string if AI incorrectly included them
+            const oldString = this.stripDelimiters(instruction.old_string, instruction.target_type);
+            const newString = this.stripDelimiters(instruction.new_string, instruction.target_type);
+
+            // Log if delimiters were found and stripped
+            if (oldString !== instruction.old_string || newString !== instruction.new_string) {
+              debugLog("🔧 [StringReplacement] Stripped delimiters from AI response:", {
+                oldStringChanged: oldString !== instruction.old_string,
+                newStringChanged: newString !== instruction.new_string,
+                targetType: instruction.target_type
+              });
+            }
 
             // DIAGNOSTIC: Log detailed state before blank detection
             debugLog(
@@ -1561,6 +1572,57 @@ Fliplet.Widget.generateInterface({
             return string.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
               return "\\" + match;
             });
+          }
+
+          /**
+           * Strip delimiter comments from code strings
+           * The AI sometimes incorrectly includes delimiters in old_string/new_string,
+           * but these delimiters are NOT stored in the widget fields - only added during injection.
+           * @param {string} codeString - Code that might contain delimiters
+           * @param {string} targetType - Type of code (html/css/js)
+           * @returns {string} Code with delimiters removed
+           */
+          stripDelimiters(codeString, targetType) {
+            if (!codeString || typeof codeString !== 'string') {
+              return codeString;
+            }
+
+            const guid = getGuidFromComponent();
+            let start, end;
+
+            if (targetType === 'js') {
+              start = `// start-ai-feature ${guid}`;
+              end = `// end-ai-feature ${guid}`;
+            } else if (targetType === 'css') {
+              start = `/* start-ai-feature ${guid} */`;
+              end = `/* end-ai-feature ${guid} */`;
+            } else {
+              // No delimiters for HTML
+              return codeString;
+            }
+
+            // Check if the string starts with the delimiter
+            let result = codeString;
+
+            // Remove start delimiter (with optional newline)
+            if (result.startsWith(start)) {
+              result = result.substring(start.length);
+              // Remove leading newline if present
+              if (result.startsWith('\n')) {
+                result = result.substring(1);
+              }
+            }
+
+            // Remove end delimiter (with optional newline before it)
+            if (result.endsWith(end)) {
+              result = result.substring(0, result.length - end.length);
+              // Remove trailing newline if present
+              if (result.endsWith('\n')) {
+                result = result.substring(0, result.length - 1);
+              }
+            }
+
+            return result;
           }
         }
 

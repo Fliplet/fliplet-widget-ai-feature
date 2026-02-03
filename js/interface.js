@@ -1361,8 +1361,14 @@ Fliplet.Widget.generateInterface({
             const targetCode = currentCode[instruction.target_type] ?? "";
 
             // Strip delimiters from old_string and new_string if AI incorrectly included them
-            const oldString = this.stripDelimiters(instruction.old_string, instruction.target_type);
-            const newString = this.stripDelimiters(instruction.new_string, instruction.target_type);
+            let oldString = this.stripDelimiters(instruction.old_string, instruction.target_type);
+            let newString = this.stripDelimiters(instruction.new_string, instruction.target_type);
+
+            // Normalize escaped characters (handle JSON-escaped newlines, tabs, etc.)
+            // This ensures oldString and targetCode are in the same format for comparison
+            oldString = this.normalizeEscapedCharacters(oldString);
+            newString = this.normalizeEscapedCharacters(newString);
+            const normalizedTargetCode = this.normalizeEscapedCharacters(targetCode);
 
             // Log if delimiters were found and stripped
             if (oldString !== instruction.old_string || newString !== instruction.new_string) {
@@ -1373,18 +1379,27 @@ Fliplet.Widget.generateInterface({
               });
             }
 
+            // Log if escaped characters were normalized
+            if (oldString !== instruction.old_string || normalizedTargetCode !== targetCode) {
+              debugLog("🔧 [StringReplacement] Normalized escaped characters:", {
+                oldStringNormalized: oldString !== instruction.old_string,
+                targetCodeNormalized: normalizedTargetCode !== targetCode,
+                targetType: instruction.target_type
+              });
+            }
+
             // DIAGNOSTIC: Log detailed state before blank detection
             debugLog(
               "🔍 [StringReplacement] DIAGNOSTIC - Target code analysis:",
               {
                 targetType: instruction.target_type,
-                targetCodeLength: targetCode.length,
-                targetCodeTrimmedLength: targetCode.trim().length,
-                targetCodePreview: targetCode.substring(0, 200) + "...",
+                targetCodeLength: normalizedTargetCode.length,
+                targetCodeTrimmedLength: normalizedTargetCode.trim().length,
+                targetCodePreview: normalizedTargetCode.substring(0, 200) + "...",
                 targetCodeEnd:
-                  "..." + targetCode.substring(targetCode.length - 100),
-                isEmptyString: targetCode === "",
-                isWhitespaceOnly: targetCode.trim() === "",
+                  "..." + normalizedTargetCode.substring(normalizedTargetCode.length - 100),
+                isEmptyString: normalizedTargetCode === "",
+                isWhitespaceOnly: normalizedTargetCode.trim() === "",
                 currentCodeKeys: Object.keys(currentCode),
                 allCodeLengths: {
                   html: currentCode.html?.length || 0,
@@ -1395,7 +1410,7 @@ Fliplet.Widget.generateInterface({
             );
 
             // CASE 1: Blank screen detection (auto-detect, no markers needed)
-            const isBlankCode = targetCode.trim() === "";
+            const isBlankCode = normalizedTargetCode.trim() === "";
 
             if (isBlankCode) {
               debugLog(
@@ -1408,7 +1423,7 @@ Fliplet.Widget.generateInterface({
                 success: true,
                 newCode: newString,
                 location: "entire content (new)",
-                oldLength: targetCode.length,
+                oldLength: normalizedTargetCode.length,
                 newLength: newString.length,
               };
             }
@@ -1418,7 +1433,7 @@ Fliplet.Widget.generateInterface({
             let count = 0;
             const positions = [];
 
-            while ((index = targetCode.indexOf(oldString, index)) !== -1) {
+            while ((index = normalizedTargetCode.indexOf(oldString, index)) !== -1) {
               positions.push(index);
               count++;
               index += oldString.length;
@@ -1429,7 +1444,7 @@ Fliplet.Widget.generateInterface({
                 success: false,
                 error: this.buildNoMatchError(
                   oldString,
-                  targetCode,
+                  normalizedTargetCode,
                   instruction.target_type,
                 ),
               };
@@ -1442,18 +1457,18 @@ Fliplet.Widget.generateInterface({
               };
             }
 
-            // Perform replacement
+            // Perform replacement on normalized code
             const newCode = instruction.replace_all
-              ? targetCode.split(oldString).join(newString)
-              : targetCode.substring(0, positions[0]) +
+              ? normalizedTargetCode.split(oldString).join(newString)
+              : normalizedTargetCode.substring(0, positions[0]) +
                 newString +
-                targetCode.substring(positions[0] + oldString.length);
+                normalizedTargetCode.substring(positions[0] + oldString.length);
 
             return {
               success: true,
               newCode,
               location: `${count} location(s)`,
-              oldLength: targetCode.length,
+              oldLength: normalizedTargetCode.length,
               newLength: newCode.length,
             };
           }
@@ -1572,6 +1587,30 @@ Fliplet.Widget.generateInterface({
             return string.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
               return "\\" + match;
             });
+          }
+
+          /**
+           * Normalize escaped characters in strings
+           * Converts escaped sequences like \\n, \\t, \\r to actual characters
+           * This handles cases where JSON parsing leaves escaped characters as literal strings
+           * @param {string} str - String that might contain escaped characters
+           * @returns {string} String with escaped characters normalized
+           */
+          normalizeEscapedCharacters(str) {
+            if (!str || typeof str !== 'string') {
+              return str;
+            }
+
+            // Replace common escaped sequences with actual characters
+            // Handle double backslashes first (mark them temporarily) to avoid double-processing
+            return str
+              .replace(/\\\\/g, '\u0001') // Temporary marker for literal double backslash
+              .replace(/\\n/g, '\n')      // Escaped newline -> actual newline
+              .replace(/\\t/g, '\t')      // Escaped tab -> actual tab
+              .replace(/\\r/g, '\r')      // Escaped carriage return -> actual CR
+              .replace(/\\"/g, '"')       // Escaped quote -> actual quote
+              .replace(/\\'/g, "'")       // Escaped apostrophe -> actual apostrophe
+              .replace(/\u0001/g, '\\');  // Restore literal double backslashes
           }
 
           /**

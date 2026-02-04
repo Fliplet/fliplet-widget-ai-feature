@@ -1307,6 +1307,14 @@ Fliplet.Widget.generateInterface({
                     `✅ [StringReplacement] Applied: ${instruction.description}`,
                   );
                 } else {
+                  await logAiComponentUsage({
+                    "Chat history": AppState.chatHistory,
+                    instructions: instructions,
+                    currentCode: currentCode,
+                    result: result,
+                    type: "string_replacement_failed",
+                    state: 'result_success_false'
+                  });
                   debugError(`❌ [StringReplacement] Failed: ${result.error}`);
                   changeLog[instruction.target_type].push({
                     type: "string_replacement_failed",
@@ -1317,6 +1325,14 @@ Fliplet.Widget.generateInterface({
                   });
                 }
               } catch (error) {
+                await logAiComponentUsage({
+                  "Chat history": AppState.chatHistory,
+                  instructions: instructions,
+                  currentCode: currentCode,
+                  result: result,
+                  state: 'error',
+                  type: "string_replacement_error",
+                });
                 debugError(
                   `❌ [StringReplacement] Error processing instruction:`,
                   error,

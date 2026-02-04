@@ -1,5 +1,6 @@
 var selectedDataSourceId = null;
 var selectedDataSourceName = null;
+var cachedAIContext = null; // Cache AI context for the session (loaded once when first needed)
 var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 const appId = Fliplet.Env.get("appId");
@@ -33,6 +34,15 @@ Fliplet.Widget.generateInterface({
                   <li>The ability to query AI</li>
                 </ol>
                 <p>Note: Only the information in your prompt is shared with AI. AI cannot access your data or app.</p>
+                <p><strong>Custom AI Context</strong></p>
+                <p>Add custom instructions for AI in your Global or Screen JavaScript using:</p>
+                <pre id="ai-context-example" style="font-size: 11px; background: #f5f5f5; padding: 8px; border-radius: 4px; cursor: pointer;" title="Click to copy">/* @ai-context-start
+Available functions:
+- showAlert(message) - Display alert
+- saveData(form) - Save form data
+@ai-context-end */</pre>
+                <p><small><a href="#" id="copy-ai-context">Click to copy example</a></small></p>
+                <p>AI will use these when generating code.</p>
               </div>
             </div>
           </div>
@@ -190,6 +200,16 @@ Fliplet.Widget.generateInterface({
         window.debugLog = debugLog;
         window.debugError = debugError;
         window.debugWarn = debugWarn;
+
+        // Copy AI context example to clipboard
+        $('#copy-ai-context, #ai-context-example').on('click', function(e) {
+          e.preventDefault();
+          var $link = $('#copy-ai-context');
+          navigator.clipboard.writeText($('#ai-context-example').text());
+          $link.text('Copied!');
+          setTimeout(function() { $link.text('Click to copy example'); }, 1500);
+        });
+
         /**
          * CONFIGURATION - Modify these settings as needed
          * @type {Object}
@@ -3039,13 +3059,17 @@ Fliplet.Widget.generateInterface({
             })),
           });
 
+          // Get AI context (cached after first load)
+          const aiContext = await getAIContext();
+
           // CRITICAL: Use the most current images for the system prompt
           const systemPrompt = buildSystemPromptWithContext(
             context,
             finalCurrentImages,
             AppState,
             dataSourceColumns,
-            selectedDataSourceName
+            selectedDataSourceName,
+            aiContext
           );
 
           // Build complete conversation history
@@ -4916,6 +4940,40 @@ async function getCurrentPageSettings() {
   });
 }
 
+/**
+ * Fetch the app's global JavaScript code
+ * @returns {Promise<string>} Global JS code or empty string
+ */
+async function getAppGlobalJS() {
+  try {
+    const response = await Fliplet.API.request({
+      url: `v1/apps/${appId}/settings`,
+      method: "GET"
+    });
+    return response?.customJS || '';
+  } catch (error) {
+    debugWarn("⚠️ [AI] Could not fetch global JS:", error);
+    return '';
+  }
+}
+
+/**
+ * Fetch the current page's JavaScript code
+ * @returns {Promise<string>} Page JS code or empty string
+ */
+async function getPageJS() {
+  try {
+    const response = await Fliplet.API.request({
+      url: `v1/apps/${appId}/pages/${pageId}`,
+      method: "GET"
+    });
+    return response?.page?.settings?.customJS || '';
+  } catch (error) {
+    debugWarn("⚠️ [AI] Could not fetch page JS:", error);
+    return '';
+  }
+}
+
 async function populateCurrentPageContent() {
   try {
     const currentSettings = await getCurrentPageSettings();
@@ -4986,6 +5044,68 @@ function extractCodeBetweenDelimiters(type, code) {
   }
 
   return "";
+}
+
+/**
+ * Extract AI context documentation from JavaScript code
+ * Supports both block comments and line comments
+ * @param {string} jsCode - JavaScript code to scan
+ * @returns {string|null} Extracted context or null if not found
+ */
+function extractAIContext(jsCode) {
+  if (!jsCode) return null;
+
+  // Try block comment style first: /* @ai-context-start ... @ai-context-end */
+  const blockMatch = jsCode.match(/\/\*\s*@ai-context-start([\s\S]*?)@ai-context-end\s*\*\//);
+  if (blockMatch) {
+    return blockMatch[1].trim();
+  }
+
+  // Try line comment style: // @ai-context-start ... // @ai-context-end
+  const lineMatch = jsCode.match(/\/\/\s*@ai-context-start\s*\n([\s\S]*?)\/\/\s*@ai-context-end/);
+  if (lineMatch) {
+    // Strip leading "// " from each line
+    const content = lineMatch[1]
+      .split('\n')
+      .map(line => line.replace(/^\s*\/\/\s?/, ''))
+      .join('\n')
+      .trim();
+    return content;
+  }
+
+  return null;
+}
+
+/**
+ * Get AI context from both app-level (global JS) and screen-level (screen JS)
+ * Caches result for the session since context is unlikely to change while editing
+ * @returns {Promise<{app: string|null, screen: string|null}>}
+ */
+async function getAIContext() {
+  // Return cached context if available
+  if (cachedAIContext !== null) {
+    return cachedAIContext;
+  }
+
+  // Fetch global JS from API
+  const globalJS = await getAppGlobalJS();
+
+  // Fetch page JS from API
+  const screenJS = await getPageJS();
+
+  cachedAIContext = {
+    app: extractAIContext(globalJS),
+    screen: extractAIContext(screenJS)
+  };
+
+  if (cachedAIContext.app || cachedAIContext.screen) {
+    debugLog("📚 [AI] Found AI context:", {
+      hasAppContext: !!cachedAIContext.app,
+      hasScreenContext: !!cachedAIContext.screen
+    });
+  }
+
+  return cachedAIContext;
 }
 
 // helper: normalize \r\n and \r to \n

@@ -252,11 +252,14 @@ Available functions:
         window.debugError = debugError;
         window.debugWarn = debugWarn;
 
-        // Copy AI context example to clipboard
+        // Copy AI context example to clipboard (using execCommand for iframe compatibility)
         $('#copy-ai-context, #ai-context-example').on('click', function(e) {
           e.preventDefault();
           var $link = $('#copy-ai-context');
-          navigator.clipboard.writeText($('#ai-context-example').text());
+          var text = $('#ai-context-example').text();
+          var $temp = $('<textarea>').val(text).appendTo('body').select();
+          document.execCommand('copy');
+          $temp.remove();
           $link.text('Copied!');
           setTimeout(function() { $link.text('Click to copy example'); }, 1500);
         });

@@ -3,13 +3,13 @@
  * @param {Object} context - Context object
  * @returns {string} System prompt
  */
-function buildSystemPromptWithContext(context, pastedImages = [], AppState, dataSourceColumns, selectedDataSourceName, componentGuid) {
+function buildSystemPromptWithContext(context, pastedImages = [], AppState, dataSourceColumns, selectedDataSourceName, componentGuid, aiContext = {}) {
     debugLog("📝 [AI] Building system prompt with context...");
     debugLog("📝 [AI] Images passed to system prompt:", {
       passedImagesCount: pastedImages.length,
       passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
       currentAppStateImages: AppState.pastedImages.length,
-      currentAppStateValidImages: AppState.pastedImages.filter(img => 
+      currentAppStateValidImages: AppState.pastedImages.filter(img =>
         img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
       ).length
     });
@@ -54,7 +54,7 @@ Examples of user-friendly communication:
 - Instead of: "Created a complete user data collection form with Bootstrap 3.4.1 styling and JS for validation and submission"
 - Say: "Created a user form with first name, last name, and bio fields"
 
-- Instead of: "Implemented responsive grid layout using CSS flexbox with media queries"  
+- Instead of: "Implemented responsive grid layout using CSS flexbox with media queries"
 - Say: "Made the layout work well on both desktop and mobile devices"
 
 - Instead of: "Added event listeners for form submission with AJAX request to datasource API"
@@ -75,7 +75,7 @@ handlebars 4.0.10 - Templating
 jquery 3.4.1 - DOM manipulation and AJAX
 lodash 4.17.4 - Utility functions
 modernizr 3.5.0 - Feature detection
-moment 2.15.2 - Date/time operations 
+moment 2.15.2 - Date/time operations
 developers.fliplet.com
 
 2. Optional (Approved) Libraries You Can Add
@@ -90,7 +90,7 @@ Charts and utilities: highcharts, jssocials, jwt-decode, lodash-joins, mixitup, 
 If user is requesting a chart always use highcharts unless they specify otherwise.
 
 3. SASS variables
-For styling the following types of elements use these SASS variables if possible. e.g. 
+For styling the following types of elements use these SASS variables if possible. e.g.
 
 body {
   background-color: $primaryButtonColor;
@@ -109,6 +109,26 @@ Ask the user if you need clarification on the requirements, do not start creatin
 
 CRITICAL: When users request features that require specific parameters (like data source names, column names, API endpoints, etc.), you MUST ask for these details if they are not provided. Never assume or make up values for required parameters. Use the "answer" response type to request missing information before generating code.
 
+${aiContext && (aiContext.app || aiContext.screen) ? `
+## IMPORTANT: App-Specific Developer Context
+
+The developer has provided the following custom documentation for this app. You MUST follow these conventions and use these custom APIs/functions when they are relevant to the user's request. These take PRIORITY over generic implementations.
+
+${aiContext.app ? `### App-Level Context (applies to all screens)
+${aiContext.app}
+` : ''}${aiContext.screen ? `
+
+### Screen-Level Context (specific to this screen)
+${aiContext.screen}
+` : ''}
+
+When generating code:
+
+- ALWAYS check if a custom function/API from the context above can fulfill the requirement
+- PREFER using the documented custom APIs over creating new implementations
+- FOLLOW the conventions and patterns described in the context
+` : ''}
+
           ${(() => {
             const validImages = pastedImages.filter(img =>
               img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
@@ -125,7 +145,7 @@ When analyzing images, describe what you see and how you'll implement it in the 
               : '';
           })()}
 
-API Documentation: 
+API Documentation:
 
 If you get asked to use datasource js api for e.g. if you need to save data from a form to a datasource or need to read data dynamic data to show it on the screen you need to use the following API:
 
@@ -1632,7 +1652,6 @@ async function runChatCompletion() {
 }
 runChatCompletion();
 
-
 CRITICAL INSTRUCTIONS:
 You MUST respond with a JSON object in one of two formats depending on the user's request:
 
@@ -1827,7 +1846,7 @@ Use "string_replacement" format for requests like:
       prompt += `\nEXISTING CODE STRUCTURE:
 - HTML Components: ${
         context.codeStructure.htmlComponents.join(", ") || "none"
-      }  
+      }
 - CSS Organization: ${context.codeStructure.cssOrganization}
 - JS Patterns: ${context.codeStructure.jsPatterns}
 `;

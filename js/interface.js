@@ -12,6 +12,52 @@ Fliplet.Widget.setCancelButtonLabel("Close");
 Fliplet.Widget.generateInterface({
   fields: [
     {
+      type: "hidden",
+      name: "chatGUID",
+      label: "Chat GUID",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "guid",
+      label: "GUID",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "chatHistory",
+      label: "Chat History",
+      default: "",
+      rows: 12,
+    },
+    {
+      type: "hidden",
+      name: "css",
+      label: "CSS",
+      default: "",
+      rows: 12,
+    },
+    {
+      type: "hidden",
+      name: "javascript",
+      label: "JavaScript",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "layoutHTML",
+      label: "Layout",
+      default: "",
+    },
+    {
+      type: "hidden",
+      name: "regenerateCode",
+      label: "Regenerate code",
+      description: "Regenerate code",
+      toggleLabel: "Regenerate",
+      default: false,
+    },
+    {
       type: "html",
       html: `
         <div class="panel-group" id="accordion-1">
@@ -76,7 +122,7 @@ Available functions:
         </div>
     </div>
       `,
-      ready: function () {
+      ready: async function () {
         /**
          * AI Coding Tool Test Application
          * Uses Fliplet.AI.createCompletion for code generation with diff processing and code merging
@@ -172,7 +218,6 @@ Available functions:
          */
 
         ("use strict");
-
         // Debug mode configuration - set to true to show console logs
         const debugMode = false;
 
@@ -193,6 +238,12 @@ Available functions:
           if (debugMode) {
             console.warn(...args);
           }
+        }
+
+        if (!Fliplet.Helper.field("guid").get()) {
+          Fliplet.Helper.field("guid").set(Fliplet.guid());
+          await Fliplet.Widget.save(Fliplet.Widget.getData().fields);
+          // Fliplet.Studio.emit("widget-interface-reload");
         }
 
         // Make debug functions globally available
@@ -218,7 +269,6 @@ Available functions:
           /** @type {string} AI Model - Options: gpt-4.1, gpt-4o, gpt-4o-mini, gpt-4o-2024-08-06 (for structured outputs) */
           OPENAI_MODEL: "gpt-4.1",
           TEMPERATURE: 0.7,
-          MAX_TOKENS: 10000,
         };
 
         /**
@@ -616,7 +666,7 @@ Available functions:
             };
 
             debugLog("✅ [ContextBuilder] Context built:", context);
-            return this.optimizeForTokens(context);
+            return context
           }
 
           /**
@@ -788,19 +838,6 @@ Available functions:
           getRecentChanges(changeHistory, limit = 3) {
             return changeHistory.slice(-limit);
           }
-
-          /**
-           * Optimize context for token limits
-           * @param {Object} context - Context object
-           * @returns {Object} Optimized context
-           */
-          optimizeForTokens(context) {
-            debugLog("⚡ [ContextBuilder] Optimizing context for tokens...");
-
-            // For now, return as-is. In production, implement token counting
-            // and intelligent truncation
-            return context;
-          }
         }
 
         /**
@@ -815,10 +852,6 @@ Available functions:
            */
           parseResponse(response) {
             debugLog("📝 [ProtocolParser] Parsing LLM response...");
-            debugLog(
-              "📄 [ProtocolParser] Raw response preview:",
-              response.substring(0, 200) + "..."
-            );
 
             try {
               // With structured outputs, this should always be valid JSON
@@ -1241,11 +1274,6 @@ Available functions:
               "🔧 [StringReplacement] Instructions received:",
               JSON.stringify(instructions, null, 2)
             );
-            debugLog("🔧 [StringReplacement] Current code lengths:", {
-              html: currentCode.html.length,
-              css: currentCode.css.length,
-              js: currentCode.js.length,
-            });
 
             const updatedCode = {
               html: currentCode.html,
@@ -1328,135 +1356,138 @@ Available functions:
               instruction
             );
 
-            const validation = this.validateInstruction(instruction);
+            const validation = this.validateInstruction(instruction, currentCode);
             if (!validation.valid) {
               return { success: false, error: validation.error };
             }
 
             const targetCode = currentCode[instruction.target_type] ?? "";
-            const oldString = instruction.old_string ?? "";
-            const newString = instruction.new_string ?? "";
+            const oldString = instruction.old_string;
+            const newString = instruction.new_string;
 
-            // Special case: new/empty files
-            const emptyMarkers = {
-              html: "<!-- EMPTY -->",
-              css: "/* EMPTY */",
-              js: "// EMPTY",
-            };
-            const expectedEmptyMarker = emptyMarkers[instruction.target_type];
-            if (oldString === expectedEmptyMarker && targetCode.trim() === "") {
+            // DIAGNOSTIC: Log detailed state before blank detection
+            debugLog("🔍 [StringReplacement] DIAGNOSTIC - Target code analysis:", {
+              targetType: instruction.target_type,
+              targetCodeLength: targetCode.length,
+              targetCodeTrimmedLength: targetCode.trim().length,
+              targetCodePreview: targetCode.substring(0, 200) + "...",
+              targetCodeEnd: "..." + targetCode.substring(targetCode.length - 100),
+              isEmptyString: targetCode === "",
+              isWhitespaceOnly: targetCode.trim() === "",
+              currentCodeKeys: Object.keys(currentCode),
+              allCodeLengths: {
+                html: currentCode.html?.length || 0,
+                css: currentCode.css?.length || 0,
+                js: currentCode.js?.length || 0,
+              },
+            });
+
+            // CASE 1: Blank screen detection (auto-detect, no markers needed)
+            const isBlankCode = targetCode.trim() === "";
+
+            if (isBlankCode) {
               debugLog(
-                `🆕 [StringReplacement] Handling empty ${instruction.target_type} code case for new project`
+                `🆕 [StringReplacement] Blank ${instruction.target_type} detected, inserting new code directly`
               );
+              debugLog("⚠️ [StringReplacement] WARNING: Blank detected - verify currentCode was passed correctly!");
               return {
                 success: true,
                 newCode: newString,
                 location: "entire content (new)",
-              };
-            }
-
-            // 1) Try exact literal match first (after normalizing EOLs on both sides)
-            const tNorm = normalizeEols(targetCode);
-            const oNorm = normalizeEols(oldString);
-
-            let occurrences = 0;
-            let newCode;
-            let location;
-
-            if (tNorm.includes(oNorm)) {
-              // exact literal branch
-              const literalPattern = new RegExp(escapeRegExp(oNorm), "gms");
-              occurrences = (tNorm.match(literalPattern) || []).length;
-
-              if (occurrences > 1 && !instruction.replace_all) {
-                return {
-                  success: false,
-                  error: `Multiple occurrences found (${occurrences}). Use replace_all: true or provide more specific old_string`,
-                };
-              }
-
-              if (instruction.replace_all) {
-                // Do replacement on original (not normalized) to preserve original EOLs
-                newCode = targetCode.split(oldString).join(newString);
-                location = `${occurrences} locations`;
-              } else {
-                const idx = tNorm.indexOf(oNorm);
-                // translate index back to original by re-finding in original
-                const originalIdx = targetCode.indexOf(oldString);
-                const start = originalIdx > -1 ? originalIdx : idx; // fallback if EOLs differ
-                newCode =
-                  targetCode.slice(0, start) +
-                  newString +
-                  targetCode.slice(start + oldString.length);
-                location = `character ${start}`;
-              }
-
-              return {
-                success: true,
-                newCode,
-                location,
                 oldLength: targetCode.length,
-                newLength: newCode.length,
+                newLength: newString.length,
               };
             }
 
-            // 2) Fallback: whitespace-tolerant regex (handles different indentation / trailing newline / CRLF)
-            const flexRe = buildFlexibleRegexFromLiteral(oldString);
-            const matches =
-              targetCode.match(new RegExp(flexRe.source, flexRe.flags + "g")) ||
-              [];
-            occurrences = matches.length;
+            // CASE 2: Exact string matching using indexOf()
+            let index = 0;
+            let count = 0;
+            const positions = [];
 
-            if (occurrences === 0) {
+            while ((index = targetCode.indexOf(oldString, index)) !== -1) {
+              positions.push(index);
+              count++;
+              index += oldString.length;
+            }
+
+            if (count === 0) {
               return {
                 success: false,
-                error: `Old string not found in ${
+                error: this.buildNoMatchError(
+                  oldString,
+                  targetCode,
                   instruction.target_type
-                }: "${oldString.substring(0, 50)}..."`,
+                ),
               };
             }
 
-            if (occurrences > 1 && !instruction.replace_all) {
+            if (count > 1 && !instruction.replace_all) {
               return {
                 success: false,
-                error: `Multiple occurrences found (${occurrences}). Use replace_all: true or provide more specific old_string`,
+                error: `Found ${count} exact matches. Set "replace_all": true or provide more specific old_string.`,
               };
             }
 
-            if (instruction.replace_all) {
-              newCode = targetCode.replace(
-                new RegExp(flexRe.source, flexRe.flags + "g"),
-                newString
-              );
-              location = `${occurrences} locations`;
-            } else {
-              // single replacement (no /g/, only first hit)
-              newCode = targetCode.replace(flexRe, newString);
-              // best-effort index for reporting (post-replace index inaccurate otherwise)
-              const firstMatch = targetCode.search(flexRe);
-              location = `character ${firstMatch}`;
-            }
+            // Perform replacement
+            const newCode = instruction.replace_all
+              ? targetCode.split(oldString).join(newString)
+              : targetCode.substring(0, positions[0]) +
+                newString +
+                targetCode.substring(positions[0] + oldString.length);
 
             return {
               success: true,
               newCode,
-              location,
+              location: `${count} location(s)`,
               oldLength: targetCode.length,
               newLength: newCode.length,
             };
           }
 
           /**
+           * Build detailed error message when string match fails
+           * @param {string} oldString - The string that was searched for
+           * @param {string} targetCode - The code that was searched
+           * @param {string} targetType - The type of code (html/css/js)
+           * @returns {string} Detailed error message
+           */
+          buildNoMatchError(oldString, targetCode, targetType) {
+            const oldPreview =
+              oldString.length > 100
+                ? oldString.substring(0, 100) + "..."
+                : oldString;
+
+            const codePreview =
+              targetCode.length > 300
+                ? targetCode.substring(0, 300) + "..."
+                : targetCode;
+
+            let error = `Could not find exact match in ${targetType}.\n\n`;
+            error += `Looking for:\n"${oldPreview}"\n\n`;
+
+            if (targetCode.trim() === "") {
+              error += `Current ${targetType} is empty. The system auto-detects blank screens - this error should not occur for empty code.`;
+            } else {
+              error += `Current ${targetType} preview:\n"${codePreview}"\n\n`;
+              error += `💡 Tip: Make sure old_string matches exactly (including spacing, quotes, and line breaks).`;
+            }
+
+            return error;
+          }
+
+          /**
            * Validate replacement instruction format
            * @param {Object} instruction - Instruction to validate
+           * @param {Object} currentCode - Current code state
            * @returns {Object} Validation result
            */
-          validateInstruction(instruction) {
+          validateInstruction(instruction, currentCode) {
             debugLog(
               "✅ [StringReplacement] Validating instruction:",
               JSON.stringify(instruction, null, 2)
             );
 
+            // Check target_type
             if (
               !instruction.target_type ||
               !["html", "css", "js"].includes(instruction.target_type)
@@ -1467,28 +1498,35 @@ Available functions:
               };
             }
 
+            // Check old_string exists and is a string
             if (
-              !instruction.old_string ||
-              typeof instruction.old_string !== "string" ||
-              instruction.old_string.trim() === ""
+              instruction.old_string === undefined ||
+              instruction.old_string === null ||
+              typeof instruction.old_string !== "string"
             ) {
-              debugLog("❌ [StringReplacement] old_string validation failed:", {
-                exists: !!instruction.old_string,
-                type: typeof instruction.old_string,
-                value: instruction.old_string,
-                isEmpty: instruction.old_string === "",
-                isOnlyWhitespace:
-                  typeof instruction.old_string === "string" &&
-                  instruction.old_string.trim() === "",
-              });
               return {
                 valid: false,
-                error: "old_string is required and must be a non-empty string",
+                error: "old_string is required and must be a string",
               };
             }
 
+            // For blank screens, old_string is ignored (can be anything, including empty string)
+            const targetCode = currentCode[instruction.target_type] ?? "";
+            const isBlankScreen = targetCode.trim() === "";
+
+            // For non-blank screens, old_string must have content
+            if (!isBlankScreen && instruction.old_string.trim() === "") {
+              return {
+                valid: false,
+                error:
+                  "old_string cannot be empty for modifying existing code. For blank screens, empty string is allowed (system auto-detects).",
+              };
+            }
+
+            // Check new_string exists
             if (
-              !instruction.new_string ||
+              instruction.new_string === undefined ||
+              instruction.new_string === null ||
               typeof instruction.new_string !== "string"
             ) {
               return {
@@ -1497,7 +1535,11 @@ Available functions:
               };
             }
 
-            if (instruction.old_string === instruction.new_string) {
+            // Check not identical (unless blank screen)
+            if (
+              !isBlankScreen &&
+              instruction.old_string === instruction.new_string
+            ) {
               return {
                 valid: false,
                 error: "old_string and new_string cannot be identical",
@@ -2302,7 +2344,6 @@ Available functions:
           model: CONFIG.OPENAI_MODEL,
           /** @type {number} Temperature for response randomness */
           temperature: CONFIG.TEMPERATURE,
-          max_tokens: CONFIG.MAX_TOKENS,
         };
 
         /**
@@ -2326,6 +2367,8 @@ Available functions:
          * Initialize the application
          */
         async function initializeApp() {
+          var data = Fliplet.Widget.getData();
+          await Fliplet.Widget.save(data.fields);
           debugLog("🚀 Initializing AI Coding Tool Test App");
 
           // Get DOM element references
@@ -2340,12 +2383,7 @@ Available functions:
           // Initialize textarea styling and behavior
           setTimeout(() => {
             if (DOM.userInput) {
-              debugLog("🔧 Initializing textarea...");
               initializeTextarea();
-              debugLog(
-                "🔧 Textarea initialized with height:",
-                DOM.userInput.style.height
-              );
             } else {
               debugError("❌ Textarea element not found during initialization");
             }
@@ -2384,7 +2422,7 @@ Available functions:
           setupEventListeners();
 
           // Load chat history from Fliplet field
-          const historyLoaded = loadChatHistoryFromStorage();
+          const historyLoaded = loadChatHistory();
           if (!historyLoaded) {
             // If no history loaded, the existing system message in HTML template is sufficient
             // No need to add another system message since there's already one in the HTML
@@ -2437,19 +2475,11 @@ Available functions:
 
           // Auto-resize textarea as user types (jQuery)
           $(DOM.userInput).on("input", function () {
-            debugLog(
-              "🔧 Input event triggered (jQuery), current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
           // Auto-resize textarea as user types (native event as backup)
           DOM.userInput.addEventListener("input", function () {
-            debugLog(
-              "🔧 Input event triggered (native), current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
@@ -2487,19 +2517,11 @@ Available functions:
 
           // Handle all text changes including programmatic changes
           DOM.userInput.addEventListener("change", function () {
-            debugLog(
-              "🔧 Change event triggered, current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
           // Handle composition events for IME input (useful for international keyboards)
           DOM.userInput.addEventListener("compositionend", function () {
-            debugLog(
-              "🔧 Composition end event triggered, current value length:",
-              this.value.length
-            );
             autoResizeTextarea(this);
           });
 
@@ -2510,11 +2532,6 @@ Available functions:
           $(document).on("click", ".remove-image-btn", function (event) {
             event.preventDefault();
             const imageId = this.dataset.imageId;
-            debugLog("🗑️ Remove button clicked!");
-            debugLog("🗑️ Button element:", this);
-            debugLog("🗑️ Button dataset:", this.dataset);
-            debugLog("🗑️ Extracted imageId:", imageId);
-            debugLog("🗑️ Type of imageId:", typeof imageId);
 
             if (imageId) {
               debugLog("🗑️ Remove button clicked for image ID:", imageId);
@@ -2656,13 +2673,45 @@ Available functions:
           DOM.chatMessages.appendChild(loadingDiv);
           scrollToBottom();
 
-          AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
-          AppState.css = Fliplet.Helper.field("css").get() || "";
-          AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+          try {
+            // CRITICAL: Always fetch fresh code from the page before each AI call
+            // This ensures we have the latest state even after navigation
+            debugLog("🔄 [Main] Fetching current code from page...");
+            await populateCurrentPageContent();
 
-          AppState.currentHTML = AppState.layoutHTML;
-          AppState.currentCSS = AppState.css;
-          AppState.currentJS = AppState.javascript;
+            // Now read from Helper fields (just populated by populateCurrentPageContent)
+            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+            AppState.css = Fliplet.Helper.field("css").get() || "";
+            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+
+            AppState.currentHTML = AppState.layoutHTML;
+            AppState.currentCSS = AppState.css;
+            AppState.currentJS = AppState.javascript;
+
+            debugLog("📊 [Main] Loaded current code state:", {
+              htmlLength: AppState.currentHTML.length,
+              cssLength: AppState.currentCSS.length,
+              jsLength: AppState.currentJS.length,
+              htmlPreview: AppState.currentHTML.substring(0, 200) || "(empty)",
+              htmlIsEmpty: AppState.currentHTML.trim() === "",
+            });
+          } catch (fetchError) {
+            debugError("⚠️ [Main] Error fetching current page content:", fetchError);
+            // Fallback to existing Helper field values
+            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+            AppState.css = Fliplet.Helper.field("css").get() || "";
+            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+
+            AppState.currentHTML = AppState.layoutHTML;
+            AppState.currentCSS = AppState.css;
+            AppState.currentJS = AppState.javascript;
+
+            debugLog("📊 [Main] Fallback to Helper fields:", {
+              htmlLength: AppState.currentHTML.length,
+              cssLength: AppState.currentCSS.length,
+              jsLength: AppState.currentJS.length,
+            });
+          }
 
           try {
             // Step 1: Build intelligent context
@@ -2810,6 +2859,13 @@ Available functions:
               changeRequest.instructions.length > 0
             ) {
               debugLog("🎯 [Main] Using string replacement engine...");
+              debugLog("📋 [Main] DIAGNOSTIC - currentCode being passed:", {
+                htmlLength: currentCode.html?.length || 0,
+                cssLength: currentCode.css?.length || 0,
+                jsLength: currentCode.js?.length || 0,
+                htmlPreview: currentCode.html?.substring(0, 200) || "(empty)",
+                instructionCount: changeRequest.instructions?.length || 0,
+              });
               applicationResult =
                 await stringReplacementEngine.applyReplacements(
                   changeRequest.instructions,
@@ -2869,18 +2925,6 @@ Available functions:
             // Step 6b: User message already added to chat history by addMessageToChat() in handleSendMessage()
             // No need to add it again here
 
-            // Step 7: Update code and save fields
-            if (!isAnswerType) {
-              updateCode();
-            } else {
-              // For answer type, we still need to save the fields even without code changes
-              saveGeneratedCode({
-                html: AppState.currentHTML || "",
-                css: AppState.currentCSS || "",
-                javascript: AppState.currentJS || "",
-              });
-            }
-
             // Remove loading indicator
             DOM.chatMessages.removeChild(loadingDiv);
 
@@ -2915,6 +2959,18 @@ Available functions:
 
             // Re-enable user controls after successful AI response
             enableUserControls();
+
+            // Step 7: Update code and save fields
+            if (!isAnswerType) {
+              updateCode();
+            } else {
+              // For answer type, we still need to save the fields even without code changes
+              saveGeneratedCode({
+                html: AppState.currentHTML || "",
+                css: AppState.currentCSS || "",
+                javascript: AppState.currentJS || "",
+              });
+            }
 
             debugLog(
               `✅ [Main] Request #${AppState.requestCount} completed successfully`
@@ -3069,7 +3125,8 @@ Available functions:
             AppState,
             dataSourceColumns,
             selectedDataSourceName,
-            aiContext
+            getGuidFromComponent(),
+            aiContext            
           );
 
           // Build complete conversation history
@@ -3212,7 +3269,6 @@ Available functions:
           });
 
           debugLog("📤 [AI] Request messages with history:", messages);
-          debugLog("📤 [AI] Final message count:", messages.length);
 
           // Summary of what we're sending
           const userMessagesWithImages = messages.filter(
@@ -4222,18 +4278,9 @@ Available functions:
           debugLog("🖼️ Updating code");
 
           try {
-            // Check if we have any code to update
-            // if (
-            //   !AppState.currentHTML &&
-            //   !AppState.currentCSS &&
-            //   !AppState.currentJS
-            // ) {
-            //   return;
-            // }
-
             // Build complete HTML document
             const rawHTMLContent =
-              AppState.currentHTML || "<p>No HTML content</p>";
+              AppState.currentHTML || "";
             const htmlContent = sanitizeHTML(rawHTMLContent);
             const cssContent = AppState.currentCSS || "";
             const jsContent = AppState.currentJS || "";
@@ -4289,7 +4336,7 @@ Available functions:
         /**
          * Load chat history from Fliplet field
          */
-        function loadChatHistoryFromStorage() {
+        function loadChatHistory() {
           try {
             const history = Fliplet.Helper.field("chatHistory").get();
             debugLog("💾 Loading chat history from Fliplet field:", history);
@@ -4411,22 +4458,6 @@ Available functions:
         }
 
         /**
-         * Clear chat history from Fliplet field
-         */
-        function clearChatHistoryFromStorage() {
-          try {
-            // Clear the Fliplet field
-            Fliplet.Helper.field("chatHistory").set("");
-            debugLog("✅ Chat history cleared from Fliplet field");
-          } catch (error) {
-            debugError(
-              "Failed to clear chat history from Fliplet field:",
-              error
-            );
-          }
-        }
-
-        /**
          * Add message to chat interface
          * @param {string} message - The message content
          * @param {string} type - Message type ('user', 'ai', 'system')
@@ -4451,11 +4482,23 @@ Available functions:
           messageDiv.className = `message ${type}-message`;
 
           const prefix = type === "user" ? "You" : type === "ai" ? "AI" : "";
-
+          
           // Build message content
+          let processedMessage;
+          
+          if (type === "ai") {
+            // Convert markdown to HTML for AI responses
+            const converter = new showdown.Converter();
+            processedMessage = converter.makeHtml(message);
+
+          } else {
+            // Escape HTML for user and system messages for security
+            processedMessage = escapeHTML(message);
+          }
+          
           let messageContent = `${
             prefix ? `<strong>${prefix}</strong>: ` : ""
-          }${escapeHTML(message)}`;
+          }${processedMessage}`;
 
           // Add images if present
           if (images && images.length > 0) {
@@ -4566,7 +4609,10 @@ Available functions:
 
           const div = document.createElement("div");
           div.textContent = text;
-          return div.innerHTML;
+          // Replace newlines with <br> tags to preserve them in HTML
+          const escapedHTML = div.innerHTML.replace(/\n/g, '<br>');
+          
+          return escapedHTML;
         }
 
         /**
@@ -4603,9 +4649,6 @@ Available functions:
             debugLog("🔄 Resetting session");
 
             // Reset application state
-            AppState.previousHTML = "";
-            AppState.previousCSS = "";
-            AppState.previousJS = "";
             AppState.chatHistory = [];
             AppState.isFirstGeneration = true;
             AppState.requestCount = 0;
@@ -4624,9 +4667,6 @@ Available functions:
 
             AppState.chatGUID = Fliplet.guid();
             Fliplet.Helper.field("chatGUID").set(AppState.chatGUID);
-
-            // Clear Fliplet field
-            clearChatHistoryFromStorage();
 
             // Clear pasted images
             clearPastedImages(false, DOM, AppState);
@@ -4650,7 +4690,16 @@ Available functions:
             }
 
             // Reset
-            updateCode();
+            var data = Fliplet.Widget.getData();
+            data.fields.chatHistory = "";
+            data.fields.chatGUID = Fliplet.guid();
+            data.fields.dataSourceId = "";
+            data.fields.dataSourceName = "";
+
+            return Fliplet.Widget.save(data.fields).then(function () {
+              // Fliplet.Studio.emit("reload-widget-instance", widgetId);
+              Fliplet.Studio.emit("reload-page-preview");
+            });
           });
           return; // Stop execution here
         }
@@ -4702,13 +4751,6 @@ Available functions:
           if (scrollTop > 0) {
             textarea.scrollTop = scrollTop;
           }
-
-          debugLog("🔧 Textarea resized:", {
-            scrollHeight: scrollHeight,
-            newHeight: newHeight,
-            contentLength: textarea.value.length,
-            currentHeight: textarea.style.height,
-          });
         }
 
         /**
@@ -4720,12 +4762,6 @@ Available functions:
           textarea.value = "";
           textarea.style.height = "75px"; // Match CSS min-height
           textarea.style.overflowY = "hidden";
-
-          debugLog(
-            "🔧 Textarea reset to minimum height:",
-            textarea.style.height
-          );
-
           textarea.focus();
         }
 
@@ -4875,46 +4911,6 @@ Available functions:
         return value && value.id;
       },
     },
-    {
-      type: "hidden",
-      name: "chatGUID",
-      label: "Chat GUID",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "chatHistory",
-      label: "Chat History",
-      default: "",
-      rows: 12,
-    },
-    {
-      type: "hidden",
-      name: "css",
-      label: "CSS",
-      default: "",
-      rows: 12,
-    },
-    {
-      type: "hidden",
-      name: "javascript",
-      label: "JavaScript",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "layoutHTML",
-      label: "Layout",
-      default: "",
-    },
-    {
-      type: "hidden",
-      name: "regenerateCode",
-      label: "Regenerate code",
-      description: "Regenerate code",
-      toggleLabel: "Regenerate",
-      default: false,
-    },
   ],
 });
 
@@ -4976,25 +4972,59 @@ async function getPageJS() {
 
 async function populateCurrentPageContent() {
   try {
+    debugLog("🔍 [populateCurrentPageContent] Starting to fetch page content...");
     const currentSettings = await getCurrentPageSettings();
 
     if (currentSettings && currentSettings.page) {
-      // Extract widget-specific HTML content
-      const htmlContent = extractHtmlContent(
+      // Extract widget-specific HTML content from richLayout
+      const htmlFromPage = extractHtmlContent(
         currentSettings.page.richLayout || ""
       );
 
+      // CRITICAL FIX: If extractHtmlContent returns empty, use the stored Helper field value
+      // This handles the case where the HTML hasn't been rendered to the page yet
+      const existingHtmlInHelper = Fliplet.Helper.field("layoutHTML").get() || "";
+
+      const htmlContent = htmlFromPage || existingHtmlInHelper;
+
+      debugLog("🔍 [populateCurrentPageContent] HTML extraction results:", {
+        htmlFromPageLength: htmlFromPage.length,
+        existingHelperLength: existingHtmlInHelper.length,
+        finalHtmlLength: htmlContent.length,
+        usingFallback: htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
+      });
+
       // Extract widget-specific CSS content
-      const cssContent = extractCodeBetweenDelimiters(
+      const cssFromPage = extractCodeBetweenDelimiters(
         "css",
         currentSettings.page.settings.customSCSS || ""
       );
 
+      // CRITICAL FIX: Fallback to Helper field if extraction returns empty
+      const existingCssInHelper = Fliplet.Helper.field("css").get() || "";
+      const cssContent = cssFromPage || existingCssInHelper;
+
       // Extract widget-specific JavaScript content
-      const jsContent = extractCodeBetweenDelimiters(
+      const jsFromPage = extractCodeBetweenDelimiters(
         "js",
         currentSettings.page.settings.customJS || ""
       );
+
+      // CRITICAL FIX: Fallback to Helper field if extraction returns empty
+      const existingJsInHelper = Fliplet.Helper.field("javascript").get() || "";
+      const jsContent = jsFromPage || existingJsInHelper;
+
+      debugLog("🔍 [populateCurrentPageContent] Extraction complete:", {
+        htmlFromPageLength: htmlFromPage.length,
+        htmlFinalLength: htmlContent.length,
+        cssFromPageLength: cssFromPage.length,
+        cssFinalLength: cssContent.length,
+        jsFromPageLength: jsFromPage.length,
+        jsFinalLength: jsContent.length,
+        htmlUsingFallback: htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
+        cssUsingFallback: cssFromPage.length === 0 && existingCssInHelper.length > 0,
+        jsUsingFallback: jsFromPage.length === 0 && existingJsInHelper.length > 0,
+      });
 
       // Populate the Helper fields with widget-specific content
       Fliplet.Helper.field("layoutHTML").set(htmlContent);
@@ -5002,9 +5032,13 @@ async function populateCurrentPageContent() {
       Fliplet.Helper.field("javascript").set(jsContent);
     }
   } catch (error) {
-    debugError("Error populating current page content:", error);
+    debugError("❌ [populateCurrentPageContent] Error:", error);
     Fliplet.UI.Toast("Error loading current page content: " + error);
   }
+}
+
+function getGuidFromComponent() {
+  return Fliplet.Helper.field("guid").get();
 }
 
 function extractHtmlContent(richLayout) {
@@ -5012,7 +5046,7 @@ function extractHtmlContent(richLayout) {
   let $wrapper = $("<div>").html(richLayout);
 
   // Find the widget-specific container and extract its content
-  const $widgetContainer = $wrapper.find(`.ai-feature-${widgetId}`);
+  const $widgetContainer = $wrapper.find(`.ai-feature-${getGuidFromComponent()}`);
 
   if ($widgetContainer.length > 0) {
     return $widgetContainer.html() || "";
@@ -5025,11 +5059,11 @@ function extractCodeBetweenDelimiters(type, code) {
   let start, end;
 
   if (type === "js") {
-    start = `// start-ai-feature ${widgetId}`;
-    end = `// end-ai-feature ${widgetId}`;
+    start = `// start-ai-feature ${getGuidFromComponent()}`;
+    end = `// end-ai-feature ${getGuidFromComponent()}`;
   } else if (type === "css") {
-    start = `/* start-ai-feature ${widgetId} */`;
-    end = `/* end-ai-feature ${widgetId} */`;
+    start = `/* start-ai-feature ${getGuidFromComponent()} */`;
+    end = `/* end-ai-feature ${getGuidFromComponent()} */`;
   }
 
   // Find the start and end positions
@@ -5114,19 +5148,9 @@ function normalizeEols(s) {
 }
 
 // helper: escape literal for regex
+// Note: Still used for exact occurrence counting in StringReplacementEngine
 function escapeRegExp(s) {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-// helper: build a whitespace-tolerant regex from a literal string
-// turns any run of whitespace in the literal into \s+
-// and allows optional leading/trailing whitespace
-function buildFlexibleRegexFromLiteral(literal) {
-  // keep original literal’s *semantic* tokens, ignore exact spacing
-  const tokens = literal.split(/\s+/).map(escapeRegExp).filter(Boolean);
-  const body = tokens.join("\\s+");
-  // allow optional surrounding whitespace and dotAll/multiline
-  return new RegExp(`\\s*${body}\\s*`, "ms");
 }
 
 function saveGeneratedCode(parsedContent) {
@@ -5134,6 +5158,7 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("css").set(parsedContent.css);
   Fliplet.Helper.field("javascript").set(parsedContent.javascript);
   Fliplet.Helper.field("regenerateCode").set(true);
+  Fliplet.Helper.field("dataSourceId").set("");
 
   var data = Fliplet.Widget.getData();
   data.fields.dataSourceId = "";
@@ -5142,15 +5167,11 @@ function saveGeneratedCode(parsedContent) {
   data.fields.css = parsedContent.css;
   data.fields.javascript = parsedContent.javascript;
   data.fields.regenerateCode = true;
-  Fliplet.Helper.field("dataSourceId").set("");
+  data.fields.guid = Fliplet.Helper.field("guid").get();
+  data.fields.chatHistory = Fliplet.Helper.field("chatHistory").get();
 
   return Fliplet.Widget.save(data.fields).then(function () {
-    Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    // toggleLoaderCodeGeneration(false);
-    setTimeout(function () {
-      Fliplet.Helper.field("regenerateCode").set(false);
-      data.fields.regenerateCode = false;
-      Fliplet.Widget.save(data.fields);
-    }, 1000);
+    // Fliplet.Studio.emit("reload-widget-instance", widgetId);
+    Fliplet.Studio.emit("reload-page-preview");
   });
 }

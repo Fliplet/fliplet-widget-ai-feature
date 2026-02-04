@@ -34,6 +34,15 @@ Fliplet.Widget.generateInterface({
                   <li>The ability to query AI</li>
                 </ol>
                 <p>Note: Only the information in your prompt is shared with AI. AI cannot access your data or app.</p>
+                <p><strong>Custom AI Context</strong></p>
+                <p>Add custom instructions for AI in your Global or Screen JavaScript using:</p>
+                <pre id="ai-context-example" style="font-size: 11px; background: #f5f5f5; padding: 8px; border-radius: 4px; cursor: pointer;" title="Click to copy">/* @ai-context-start
+Available functions:
+- showAlert(message) - Display alert
+- saveData(form) - Save form data
+@ai-context-end */</pre>
+                <p><small><a href="#" id="copy-ai-context">Click to copy example</a></small></p>
+                <p>AI will use these when generating code.</p>
               </div>
             </div>
           </div>
@@ -191,6 +200,16 @@ Fliplet.Widget.generateInterface({
         window.debugLog = debugLog;
         window.debugError = debugError;
         window.debugWarn = debugWarn;
+
+        // Copy AI context example to clipboard
+        $('#copy-ai-context, #ai-context-example').on('click', function(e) {
+          e.preventDefault();
+          var $link = $('#copy-ai-context');
+          navigator.clipboard.writeText($('#ai-context-example').text());
+          $link.text('Copied!');
+          setTimeout(function() { $link.text('Click to copy example'); }, 1500);
+        });
+
         /**
          * CONFIGURATION - Modify these settings as needed
          * @type {Object}

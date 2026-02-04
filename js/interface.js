@@ -1404,6 +1404,21 @@ Fliplet.Widget.generateInterface({
               });
             }
 
+            // DIAGNOSTIC: Log detailed comparison before matching
+            debugLog("🔍 [StringReplacement] String comparison diagnostics:", {
+              targetType: instruction.target_type,
+              oldStringLength: oldString.length,
+              targetCodeLength: normalizedTargetCode.length,
+              oldStringFirst100: oldString.substring(0, 100).replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+              targetCodeFirst100: normalizedTargetCode.substring(0, 100).replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+              oldStringLast100: oldString.substring(Math.max(0, oldString.length - 100)).replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+              targetCodeLast100: normalizedTargetCode.substring(Math.max(0, normalizedTargetCode.length - 100)).replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+              oldStringHasNewlines: oldString.includes('\n'),
+              targetCodeHasNewlines: normalizedTargetCode.includes('\n'),
+              oldStringTrimmedLength: oldString.trim().length,
+              targetCodeTrimmedLength: normalizedTargetCode.trim().length,
+            });
+
             // DIAGNOSTIC: Log detailed state before blank detection
             debugLog(
               "🔍 [StringReplacement] DIAGNOSTIC - Target code analysis:",
@@ -1455,7 +1470,157 @@ Fliplet.Widget.generateInterface({
               index += oldString.length;
             }
 
+            // CASE 2b: If exact match fails, try whitespace-normalized matching
             if (count === 0) {
+              debugLog("⚠️ [StringReplacement] Exact match failed, trying whitespace-normalized matching...");
+              
+              // Normalize whitespace: normalize line endings and collapse consecutive whitespace
+              // This handles cases where AI provides \n but code has actual newlines, or vice versa
+              const normalizeWhitespace = (str) => {
+                return str
+                  .replace(/\r\n/g, '\n')  // Normalize CRLF to LF
+                  .replace(/\r/g, '\n')    // Normalize CR to LF
+                  .replace(/[ \t]+/g, ' ') // Collapse spaces/tabs to single space
+                  .replace(/ *\n */g, '\n') // Normalize spaces around newlines
+                  .replace(/\n{3,}/g, '\n\n'); // Collapse 3+ newlines to 2
+              };
+
+              const normalizedOldString = normalizeWhitespace(oldString);
+              
+              debugLog("🔍 [StringReplacement] Whitespace normalization:", {
+                originalOldLength: oldString.length,
+                normalizedOldLength: normalizedOldString.length,
+                originalOldPreview: oldString.substring(0, 150).replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+                normalizedOldPreview: normalizedOldString.substring(0, 150).replace(/\n/g, '\\n'),
+              });
+
+              // Try to find a substring in the original code that matches when normalized
+              // First, try to find a unique anchor point (first non-whitespace sequence)
+              const findAnchor = (str) => {
+                const match = str.match(/[^\s\n\r]{10,}/);
+                return match ? match[0].substring(0, 20) : null; // Use first 20 chars of anchor
+              };
+              
+              const anchor = findAnchor(normalizedOldString);
+              const potentialMatches = [];
+              
+              if (anchor) {
+                // Use anchor-based search for efficiency
+                let searchStart = 0;
+                while (true) {
+                  const anchorIndex = normalizedTargetCode.indexOf(anchor, searchStart);
+                  if (anchorIndex === -1) break;
+                  
+                  // Try matching around the anchor position
+                  const oldStringLength = oldString.length;
+                  const searchRange = Math.max(oldStringLength * 0.5, 100); // Search range
+                  const startPos = Math.max(0, anchorIndex - searchRange);
+                  const endPos = Math.min(normalizedTargetCode.length, anchorIndex + anchor.length + searchRange);
+                  
+                  // Try different substring lengths around the anchor
+                  for (let start = Math.max(0, anchorIndex - 100); start < anchorIndex + anchor.length; start++) {
+                    for (let len = Math.floor(oldStringLength * 0.8); len <= Math.min(oldStringLength * 1.2, endPos - start); len++) {
+                      if (start + len > normalizedTargetCode.length) break;
+                      
+                      const candidate = normalizedTargetCode.substring(start, start + len);
+                      const candidateNormalized = normalizeWhitespace(candidate);
+                      
+                      if (candidateNormalized === normalizedOldString) {
+                        potentialMatches.push({
+                          start: start,
+                          end: start + len,
+                          original: candidate,
+                          normalized: candidateNormalized
+                        });
+                        break; // Found a match, move to next anchor
+                      }
+                    }
+                    if (potentialMatches.length > 0 && potentialMatches[potentialMatches.length - 1].start === start) {
+                      break; // Found match at this start position
+                    }
+                  }
+                  
+                  if (potentialMatches.length > 0) {
+                    searchStart = potentialMatches[potentialMatches.length - 1].end;
+                  } else {
+                    searchStart = anchorIndex + 1;
+                  }
+                }
+              } else {
+                // Fallback: sliding window if no anchor found
+                const oldStringLength = oldString.length;
+                const searchWindow = Math.max(oldStringLength - 50, oldStringLength * 0.8);
+                const searchEnd = Math.min(oldStringLength + 50, normalizedTargetCode.length);
+                
+                for (let start = 0; start <= normalizedTargetCode.length - searchWindow; start++) {
+                  for (let len = Math.floor(searchWindow * 0.8); len <= Math.min(searchEnd, normalizedTargetCode.length - start); len++) {
+                    const candidate = normalizedTargetCode.substring(start, start + len);
+                    const candidateNormalized = normalizeWhitespace(candidate);
+                    
+                    if (candidateNormalized === normalizedOldString) {
+                      potentialMatches.push({
+                        start: start,
+                        end: start + len,
+                        original: candidate,
+                        normalized: candidateNormalized
+                      });
+                      break;
+                    }
+                  }
+                  if (potentialMatches.length > 0) break;
+                }
+              }
+
+              if (potentialMatches.length > 0) {
+                debugLog(`✅ [StringReplacement] Found ${potentialMatches.length} match(es) with whitespace normalization`);
+                
+                if (potentialMatches.length > 1 && !instruction.replace_all) {
+                  return {
+                    success: false,
+                    error: `Found ${potentialMatches.length} whitespace-normalized matches. Set "replace_all": true or provide more specific old_string.`,
+                  };
+                  }
+
+                // Use the first match (or all if replace_all is true)
+                if (instruction.replace_all) {
+                  // Replace all matches
+                  let resultCode = normalizedTargetCode;
+                  // Process from end to start to preserve indices
+                  for (let i = potentialMatches.length - 1; i >= 0; i--) {
+                    const match = potentialMatches[i];
+                    resultCode = resultCode.substring(0, match.start) +
+                      newString +
+                      resultCode.substring(match.end);
+                  }
+                  
+                  debugLog("✅ [StringReplacement] Successfully replaced all matches with whitespace normalization");
+                  return {
+                    success: true,
+                    newCode: resultCode,
+                    location: `${potentialMatches.length} location(s) (whitespace-normalized)`,
+                    oldLength: normalizedTargetCode.length,
+                    newLength: resultCode.length,
+                  };
+                } else {
+                  // Replace first match only
+                  const match = potentialMatches[0];
+                  const newCode = normalizedTargetCode.substring(0, match.start) +
+                    newString +
+                    normalizedTargetCode.substring(match.end);
+
+                  debugLog("✅ [StringReplacement] Successfully matched with whitespace normalization");
+                  return {
+                    success: true,
+                    newCode,
+                    location: `1 location (whitespace-normalized)`,
+                    oldLength: normalizedTargetCode.length,
+                    newLength: newCode.length,
+                  };
+                }
+              }
+
+              // If whitespace normalization also failed, return detailed error
+              debugLog("❌ [StringReplacement] Both exact and whitespace-normalized matching failed");
               return {
                 success: false,
                 error: this.buildNoMatchError(
@@ -1507,14 +1672,36 @@ Fliplet.Widget.generateInterface({
                 ? targetCode.substring(0, 300) + "..."
                 : targetCode;
 
+            // Show character-by-character comparison of first 50 chars
+            let charComparison = "";
+            const compareLength = Math.min(50, Math.min(oldString.length, targetCode.length));
+            for (let i = 0; i < compareLength; i++) {
+              const oldChar = oldString[i];
+              const targetChar = targetCode[i];
+              if (oldChar === targetChar) {
+                charComparison += oldChar === '\n' ? '\\n' : oldChar === '\r' ? '\\r' : oldChar === '\t' ? '\\t' : oldChar;
+              } else {
+                const oldRepr = oldChar === '\n' ? '\\n' : oldChar === '\r' ? '\\r' : oldChar === '\t' ? '\\t' : oldChar === ' ' ? '␣' : oldChar;
+                const targetRepr = targetChar === '\n' ? '\\n' : targetChar === '\r' ? '\\r' : targetChar === '\t' ? '\\t' : targetChar === ' ' ? '␣' : targetChar;
+                charComparison += `[DIFF: '${oldRepr}' vs '${targetRepr}']`;
+                break; // Stop at first difference
+              }
+            }
+
             let error = `Could not find exact match in ${targetType}.\n\n`;
-            error += `Looking for:\n"${oldPreview}"\n\n`;
+            error += `Looking for (${oldString.length} chars):\n"${oldPreview.replace(/\n/g, '\\n').replace(/\r/g, '\\r')}"\n\n`;
 
             if (targetCode.trim() === "") {
               error += `Current ${targetType} is empty. The system auto-detects blank screens - this error should not occur for empty code.`;
             } else {
-              error += `Current ${targetType} preview:\n"${codePreview}"\n\n`;
-              error += `💡 Tip: Make sure old_string matches exactly (including spacing, quotes, and line breaks).`;
+              error += `Current ${targetType} preview (${targetCode.length} chars):\n"${codePreview.replace(/\n/g, '\\n').replace(/\r/g, '\\r')}"\n\n`;
+              
+              if (charComparison) {
+                error += `Character comparison (first ${compareLength} chars):\n"${charComparison}"\n\n`;
+              }
+              
+              error += `💡 Tip: Make sure old_string matches exactly (including spacing, quotes, and line breaks).\n`;
+              error += `💡 The system tried whitespace-normalized matching but it also failed.`;
             }
 
             return error;

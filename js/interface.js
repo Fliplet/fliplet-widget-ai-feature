@@ -57,9 +57,15 @@ Fliplet.Widget.generateInterface({
       default: false,
     },
     {
+      type: "html",
+      html: `<p style="position: absolute; top: -45px; right: 15px; margin: 0; color: #666; font-size: 12px;">Version 3.0.0 (latest)</p>`,
+    },
+    // Hidden for production launch - model is set to gpt-5.2-reasoning-none by default
+    {
       type: "dropdown",
       name: "openaiModel",
       label: "OpenAI Model",
+      hidden: true,
       options: [
         "gpt-5.2-reasoning-none",
         "gpt-5.2-reasoning-low",
@@ -70,10 +76,10 @@ Fliplet.Widget.generateInterface({
         "gpt-5.1-reasoning-medium",
         "gpt-5.1-reasoning-high",
         "gpt-5.1-codex",
-        "gpt-5.1-codex-mini"
+        "gpt-5.1-codex-mini",
       ],
       default: "gpt-5.2-reasoning-none",
-      required: true
+      required: true,
     },
     {
       type: "html",
@@ -228,7 +234,7 @@ Fliplet.Widget.generateInterface({
 
         ("use strict");
         // Debug mode configuration - set to true to show console logs
-        const debugMode = true;
+        const debugMode = false;
 
         // Debug utility function to conditionally log console messages
         function debugLog(...args) {
@@ -368,7 +374,7 @@ Fliplet.Widget.generateInterface({
                   action: form.action || "",
                   method: form.method || "get",
                   fields: Array.from(
-                    form.querySelectorAll("input, select, textarea")
+                    form.querySelectorAll("input, select, textarea"),
                   ).map((field) => ({
                     name: field.name || "",
                     type: field.type || "",
@@ -450,7 +456,7 @@ Fliplet.Widget.generateInterface({
 
               // Extract media queries
               const mediaMatches = css.match(
-                /@media[^{]*\{[^{}]*(\{[^{}]*\}[^{}]*)*\}/g
+                /@media[^{]*\{[^{}]*(\{[^{}]*\}[^{}]*)*\}/g,
               );
               if (mediaMatches) {
                 analysis.mediaQueries = mediaMatches;
@@ -500,7 +506,7 @@ Fliplet.Widget.generateInterface({
 
               // Extract arrow functions and assignments
               const arrowMatches = js.match(
-                /(?:const|let|var)\s+(\w+)\s*=\s*\([^)]*\)\s*=>/g
+                /(?:const|let|var)\s+(\w+)\s*=\s*\([^)]*\)\s*=>/g,
               );
               if (arrowMatches) {
                 arrowMatches.forEach((match) => {
@@ -517,12 +523,12 @@ Fliplet.Widget.generateInterface({
 
               // Extract event handlers
               const eventMatches = js.match(
-                /addEventListener\s*\(\s*['"`](\w+)['"`]/g
+                /addEventListener\s*\(\s*['"`](\w+)['"`]/g,
               );
               if (eventMatches) {
                 eventMatches.forEach((match) => {
                   const eventMatch = match.match(
-                    /addEventListener\s*\(\s*['"`](\w+)['"`]/
+                    /addEventListener\s*\(\s*['"`](\w+)['"`]/,
                   );
                   if (eventMatch) {
                     analysis.eventHandlers.push({
@@ -535,13 +541,13 @@ Fliplet.Widget.generateInterface({
 
               debugLog(
                 "✅ [CodeAnalyzer] JavaScript analysis complete:",
-                analysis
+                analysis,
               );
               return analysis;
             } catch (error) {
               debugError(
                 "❌ [CodeAnalyzer] JavaScript analysis failed:",
-                error
+                error,
               );
               return { functions: [], eventHandlers: [], variables: [] };
             }
@@ -579,7 +585,7 @@ Fliplet.Widget.generateInterface({
             // Map HTML IDs to CSS selectors
             htmlAnalysis.ids.forEach((element) => {
               const relatedCSS = cssAnalysis.selectors.filter((selector) =>
-                selector.includes(`#${element.id}`)
+                selector.includes(`#${element.id}`),
               );
               if (relatedCSS.length > 0) {
                 crossRefs.htmlToCSS[`#${element.id}`] = relatedCSS;
@@ -589,7 +595,7 @@ Fliplet.Widget.generateInterface({
             // Map HTML classes to CSS selectors
             htmlAnalysis.classes.forEach((element) => {
               const relatedCSS = cssAnalysis.selectors.filter((selector) =>
-                selector.includes(`.${element.name}`)
+                selector.includes(`.${element.name}`),
               );
               if (relatedCSS.length > 0) {
                 crossRefs.htmlToCSS[`.${element.name}`] = relatedCSS;
@@ -620,7 +626,7 @@ Fliplet.Widget.generateInterface({
           buildContext(userMessage, currentCode, changeHistory) {
             debugLog(
               "🏗️ [ContextBuilder] Building context for message:",
-              userMessage
+              userMessage,
             );
 
             const intent = this.analyzeIntent(userMessage);
@@ -628,14 +634,14 @@ Fliplet.Widget.generateInterface({
 
             // Analyze current code structure
             const htmlAnalysis = this.codeAnalyzer.analyzeHTML(
-              currentCode.html
+              currentCode.html,
             );
             const cssAnalysis = this.codeAnalyzer.analyzeCSS(currentCode.css);
             const jsAnalysis = this.codeAnalyzer.analyzeJS(currentCode.js);
             const crossRefs = this.codeAnalyzer.findCrossReferences(
               htmlAnalysis,
               cssAnalysis,
-              jsAnalysis
+              jsAnalysis,
             );
 
             // Extract relevant sections based on intent
@@ -646,7 +652,7 @@ Fliplet.Widget.generateInterface({
                 htmlAnalysis,
                 cssAnalysis,
                 jsAnalysis,
-              }
+              },
             );
 
             const context = {
@@ -668,7 +674,7 @@ Fliplet.Widget.generateInterface({
             };
 
             debugLog("✅ [ContextBuilder] Context built:", context);
-            return context
+            return context;
           }
 
           /**
@@ -765,7 +771,7 @@ Fliplet.Widget.generateInterface({
               if (msg.includes("form") || msg.includes("input")) {
                 // Extract form-related HTML
                 const formMatches = currentCode.html.match(
-                  /<form[^>]*>[\s\S]*?<\/form>/gi
+                  /<form[^>]*>[\s\S]*?<\/form>/gi,
                 );
                 if (formMatches) {
                   sections.html.forms = formMatches.join("\n");
@@ -777,7 +783,7 @@ Fliplet.Widget.generateInterface({
                 if (msg.includes(element.id.toLowerCase())) {
                   const regex = new RegExp(
                     `<[^>]*id=["']${element.id}["'][^>]*>.*?</[^>]*>`,
-                    "gi"
+                    "gi",
                   );
                   const matches = currentCode.html.match(regex);
                   if (matches) {
@@ -797,9 +803,8 @@ Fliplet.Widget.generateInterface({
                   (msg.includes("form") && selector.includes("form")) ||
                   (msg.includes("button") && selector.includes("button"))
                 ) {
-                  sections.css[
-                    rule.selector
-                  ] = `${rule.selector} {\n${rule.declarations}\n}`;
+                  sections.css[rule.selector] =
+                    `${rule.selector} {\n${rule.declarations}\n}`;
                 }
               });
             }
@@ -817,7 +822,7 @@ Fliplet.Widget.generateInterface({
                   // Extract function body (simplified)
                   const funcRegex = new RegExp(
                     `function\\s+${func.name}[^{]*\\{[^}]*\\}`,
-                    "gi"
+                    "gi",
                   );
                   const matches = currentCode.js.match(funcRegex);
                   if (matches) {
@@ -860,7 +865,7 @@ Fliplet.Widget.generateInterface({
               const parsed = JSON.parse(response);
               debugLog(
                 "✅ [ProtocolParser] Structured JSON response parsed:",
-                parsed
+                parsed,
               );
 
               // Add request ID if not present
@@ -872,27 +877,27 @@ Fliplet.Widget.generateInterface({
             } catch (error) {
               debugError(
                 "❌ [ProtocolParser] Structured JSON parse failed:",
-                error
+                error,
               );
               debugLog("📄 [ProtocolParser] Full response that caused error:");
               debugLog("---START RESPONSE---");
               debugLog(response);
               debugLog("---END RESPONSE---");
               debugLog(
-                "🔧 [ProtocolParser] Falling back to legacy extraction methods"
+                "🔧 [ProtocolParser] Falling back to legacy extraction methods",
               );
 
               // Fallback to old extraction methods for backward compatibility
               const extractedJSON = this.extractJSON(response);
               if (extractedJSON) {
                 debugLog(
-                  "✅ [ProtocolParser] Legacy JSON extraction successful"
+                  "✅ [ProtocolParser] Legacy JSON extraction successful",
                 );
                 return this.validateStructure(extractedJSON);
               }
 
               debugLog(
-                "🔧 [ProtocolParser] Falling back to unstructured parsing"
+                "🔧 [ProtocolParser] Falling back to unstructured parsing",
               );
               return this.parseUnstructuredResponse(response);
             }
@@ -933,13 +938,13 @@ Fliplet.Widget.generateInterface({
                 const jsonStr = response.substring(jsonStart, jsonEnd);
                 debugLog(
                   "🎯 [ProtocolParser] Found JSON block:",
-                  jsonStr.substring(0, 100) + "..."
+                  jsonStr.substring(0, 100) + "...",
                 );
                 return JSON.parse(jsonStr);
               } catch (error) {
                 debugLog(
                   "❌ [ProtocolParser] Strategy 1 failed:",
-                  error.message
+                  error.message,
                 );
               }
             }
@@ -956,7 +961,7 @@ Fliplet.Widget.generateInterface({
               } catch (error) {
                 debugLog(
                   "❌ [ProtocolParser] Strategy 2 failed:",
-                  error.message
+                  error.message,
                 );
               }
             }
@@ -973,7 +978,7 @@ Fliplet.Widget.generateInterface({
               const jsonMatch = cleanedResponse.match(/\{[\s\S]*?\}/);
               if (jsonMatch) {
                 debugLog(
-                  "🎯 [ProtocolParser] Found JSON with cleaning strategy"
+                  "🎯 [ProtocolParser] Found JSON with cleaning strategy",
                 );
                 return JSON.parse(jsonMatch[0]);
               }
@@ -982,7 +987,7 @@ Fliplet.Widget.generateInterface({
             }
 
             debugLog(
-              "❌ [ProtocolParser] All JSON extraction strategies failed"
+              "❌ [ProtocolParser] All JSON extraction strategies failed",
             );
             return null;
           }
@@ -1032,7 +1037,7 @@ Fliplet.Widget.generateInterface({
 
             if (replacementInstructions.length > 0) {
               debugLog(
-                "🎯 [ProtocolParser] Found string replacement instructions"
+                "🎯 [ProtocolParser] Found string replacement instructions",
               );
               return {
                 type: "string_replacement",
@@ -1044,7 +1049,7 @@ Fliplet.Widget.generateInterface({
 
             // Fallback to code block extraction
             debugLog(
-              "🔄 [ProtocolParser] No replacement instructions found, extracting code blocks"
+              "🔄 [ProtocolParser] No replacement instructions found, extracting code blocks",
             );
 
             const changes = {
@@ -1061,7 +1066,7 @@ Fliplet.Widget.generateInterface({
                 const changeType = this.detectChangeType(
                   "html",
                   content,
-                  response
+                  response,
                 );
                 changes.html.push({
                   type: changeType,
@@ -1079,7 +1084,7 @@ Fliplet.Widget.generateInterface({
                 const changeType = this.detectChangeType(
                   "css",
                   content,
-                  response
+                  response,
                 );
                 changes.css.push({
                   type: changeType,
@@ -1091,18 +1096,18 @@ Fliplet.Widget.generateInterface({
 
             // Extract JS blocks
             const jsMatches = response.match(
-              /```(?:javascript|js)\n([\s\S]*?)\n```/gi
+              /```(?:javascript|js)\n([\s\S]*?)\n```/gi,
             );
             if (jsMatches) {
               jsMatches.forEach((match) => {
                 const content = match.replace(
                   /```(?:javascript|js)\n|\n```/gi,
-                  ""
+                  "",
                 );
                 const changeType = this.detectChangeType(
                   "js",
                   content,
-                  response
+                  response,
                 );
                 changes.js.push({
                   type: changeType,
@@ -1121,7 +1126,7 @@ Fliplet.Widget.generateInterface({
 
             debugLog(
               "✅ [ProtocolParser] Unstructured parsing complete:",
-              result
+              result,
             );
             return result;
           }
@@ -1176,7 +1181,7 @@ Fliplet.Widget.generateInterface({
             }
 
             debugLog(
-              `🔍 [ProtocolParser] Found ${instructions.length} replacement instructions`
+              `🔍 [ProtocolParser] Found ${instructions.length} replacement instructions`,
             );
             return instructions;
           }
@@ -1202,13 +1207,13 @@ Fliplet.Widget.generateInterface({
                 (response.includes("new") || response.includes("additional")))
             ) {
               debugLog(
-                `🎯 [ProtocolParser] Detected targeted change for ${codeType}: content has ${contentLines} lines`
+                `🎯 [ProtocolParser] Detected targeted change for ${codeType}: content has ${contentLines} lines`,
               );
               return codeType === "html"
                 ? "element_add"
                 : codeType === "css"
-                ? "rule_add"
-                : "function_add";
+                  ? "rule_add"
+                  : "function_add";
             }
 
             // Look for complete document structure
@@ -1219,14 +1224,14 @@ Fliplet.Widget.generateInterface({
                 content.includes("<body"))
             ) {
               debugLog(
-                "📄 [ProtocolParser] Detected full HTML document replacement"
+                "📄 [ProtocolParser] Detected full HTML document replacement",
               );
               return "full_replace";
             }
 
             // Default to replacement for now, but with better detection
             debugLog(
-              `🔄 [ProtocolParser] Defaulting to full replacement for ${codeType}`
+              `🔄 [ProtocolParser] Defaulting to full replacement for ${codeType}`,
             );
             return "full_replace";
           }
@@ -1270,11 +1275,11 @@ Fliplet.Widget.generateInterface({
            */
           async applyReplacements(instructions, currentCode) {
             debugLog(
-              "🔧 [StringReplacement] Applying replacement instructions..."
+              "🔧 [StringReplacement] Applying replacement instructions...",
             );
             debugLog(
               "🔧 [StringReplacement] Instructions received:",
-              JSON.stringify(instructions, null, 2)
+              JSON.stringify(instructions, null, 2),
             );
 
             const updatedCode = {
@@ -1293,7 +1298,7 @@ Fliplet.Widget.generateInterface({
               try {
                 const result = await this.applyInstruction(
                   instruction,
-                  updatedCode
+                  updatedCode,
                 );
 
                 if (result.success) {
@@ -1312,9 +1317,17 @@ Fliplet.Widget.generateInterface({
                   });
 
                   debugLog(
-                    `✅ [StringReplacement] Applied: ${instruction.description}`
+                    `✅ [StringReplacement] Applied: ${instruction.description}`,
                   );
                 } else {
+                  await logAiComponentUsage({
+                    "Chat history": AppState.chatHistory,
+                    instructions: instructions,
+                    currentCode: currentCode,
+                    result: result,
+                    type: "string_replacement_failed",
+                    state: 'result_success_false'
+                  });
                   debugError(`❌ [StringReplacement] Failed: ${result.error}`);
                   changeLog[instruction.target_type].push({
                     type: "string_replacement_failed",
@@ -1325,9 +1338,17 @@ Fliplet.Widget.generateInterface({
                   });
                 }
               } catch (error) {
+                await logAiComponentUsage({
+                  "Chat history": AppState.chatHistory,
+                  instructions: instructions,
+                  currentCode: currentCode,
+                  result: result,
+                  state: 'error',
+                  type: "string_replacement_error",
+                });
                 debugError(
                   `❌ [StringReplacement] Error processing instruction:`,
-                  error
+                  error,
                 );
                 changeLog[instruction.target_type || "html"].push({
                   type: "string_replacement_error",
@@ -1355,48 +1376,98 @@ Fliplet.Widget.generateInterface({
           async applyInstruction(instruction, currentCode) {
             debugLog(
               "🎯 [StringReplacement] Applying instruction:",
-              instruction
+              instruction,
             );
 
-            const validation = this.validateInstruction(instruction, currentCode);
+            const validation = this.validateInstruction(
+              instruction,
+              currentCode,
+            );
             if (!validation.valid) {
               return { success: false, error: validation.error };
             }
 
             const targetCode = currentCode[instruction.target_type] ?? "";
-            const oldString = instruction.old_string;
-            const newString = instruction.new_string;
 
-            // DIAGNOSTIC: Log detailed state before blank detection
-            debugLog("🔍 [StringReplacement] DIAGNOSTIC - Target code analysis:", {
+            // Strip delimiters from old_string and new_string if AI incorrectly included them
+            let oldString = this.stripDelimiters(instruction.old_string, instruction.target_type);
+            let newString = this.stripDelimiters(instruction.new_string, instruction.target_type);
+
+            // Normalize escaped characters (handle JSON-escaped newlines, tabs, etc.)
+            // This ensures oldString and targetCode are in the same format for comparison
+            oldString = this.normalizeEscapedCharacters(oldString);
+            newString = this.normalizeEscapedCharacters(newString);
+            const normalizedTargetCode = this.normalizeEscapedCharacters(targetCode);
+
+            // Log if delimiters were found and stripped
+            if (oldString !== instruction.old_string || newString !== instruction.new_string) {
+              debugLog("🔧 [StringReplacement] Stripped delimiters from AI response:", {
+                oldStringChanged: oldString !== instruction.old_string,
+                newStringChanged: newString !== instruction.new_string,
+                targetType: instruction.target_type
+              });
+            }
+
+            // Log if escaped characters were normalized
+            if (oldString !== instruction.old_string || normalizedTargetCode !== targetCode) {
+              debugLog("🔧 [StringReplacement] Normalized escaped characters:", {
+                oldStringNormalized: oldString !== instruction.old_string,
+                targetCodeNormalized: normalizedTargetCode !== targetCode,
+                targetType: instruction.target_type
+              });
+            }
+
+            // DIAGNOSTIC: Log detailed comparison before matching
+            debugLog("🔍 [StringReplacement] String comparison diagnostics:", {
               targetType: instruction.target_type,
-              targetCodeLength: targetCode.length,
-              targetCodeTrimmedLength: targetCode.trim().length,
-              targetCodePreview: targetCode.substring(0, 200) + "...",
-              targetCodeEnd: "..." + targetCode.substring(targetCode.length - 100),
-              isEmptyString: targetCode === "",
-              isWhitespaceOnly: targetCode.trim() === "",
-              currentCodeKeys: Object.keys(currentCode),
-              allCodeLengths: {
-                html: currentCode.html?.length || 0,
-                css: currentCode.css?.length || 0,
-                js: currentCode.js?.length || 0,
-              },
+              oldStringLength: oldString.length,
+              targetCodeLength: normalizedTargetCode.length,
+              oldStringFirst100: oldString.substring(0, 100).replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+              targetCodeFirst100: normalizedTargetCode.substring(0, 100).replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+              oldStringLast100: oldString.substring(Math.max(0, oldString.length - 100)).replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+              targetCodeLast100: normalizedTargetCode.substring(Math.max(0, normalizedTargetCode.length - 100)).replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+              oldStringHasNewlines: oldString.includes('\n'),
+              targetCodeHasNewlines: normalizedTargetCode.includes('\n'),
+              oldStringTrimmedLength: oldString.trim().length,
+              targetCodeTrimmedLength: normalizedTargetCode.trim().length,
             });
 
+            // DIAGNOSTIC: Log detailed state before blank detection
+            debugLog(
+              "🔍 [StringReplacement] DIAGNOSTIC - Target code analysis:",
+              {
+                targetType: instruction.target_type,
+                targetCodeLength: normalizedTargetCode.length,
+                targetCodeTrimmedLength: normalizedTargetCode.trim().length,
+                targetCodePreview: normalizedTargetCode.substring(0, 200) + "...",
+                targetCodeEnd:
+                  "..." + normalizedTargetCode.substring(normalizedTargetCode.length - 100),
+                isEmptyString: normalizedTargetCode === "",
+                isWhitespaceOnly: normalizedTargetCode.trim() === "",
+                currentCodeKeys: Object.keys(currentCode),
+                allCodeLengths: {
+                  html: currentCode.html?.length || 0,
+                  css: currentCode.css?.length || 0,
+                  js: currentCode.js?.length || 0,
+                },
+              },
+            );
+
             // CASE 1: Blank screen detection (auto-detect, no markers needed)
-            const isBlankCode = targetCode.trim() === "";
+            const isBlankCode = normalizedTargetCode.trim() === "";
 
             if (isBlankCode) {
               debugLog(
-                `🆕 [StringReplacement] Blank ${instruction.target_type} detected, inserting new code directly`
+                `🆕 [StringReplacement] Blank ${instruction.target_type} detected, inserting new code directly`,
               );
-              debugLog("⚠️ [StringReplacement] WARNING: Blank detected - verify currentCode was passed correctly!");
+              debugLog(
+                "⚠️ [StringReplacement] WARNING: Blank detected - verify currentCode was passed correctly!",
+              );
               return {
                 success: true,
                 newCode: newString,
                 location: "entire content (new)",
-                oldLength: targetCode.length,
+                oldLength: normalizedTargetCode.length,
                 newLength: newString.length,
               };
             }
@@ -1406,19 +1477,169 @@ Fliplet.Widget.generateInterface({
             let count = 0;
             const positions = [];
 
-            while ((index = targetCode.indexOf(oldString, index)) !== -1) {
+            while ((index = normalizedTargetCode.indexOf(oldString, index)) !== -1) {
               positions.push(index);
               count++;
               index += oldString.length;
             }
 
+            // CASE 2b: If exact match fails, try whitespace-normalized matching
             if (count === 0) {
+              debugLog("⚠️ [StringReplacement] Exact match failed, trying whitespace-normalized matching...");
+
+              // Normalize whitespace: normalize line endings and collapse consecutive whitespace
+              // This handles cases where AI provides \n but code has actual newlines, or vice versa
+              const normalizeWhitespace = (str) => {
+                return str
+                  .replace(/\r\n/g, '\n')  // Normalize CRLF to LF
+                  .replace(/\r/g, '\n')    // Normalize CR to LF
+                  .replace(/[ \t]+/g, ' ') // Collapse spaces/tabs to single space
+                  .replace(/ *\n */g, '\n') // Normalize spaces around newlines
+                  .replace(/\n{3,}/g, '\n\n'); // Collapse 3+ newlines to 2
+              };
+
+              const normalizedOldString = normalizeWhitespace(oldString);
+
+              debugLog("🔍 [StringReplacement] Whitespace normalization:", {
+                originalOldLength: oldString.length,
+                normalizedOldLength: normalizedOldString.length,
+                originalOldPreview: oldString.substring(0, 150).replace(/\n/g, '\\n').replace(/\r/g, '\\r'),
+                normalizedOldPreview: normalizedOldString.substring(0, 150).replace(/\n/g, '\\n'),
+              });
+
+              // Try to find a substring in the original code that matches when normalized
+              // First, try to find a unique anchor point (first non-whitespace sequence)
+              const findAnchor = (str) => {
+                const match = str.match(/[^\s\n\r]{10,}/);
+                return match ? match[0].substring(0, 20) : null; // Use first 20 chars of anchor
+              };
+
+              const anchor = findAnchor(normalizedOldString);
+              const potentialMatches = [];
+
+              if (anchor) {
+                // Use anchor-based search for efficiency
+                let searchStart = 0;
+                while (true) {
+                  const anchorIndex = normalizedTargetCode.indexOf(anchor, searchStart);
+                  if (anchorIndex === -1) break;
+
+                  // Try matching around the anchor position
+                  const oldStringLength = oldString.length;
+                  const searchRange = Math.max(oldStringLength * 0.5, 100); // Search range
+                  const startPos = Math.max(0, anchorIndex - searchRange);
+                  const endPos = Math.min(normalizedTargetCode.length, anchorIndex + anchor.length + searchRange);
+
+                  // Try different substring lengths around the anchor
+                  for (let start = Math.max(0, anchorIndex - 100); start < anchorIndex + anchor.length; start++) {
+                    for (let len = Math.floor(oldStringLength * 0.8); len <= Math.min(oldStringLength * 1.2, endPos - start); len++) {
+                      if (start + len > normalizedTargetCode.length) break;
+
+                      const candidate = normalizedTargetCode.substring(start, start + len);
+                      const candidateNormalized = normalizeWhitespace(candidate);
+
+                      if (candidateNormalized === normalizedOldString) {
+                        potentialMatches.push({
+                          start: start,
+                          end: start + len,
+                          original: candidate,
+                          normalized: candidateNormalized
+                        });
+                        break; // Found a match, move to next anchor
+                      }
+                    }
+                    if (potentialMatches.length > 0 && potentialMatches[potentialMatches.length - 1].start === start) {
+                      break; // Found match at this start position
+                    }
+                  }
+
+                  if (potentialMatches.length > 0) {
+                    searchStart = potentialMatches[potentialMatches.length - 1].end;
+                  } else {
+                    searchStart = anchorIndex + 1;
+                  }
+                }
+              } else {
+                // Fallback: sliding window if no anchor found
+                const oldStringLength = oldString.length;
+                const searchWindow = Math.max(oldStringLength - 50, oldStringLength * 0.8);
+                const searchEnd = Math.min(oldStringLength + 50, normalizedTargetCode.length);
+
+                for (let start = 0; start <= normalizedTargetCode.length - searchWindow; start++) {
+                  for (let len = Math.floor(searchWindow * 0.8); len <= Math.min(searchEnd, normalizedTargetCode.length - start); len++) {
+                    const candidate = normalizedTargetCode.substring(start, start + len);
+                    const candidateNormalized = normalizeWhitespace(candidate);
+
+                    if (candidateNormalized === normalizedOldString) {
+                      potentialMatches.push({
+                        start: start,
+                        end: start + len,
+                        original: candidate,
+                        normalized: candidateNormalized
+                      });
+                      break;
+                    }
+                  }
+                  if (potentialMatches.length > 0) break;
+                }
+              }
+
+              if (potentialMatches.length > 0) {
+                debugLog(`✅ [StringReplacement] Found ${potentialMatches.length} match(es) with whitespace normalization`);
+
+                if (potentialMatches.length > 1 && !instruction.replace_all) {
+                  return {
+                    success: false,
+                    error: `Found ${potentialMatches.length} whitespace-normalized matches. Set "replace_all": true or provide more specific old_string.`,
+                  };
+                  }
+
+                // Use the first match (or all if replace_all is true)
+                if (instruction.replace_all) {
+                  // Replace all matches
+                  let resultCode = normalizedTargetCode;
+                  // Process from end to start to preserve indices
+                  for (let i = potentialMatches.length - 1; i >= 0; i--) {
+                    const match = potentialMatches[i];
+                    resultCode = resultCode.substring(0, match.start) +
+                      newString +
+                      resultCode.substring(match.end);
+                  }
+
+                  debugLog("✅ [StringReplacement] Successfully replaced all matches with whitespace normalization");
+                  return {
+                    success: true,
+                    newCode: resultCode,
+                    location: `${potentialMatches.length} location(s) (whitespace-normalized)`,
+                    oldLength: normalizedTargetCode.length,
+                    newLength: resultCode.length,
+                  };
+                } else {
+                  // Replace first match only
+                  const match = potentialMatches[0];
+                  const newCode = normalizedTargetCode.substring(0, match.start) +
+                    newString +
+                    normalizedTargetCode.substring(match.end);
+
+                  debugLog("✅ [StringReplacement] Successfully matched with whitespace normalization");
+                  return {
+                    success: true,
+                    newCode,
+                    location: `1 location (whitespace-normalized)`,
+                    oldLength: normalizedTargetCode.length,
+                    newLength: newCode.length,
+                  };
+                }
+              }
+
+              // If whitespace normalization also failed, return detailed error
+              debugLog("❌ [StringReplacement] Both exact and whitespace-normalized matching failed");
               return {
                 success: false,
                 error: this.buildNoMatchError(
                   oldString,
-                  targetCode,
-                  instruction.target_type
+                  normalizedTargetCode,
+                  instruction.target_type,
                 ),
               };
             }
@@ -1430,18 +1651,18 @@ Fliplet.Widget.generateInterface({
               };
             }
 
-            // Perform replacement
+            // Perform replacement on normalized code
             const newCode = instruction.replace_all
-              ? targetCode.split(oldString).join(newString)
-              : targetCode.substring(0, positions[0]) +
+              ? normalizedTargetCode.split(oldString).join(newString)
+              : normalizedTargetCode.substring(0, positions[0]) +
                 newString +
-                targetCode.substring(positions[0] + oldString.length);
+                normalizedTargetCode.substring(positions[0] + oldString.length);
 
             return {
               success: true,
               newCode,
               location: `${count} location(s)`,
-              oldLength: targetCode.length,
+              oldLength: normalizedTargetCode.length,
               newLength: newCode.length,
             };
           }
@@ -1464,14 +1685,36 @@ Fliplet.Widget.generateInterface({
                 ? targetCode.substring(0, 300) + "..."
                 : targetCode;
 
+            // Show character-by-character comparison of first 50 chars
+            let charComparison = "";
+            const compareLength = Math.min(50, Math.min(oldString.length, targetCode.length));
+            for (let i = 0; i < compareLength; i++) {
+              const oldChar = oldString[i];
+              const targetChar = targetCode[i];
+              if (oldChar === targetChar) {
+                charComparison += oldChar === '\n' ? '\\n' : oldChar === '\r' ? '\\r' : oldChar === '\t' ? '\\t' : oldChar;
+              } else {
+                const oldRepr = oldChar === '\n' ? '\\n' : oldChar === '\r' ? '\\r' : oldChar === '\t' ? '\\t' : oldChar === ' ' ? '␣' : oldChar;
+                const targetRepr = targetChar === '\n' ? '\\n' : targetChar === '\r' ? '\\r' : targetChar === '\t' ? '\\t' : targetChar === ' ' ? '␣' : targetChar;
+                charComparison += `[DIFF: '${oldRepr}' vs '${targetRepr}']`;
+                break; // Stop at first difference
+              }
+            }
+
             let error = `Could not find exact match in ${targetType}.\n\n`;
-            error += `Looking for:\n"${oldPreview}"\n\n`;
+            error += `Looking for (${oldString.length} chars):\n"${oldPreview.replace(/\n/g, '\\n').replace(/\r/g, '\\r')}"\n\n`;
 
             if (targetCode.trim() === "") {
               error += `Current ${targetType} is empty. The system auto-detects blank screens - this error should not occur for empty code.`;
             } else {
-              error += `Current ${targetType} preview:\n"${codePreview}"\n\n`;
-              error += `💡 Tip: Make sure old_string matches exactly (including spacing, quotes, and line breaks).`;
+              error += `Current ${targetType} preview (${targetCode.length} chars):\n"${codePreview.replace(/\n/g, '\\n').replace(/\r/g, '\\r')}"\n\n`;
+
+              if (charComparison) {
+                error += `Character comparison (first ${compareLength} chars):\n"${charComparison}"\n\n`;
+              }
+
+              error += `💡 Tip: Make sure old_string matches exactly (including spacing, quotes, and line breaks).\n`;
+              error += `💡 The system tried whitespace-normalized matching but it also failed.`;
             }
 
             return error;
@@ -1486,7 +1729,7 @@ Fliplet.Widget.generateInterface({
           validateInstruction(instruction, currentCode) {
             debugLog(
               "✅ [StringReplacement] Validating instruction:",
-              JSON.stringify(instruction, null, 2)
+              JSON.stringify(instruction, null, 2),
             );
 
             // Check target_type
@@ -1561,6 +1804,81 @@ Fliplet.Widget.generateInterface({
               return "\\" + match;
             });
           }
+
+          /**
+           * Normalize escaped characters in strings
+           * Converts escaped sequences like \\n, \\t, \\r to actual characters
+           * This handles cases where JSON parsing leaves escaped characters as literal strings
+           * @param {string} str - String that might contain escaped characters
+           * @returns {string} String with escaped characters normalized
+           */
+          normalizeEscapedCharacters(str) {
+            if (!str || typeof str !== 'string') {
+              return str;
+            }
+
+            // Replace common escaped sequences with actual characters
+            // Handle double backslashes first (mark them temporarily) to avoid double-processing
+            return str
+              .replace(/\\\\/g, '\u0001') // Temporary marker for literal double backslash
+              .replace(/\\n/g, '\n')      // Escaped newline -> actual newline
+              .replace(/\\t/g, '\t')      // Escaped tab -> actual tab
+              .replace(/\\r/g, '\r')      // Escaped carriage return -> actual CR
+              .replace(/\\"/g, '"')       // Escaped quote -> actual quote
+              .replace(/\\'/g, "'")       // Escaped apostrophe -> actual apostrophe
+              .replace(/\u0001/g, '\\');  // Restore literal double backslashes
+          }
+
+          /**
+           * Strip delimiter comments from code strings
+           * The AI sometimes incorrectly includes delimiters in old_string/new_string,
+           * but these delimiters are NOT stored in the widget fields - only added during injection.
+           * @param {string} codeString - Code that might contain delimiters
+           * @param {string} targetType - Type of code (html/css/js)
+           * @returns {string} Code with delimiters removed
+           */
+          stripDelimiters(codeString, targetType) {
+            if (!codeString || typeof codeString !== 'string') {
+              return codeString;
+            }
+
+            const guid = getGuidFromComponent();
+            let start, end;
+
+            if (targetType === 'js') {
+              start = `// start-ai-feature ${guid}`;
+              end = `// end-ai-feature ${guid}`;
+            } else if (targetType === 'css') {
+              start = `/* start-ai-feature ${guid} */`;
+              end = `/* end-ai-feature ${guid} */`;
+            } else {
+              // No delimiters for HTML
+              return codeString;
+            }
+
+            // Check if the string starts with the delimiter
+            let result = codeString;
+
+            // Remove start delimiter (with optional newline)
+            if (result.startsWith(start)) {
+              result = result.substring(start.length);
+              // Remove leading newline if present
+              if (result.startsWith('\n')) {
+                result = result.substring(1);
+              }
+            }
+
+            // Remove end delimiter (with optional newline before it)
+            if (result.endsWith(end)) {
+              result = result.substring(0, result.length - end.length);
+              // Remove trailing newline if present
+              if (result.endsWith('\n')) {
+                result = result.substring(0, result.length - 1);
+              }
+            }
+
+            return result;
+          }
         }
 
         /**
@@ -1596,7 +1914,7 @@ Fliplet.Widget.generateInterface({
               // Layer 3: Semantic Validation
               const semanticResult = this.validateSemantics(
                 changeRequest,
-                currentCode
+                currentCode,
               );
               results.details.semantic = semanticResult;
 
@@ -1620,7 +1938,7 @@ Fliplet.Widget.generateInterface({
                 `${
                   results.valid ? "✅" : "❌"
                 } [ValidationEngine] Validation complete:`,
-                results
+                results,
               );
               return results;
             } catch (error) {
@@ -1683,7 +2001,7 @@ Fliplet.Widget.generateInterface({
               `${
                 result.valid ? "✅" : "❌"
               } [ValidationEngine] Protocol validation:`,
-              result
+              result,
             );
             return result;
           }
@@ -1707,11 +2025,11 @@ Fliplet.Widget.generateInterface({
               if (changeRequest.changes.html) {
                 for (const htmlChange of changeRequest.changes.html) {
                   const htmlResult = this.validateHTMLSyntax(
-                    htmlChange.content
+                    htmlChange.content,
                   );
                   if (!htmlResult.valid) {
                     result.errors.push(
-                      `HTML syntax error: ${htmlResult.error}`
+                      `HTML syntax error: ${htmlResult.error}`,
                     );
                     result.valid = false;
                   }
@@ -1748,7 +2066,7 @@ Fliplet.Widget.generateInterface({
               `${
                 result.valid ? "✅" : "❌"
               } [ValidationEngine] Syntax validation:`,
-              result
+              result,
             );
             return result;
           }
@@ -1878,11 +2196,11 @@ Fliplet.Widget.generateInterface({
               const validationResult =
                 await this.validationEngine.validateChanges(
                   changeRequest,
-                  currentCode
+                  currentCode,
                 );
               if (!validationResult.valid) {
                 throw new Error(
-                  `Validation failed: ${validationResult.errors.join(", ")}`
+                  `Validation failed: ${validationResult.errors.join(", ")}`,
                 );
               }
 
@@ -1907,7 +2225,7 @@ Fliplet.Widget.generateInterface({
                 debugLog("🔧 [ChangeApplicator] Applying HTML changes...");
                 const htmlResult = this.applyHTMLChanges(
                   changeRequest.changes.html,
-                  updatedCode.html
+                  updatedCode.html,
                 );
                 updatedCode.html = htmlResult.code;
                 changeLog.html = htmlResult.changes;
@@ -1921,7 +2239,7 @@ Fliplet.Widget.generateInterface({
                 debugLog("🔧 [ChangeApplicator] Applying CSS changes...");
                 const cssResult = this.applyCSSChanges(
                   changeRequest.changes.css,
-                  updatedCode.css
+                  updatedCode.css,
                 );
                 updatedCode.css = cssResult.code;
                 changeLog.css = cssResult.changes;
@@ -1935,7 +2253,7 @@ Fliplet.Widget.generateInterface({
                 debugLog("🔧 [ChangeApplicator] Applying JS changes...");
                 const jsResult = this.applyJSChanges(
                   changeRequest.changes.js,
-                  updatedCode.js
+                  updatedCode.js,
                 );
                 updatedCode.js = jsResult.code;
                 changeLog.js = jsResult.changes;
@@ -1973,7 +2291,7 @@ Fliplet.Widget.generateInterface({
             htmlChanges.forEach((change, index) => {
               debugLog(
                 `🔄 [ChangeApplicator] HTML Change ${index + 1}:`,
-                change.type
+                change.type,
               );
 
               switch (change.type) {
@@ -1986,7 +2304,7 @@ Fliplet.Widget.generateInterface({
                   const actualChanges = this.detectActualChanges(
                     oldHTML,
                     updatedHTML,
-                    "html"
+                    "html",
                   );
                   changes.push({
                     type: "full_replace",
@@ -2002,7 +2320,7 @@ Fliplet.Widget.generateInterface({
                   // Smart addition - try to add in appropriate location
                   const insertionPoint = this.findInsertionPoint(
                     updatedHTML,
-                    change.content
+                    change.content,
                   );
 
                   if (insertionPoint.found) {
@@ -2028,7 +2346,7 @@ Fliplet.Widget.generateInterface({
                 default:
                   debugWarn(
                     "⚠️ [ChangeApplicator] Unknown HTML change type:",
-                    change.type
+                    change.type,
                   );
               }
             });
@@ -2116,17 +2434,17 @@ Fliplet.Widget.generateInterface({
               newElement.includes("<textarea")
             ) {
               const formMatch = html.match(
-                /(<form[^>]*>)([\s\S]*?)(<\/form>)/i
+                /(<form[^>]*>)([\s\S]*?)(<\/form>)/i,
               );
               if (formMatch) {
                 // Insert before closing form tag
                 const beforeForm = html.substring(
                   0,
-                  formMatch.index + formMatch[1].length
+                  formMatch.index + formMatch[1].length,
                 );
                 const formContent = formMatch[2];
                 const afterForm = html.substring(
-                  formMatch.index + formMatch[1].length + formContent.length
+                  formMatch.index + formMatch[1].length + formContent.length,
                 );
 
                 const result =
@@ -2150,11 +2468,11 @@ Fliplet.Widget.generateInterface({
             if (bodyMatch) {
               const beforeBody = html.substring(
                 0,
-                bodyMatch.index + bodyMatch[1].length
+                bodyMatch.index + bodyMatch[1].length,
               );
               const bodyContent = bodyMatch[2];
               const afterBody = html.substring(
-                bodyMatch.index + bodyMatch[1].length + bodyContent.length
+                bodyMatch.index + bodyMatch[1].length + bodyContent.length,
               );
 
               const result =
@@ -2190,7 +2508,7 @@ Fliplet.Widget.generateInterface({
             cssChanges.forEach((change, index) => {
               debugLog(
                 `🔄 [ChangeApplicator] CSS Change ${index + 1}:`,
-                change.type
+                change.type,
               );
 
               switch (change.type) {
@@ -2220,7 +2538,7 @@ Fliplet.Widget.generateInterface({
                 default:
                   debugWarn(
                     "⚠️ [ChangeApplicator] Unknown CSS change type:",
-                    change.type
+                    change.type,
                   );
               }
             });
@@ -2243,7 +2561,7 @@ Fliplet.Widget.generateInterface({
             jsChanges.forEach((change, index) => {
               debugLog(
                 `🔄 [ChangeApplicator] JS Change ${index + 1}:`,
-                change.type
+                change.type,
               );
 
               switch (change.type) {
@@ -2273,7 +2591,7 @@ Fliplet.Widget.generateInterface({
                 default:
                   debugWarn(
                     "⚠️ [ChangeApplicator] Unknown JS change type:",
-                    change.type
+                    change.type,
                   );
               }
             });
@@ -2404,7 +2722,7 @@ Fliplet.Widget.generateInterface({
           for (const elementName of requiredElements) {
             if (!DOM[elementName]) {
               throw new TypeError(
-                `Required DOM element '${elementName}' not found`
+                `Required DOM element '${elementName}' not found`,
               );
             }
           }
@@ -2422,17 +2740,20 @@ Fliplet.Widget.generateInterface({
           }
 
           // Set up periodic cleanup of old file signatures and orphaned signatures (every 10 minutes)
-          setInterval(() => {
-            if (AppState.processedFileSignatures.size > 100) {
-              debugLog(
-                "🧹 Cleaning up old file signatures to prevent memory bloat"
-              );
-              AppState.processedFileSignatures.clear();
-            } else {
-              // Clean up orphaned signatures even if we're under the limit
-              cleanupOrphanedFileSignatures();
-            }
-          }, 10 * 60 * 1000); // 10 minutes
+          setInterval(
+            () => {
+              if (AppState.processedFileSignatures.size > 100) {
+                debugLog(
+                  "🧹 Cleaning up old file signatures to prevent memory bloat",
+                );
+                AppState.processedFileSignatures.clear();
+              } else {
+                // Clean up orphaned signatures even if we're under the limit
+                cleanupOrphanedFileSignatures();
+              }
+            },
+            10 * 60 * 1000,
+          ); // 10 minutes
 
           // Handle window resize to maintain textarea sizing
           window.addEventListener("resize", function () {
@@ -2450,7 +2771,7 @@ Fliplet.Widget.generateInterface({
         function setupEventListeners() {
           console.assert(
             DOM.sendBtn && DOM.userInput,
-            "Send button and input field must exist"
+            "Send button and input field must exist",
           );
 
           // Send message on button click
@@ -2532,7 +2853,7 @@ Fliplet.Widget.generateInterface({
               debugError("❌ Button HTML:", this.outerHTML);
               debugError(
                 "❌ Parent container:",
-                this.closest(".pasted-image-container")
+                this.closest(".pasted-image-container"),
               );
             }
           });
@@ -2954,7 +3275,7 @@ Fliplet.Widget.generateInterface({
               img &&
               img.status === "uploaded" &&
               img.flipletUrl &&
-              img.flipletFileId
+              img.flipletFileId,
           );
 
           // Input validation
@@ -2998,16 +3319,16 @@ Fliplet.Widget.generateInterface({
         async function processUserMessage(
           userMessage,
           pastedImages = [],
-          AppState
+          AppState,
         ) {
           console.assert(
             typeof userMessage === "string",
-            "userMessage must be a string"
+            "userMessage must be a string",
           );
 
           AppState.requestCount++;
           debugLog(
-            `🚀 [Main] Processing request #${AppState.requestCount}: "${userMessage}"`
+            `🚀 [Main] Processing request #${AppState.requestCount}: "${userMessage}"`,
           );
 
           // Create streaming UI with status line, toggle, and cancel button
@@ -3020,9 +3341,11 @@ Fliplet.Widget.generateInterface({
             await populateCurrentPageContent();
 
             // Now read from Helper fields (just populated by populateCurrentPageContent)
-            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+            AppState.layoutHTML =
+              Fliplet.Helper.field("layoutHTML").get() || "";
             AppState.css = Fliplet.Helper.field("css").get() || "";
-            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+            AppState.javascript =
+              Fliplet.Helper.field("javascript").get() || "";
 
             AppState.currentHTML = AppState.layoutHTML;
             AppState.currentCSS = AppState.css;
@@ -3036,11 +3359,16 @@ Fliplet.Widget.generateInterface({
               htmlIsEmpty: AppState.currentHTML.trim() === "",
             });
           } catch (fetchError) {
-            debugError("⚠️ [Main] Error fetching current page content:", fetchError);
+            debugError(
+              "⚠️ [Main] Error fetching current page content:",
+              fetchError,
+            );
             // Fallback to existing Helper field values
-            AppState.layoutHTML = Fliplet.Helper.field("layoutHTML").get() || "";
+            AppState.layoutHTML =
+              Fliplet.Helper.field("layoutHTML").get() || "";
             AppState.css = Fliplet.Helper.field("css").get() || "";
-            AppState.javascript = Fliplet.Helper.field("javascript").get() || "";
+            AppState.javascript =
+              Fliplet.Helper.field("javascript").get() || "";
 
             AppState.currentHTML = AppState.layoutHTML;
             AppState.currentCSS = AppState.css;
@@ -3070,7 +3398,7 @@ Fliplet.Widget.generateInterface({
             const context = contextBuilder.buildContext(
               userMessage,
               currentCode,
-              AppState.changeHistory
+              AppState.changeHistory,
             );
 
             // Log what context we're sending
@@ -3091,7 +3419,7 @@ Fliplet.Widget.generateInterface({
                 img &&
                 img.status === "uploaded" &&
                 img.flipletUrl &&
-                img.flipletFileId
+                img.flipletFileId,
             );
 
             debugLog("📸 [Main] Current images for AI processing:", {
@@ -3146,7 +3474,7 @@ Fliplet.Widget.generateInterface({
             // CRITICAL: If no valid images remain, log this clearly
             if (currentImages.length === 0) {
               debugLog(
-                "ℹ️ [Main] No valid images remain - sending text-only request to AI"
+                "ℹ️ [Main] No valid images remain - sending text-only request to AI",
               );
             }
 
@@ -3164,7 +3492,7 @@ Fliplet.Widget.generateInterface({
             const aiResponse = await callOpenAIWithNewArchitecture(
               userMessage,
               context,
-              currentImages
+              currentImages,
             );
 
             // Check if the request was cancelled (aiResponse will be null)
@@ -3218,13 +3546,13 @@ Fliplet.Widget.generateInterface({
               applicationResult =
                 await stringReplacementEngine.applyReplacements(
                   changeRequest.instructions,
-                  currentCode
+                  currentCode,
                 );
             } else {
               debugLog("🔄 [Main] Using traditional change applicator...");
               applicationResult = await changeApplicator.applyChanges(
                 changeRequest,
-                currentCode
+                currentCode,
               );
             }
 
@@ -3287,7 +3615,7 @@ Fliplet.Widget.generateInterface({
             } else {
               // For string_replacement type, show explanation with change summary
               const changesSummary = generateChangesSummary(
-                applicationResult.changeLog
+                applicationResult.changeLog,
               );
               aiResponseText = `${changeRequest.explanation}\n\n${changesSummary}`;
               debugLog("🔧 [Main] Displaying code changes to user");
@@ -3322,7 +3650,7 @@ Fliplet.Widget.generateInterface({
             }
 
             debugLog(
-              `✅ [Main] Request #${AppState.requestCount} completed successfully`
+              `✅ [Main] Request #${AppState.requestCount} completed successfully`,
             );
           } catch (error) {
             // Show error state in streaming UI (if visible) then remove it
@@ -3335,7 +3663,7 @@ Fliplet.Widget.generateInterface({
 
             debugError(
               `❌ [Main] Request #${AppState.requestCount} failed:`,
-              error
+              error,
             );
 
             // Add detailed error message
@@ -3388,7 +3716,7 @@ Fliplet.Widget.generateInterface({
          * @param {string} accumulatedText - Text accumulated during streaming (optional)
          * @returns {string} Extracted AI response text
          */
-        function extractTextFromResponsesAPI(response, accumulatedText = '') {
+        function extractTextFromResponsesAPI(response, accumulatedText = "") {
           debugLog("🔍 [AI] Extracting text from Responses API format...");
 
           // Validate response structure
@@ -3400,14 +3728,22 @@ Fliplet.Widget.generateInterface({
             throw new Error("Invalid response format from AI API");
           }
 
-          let aiResponse = '';
+          let aiResponse = "";
 
           // Find the message object in the output array
           // (reasoning models have "reasoning" object first, then "message" object)
-          const messageOutput = response.output.find(item => item.type === 'message');
+          const messageOutput = response.output.find(
+            (item) => item.type === "message",
+          );
 
-          if (messageOutput && messageOutput.content && Array.isArray(messageOutput.content)) {
-            const textContent = messageOutput.content.find(item => item.type === 'output_text');
+          if (
+            messageOutput &&
+            messageOutput.content &&
+            Array.isArray(messageOutput.content)
+          ) {
+            const textContent = messageOutput.content.find(
+              (item) => item.type === "output_text",
+            );
             if (textContent && textContent.text) {
               aiResponse = textContent.text;
             }
@@ -3415,18 +3751,23 @@ Fliplet.Widget.generateInterface({
 
           // Fallback to accumulated text if extraction fails
           if (!aiResponse && accumulatedText) {
-            debugWarn("⚠️ [AI] Could not extract from output structure, using accumulated text");
+            debugWarn(
+              "⚠️ [AI] Could not extract from output structure, using accumulated text",
+            );
             aiResponse = accumulatedText;
           }
 
           if (!aiResponse) {
-            debugError("❌ [AI] Failed to extract text from response. Output structure:", response.output);
+            debugError(
+              "❌ [AI] Failed to extract text from response. Output structure:",
+              response.output,
+            );
             throw new Error("Could not extract text from response output");
           }
 
           debugLog("📥 [AI] Response extracted successfully:", {
             length: aiResponse.length,
-            preview: aiResponse.substring(0, 200) + "..."
+            preview: aiResponse.substring(0, 200) + "...",
           });
 
           return aiResponse;
@@ -3441,12 +3782,14 @@ Fliplet.Widget.generateInterface({
         async function callOpenAIWithNewArchitecture(
           userMessage,
           context,
-          pastedImages = []
+          pastedImages = [],
         ) {
           debugLog("🌐 [AI] Making API call with optimized context...");
 
-          // Get current model selection from dropdown
-          const selectedModel = Fliplet.Helper.field("openaiModel").get() || "gpt-5.1-reasoning-none";
+          // Get current model selection from dropdown (hidden for production, defaults to gpt-5.2-reasoning-none)
+          const selectedModel =
+            Fliplet.Helper.field("openaiModel").get() ||
+            "gpt-5.2-reasoning-none";
 
           // Parse model name and reasoning level
           let modelName = selectedModel;
@@ -3477,7 +3820,7 @@ Fliplet.Widget.generateInterface({
               img &&
               img.status === "uploaded" &&
               img.flipletUrl &&
-              img.flipletFileId
+              img.flipletFileId,
           );
 
           // IMMEDIATE SAFETY CHECK: If passed images don't match current state, log warning
@@ -3487,13 +3830,13 @@ Fliplet.Widget.generateInterface({
               pastedImages.length,
               ") does not match current state count (",
               currentImages.length,
-              ")"
+              ")",
             );
             debugWarn(
-              "⚠️ [AI] This indicates images were removed after the initial filtering"
+              "⚠️ [AI] This indicates images were removed after the initial filtering",
             );
             debugWarn(
-              "⚠️ [AI] Using current state images instead of passed parameter"
+              "⚠️ [AI] Using current state images instead of passed parameter",
             );
           }
 
@@ -3512,7 +3855,7 @@ Fliplet.Widget.generateInterface({
                 name: img.name,
                 status: img.status,
               })),
-            }
+            },
           );
 
           // CRITICAL: Get the most current images right before building the system prompt
@@ -3521,7 +3864,7 @@ Fliplet.Widget.generateInterface({
               img &&
               img.status === "uploaded" &&
               img.flipletUrl &&
-              img.flipletFileId
+              img.flipletFileId,
           );
 
           // Log current image state before building system prompt
@@ -3551,7 +3894,7 @@ Fliplet.Widget.generateInterface({
             AppState,
             dataSourceColumns,
             selectedDataSourceName,
-            getGuidFromComponent()
+            getGuidFromComponent(),
           );
 
           // Build complete conversation history
@@ -3575,7 +3918,7 @@ Fliplet.Widget.generateInterface({
                 historyItem.type === "user"
               ) {
                 debugLog(
-                  "⏭️ [AI] Skipping duplicate current user message in history"
+                  "⏭️ [AI] Skipping duplicate current user message in history",
                 );
                 return;
               }
@@ -3592,9 +3935,11 @@ Fliplet.Widget.generateInterface({
                 // Add data source context if available
                 let messageText = historyItem.message;
                 if (historyItem.dataSourceName) {
-                  const columnsText = historyItem.dataSourceColumns && historyItem.dataSourceColumns.length > 0
-                    ? ` with columns: ${historyItem.dataSourceColumns.join(', ')}`
-                    : '';
+                  const columnsText =
+                    historyItem.dataSourceColumns &&
+                    historyItem.dataSourceColumns.length > 0
+                      ? ` with columns: ${historyItem.dataSourceColumns.join(", ")}`
+                      : "";
                   messageText = `[Using data source: "${historyItem.dataSourceName}"${columnsText}]\n\n${historyItem.message}`;
                 }
                 const content = [{ type: "input_text", text: messageText }];
@@ -3609,7 +3954,7 @@ Fliplet.Widget.generateInterface({
                   } else {
                     debugWarn(
                       "⚠️ [AI] Historical image missing flipletUrl, skipping:",
-                      { id: img.id, name: img.name }
+                      { id: img.id, name: img.name },
                     );
                   }
                 });
@@ -3622,16 +3967,18 @@ Fliplet.Widget.generateInterface({
                 debugLog(
                   `📝 [AI] Added user history message with ${
                     historyItem.images.length
-                  } images (Responses API format): ${historyItem.message.substring(0, 50)}...`
+                  } images (Responses API format): ${historyItem.message.substring(0, 50)}...`,
                 );
               } else {
                 // Assistant message or user message without images - use text format
                 let messageText = historyItem.message;
                 // Add data source context for user messages even without images
                 if (role === "user" && historyItem.dataSourceName) {
-                  const columnsText = historyItem.dataSourceColumns && historyItem.dataSourceColumns.length > 0
-                    ? ` with columns: ${historyItem.dataSourceColumns.join(', ')}`
-                    : '';
+                  const columnsText =
+                    historyItem.dataSourceColumns &&
+                    historyItem.dataSourceColumns.length > 0
+                      ? ` with columns: ${historyItem.dataSourceColumns.join(", ")}`
+                      : "";
                   messageText = `[Using data source: "${historyItem.dataSourceName}"${columnsText}]\n\n${historyItem.message}`;
                 }
                 messages.push({
@@ -3641,8 +3988,8 @@ Fliplet.Widget.generateInterface({
                 debugLog(
                   `📝 [AI] Added ${role} history message: ${messageText.substring(
                     0,
-                    50
-                  )}...`
+                    50,
+                  )}...`,
                 );
               }
             }
@@ -3652,9 +3999,10 @@ Fliplet.Widget.generateInterface({
           // Add data source context to current message if available
           let currentMessageText = userMessage;
           if (selectedDataSourceName) {
-            const columnsText = dataSourceColumns && dataSourceColumns.length > 0
-              ? ` with columns: ${dataSourceColumns.join(', ')}`
-              : '';
+            const columnsText =
+              dataSourceColumns && dataSourceColumns.length > 0
+                ? ` with columns: ${dataSourceColumns.join(", ")}`
+                : "";
             currentMessageText = `[Using data source: "${selectedDataSourceName}"${columnsText}]\n\n${userMessage}`;
           }
 
@@ -3674,27 +4022,25 @@ Fliplet.Widget.generateInterface({
               } else {
                 debugWarn(
                   "⚠️ [AI] Current image missing flipletUrl, skipping:",
-                  { id: img.id, name: img.name }
+                  { id: img.id, name: img.name },
                 );
               }
             });
             debugLog(
               "📤 [AI] Added current images to user message (Responses API format):",
-              finalCurrentImages.length
+              finalCurrentImages.length,
             );
           } else {
             // If no images, use simple string format
             content = currentMessageText;
-            debugLog(
-              "📤 [AI] User message has no images, using string format"
-            );
+            debugLog("📤 [AI] User message has no images, using string format");
           }
 
           // Note: Historical images are NOT added to current user messages
           // Each user message should only contain its own text and images
           // Historical context is maintained through the separate history messages above
           debugLog(
-            "📤 [AI] Current user message will only contain current images, not historical ones"
+            "📤 [AI] Current user message will only contain current images, not historical ones",
           );
 
           // Add the user message with appropriate content format
@@ -3717,34 +4063,40 @@ Fliplet.Widget.generateInterface({
 
           // Log the final content structure
           if (Array.isArray(content)) {
-            debugLog("📤 [AI] Current user message content structure (array):", {
-              contentLength: content.length,
-              textContent: content.find((c) => c.type === "input_text")?.text,
-              imageContents: content
-                .filter((c) => c.type === "input_image")
-                .map((img) => ({
-                  url: img.image_url,
-                  name: img.image_url.split("/").pop(), // Extract filename from URL
-                })),
-            });
+            debugLog(
+              "📤 [AI] Current user message content structure (array):",
+              {
+                contentLength: content.length,
+                textContent: content.find((c) => c.type === "input_text")?.text,
+                imageContents: content
+                  .filter((c) => c.type === "input_image")
+                  .map((img) => ({
+                    url: img.image_url,
+                    name: img.image_url.split("/").pop(), // Extract filename from URL
+                  })),
+              },
+            );
           } else {
-            debugLog("📤 [AI] Current user message content structure (string):", {
-              textLength: content.length,
-              text: content
-            });
+            debugLog(
+              "📤 [AI] Current user message content structure (string):",
+              {
+                textLength: content.length,
+                text: content,
+              },
+            );
           }
 
           debugLog("📤 [AI] Request messages with history:", messages);
 
-          // Summary of what we're sending
+          // Summary of what we're sending (using Responses API format)
           const userMessagesWithImages = messages.filter(
             (msg) =>
               msg.role === "user" &&
               Array.isArray(msg.content) &&
-              msg.content.some((c) => c.type === "image_url")
+              msg.content.some((c) => c.type === "input_image"), // ✅ Responses API format
           );
           const userMessagesTextOnly = messages.filter(
-            (msg) => msg.role === "user" && typeof msg.content === "string"
+            (msg) => msg.role === "user" && typeof msg.content === "string",
           );
 
           debugLog("📊 [AI] Message Summary:", {
@@ -3754,30 +4106,30 @@ Fliplet.Widget.generateInterface({
             userMessagesWithImages: userMessagesWithImages.length,
             userMessagesTextOnly: userMessagesTextOnly.length,
             assistantMessages: messages.filter(
-              (msg) => msg.role === "assistant"
+              (msg) => msg.role === "assistant",
             ).length,
             totalImagesInRequest: messages.reduce((count, msg) => {
               if (msg.role === "user" && Array.isArray(msg.content)) {
                 return (
                   count +
-                  msg.content.filter((c) => c.type === "image_url").length
+                  msg.content.filter((c) => c.type === "input_image").length // ✅ Responses API format
                 );
               }
               return count;
             }, 0),
           });
 
-          // Log each message for debugging
+          // Log each message for debugging (using Responses API format)
           messages.forEach((msg, index) => {
             if (msg.role === "user" && Array.isArray(msg.content)) {
               debugLog(`📤 [AI] Message ${index} (user with images):`, {
-                textContent: msg.content.find((c) => c.type === "text")?.text,
-                imageCount: msg.content.filter((c) => c.type === "image_url")
-                  .length,
+                textContent: msg.content.find((c) => c.type === "input_text")?.text, // ✅ Responses API format
+                imageCount: msg.content.filter((c) => c.type === "input_image")
+                  .length, // ✅ Responses API format
                 images: msg.content
-                  .filter((c) => c.type === "image_url")
+                  .filter((c) => c.type === "input_image") // ✅ Responses API format
                   .map((img) => ({
-                    url: img.image_url.url,
+                    url: img.image_url, // ✅ Direct string in Responses API
                     type: img.type,
                   })),
               });
@@ -3792,10 +4144,10 @@ Fliplet.Widget.generateInterface({
           });
 
           debugLog(
-            "🎯 [AI] Using structured outputs for reliable JSON responses"
+            "🎯 [AI] Using structured outputs for reliable JSON responses",
           );
 
-          // Final validation of what we're about to send to the AI
+          // Final validation of what we're about to send to the AI (using Responses API format)
           debugLog("🚀 [AI] Final request body validation:", {
             messageCount: messages.length,
             userMessageIndex: messages.findIndex((msg) => msg.role === "user"),
@@ -3805,24 +4157,24 @@ Fliplet.Widget.generateInterface({
               (msg) =>
                 msg.role === "user" &&
                 Array.isArray(msg.content) &&
-                msg.content.some((c) => c.type === "image_url")
+                msg.content.some((c) => c.type === "input_image"), // ✅ Responses API format
             ),
             imageCount: messages.reduce((count, msg) => {
               if (msg.role === "user" && Array.isArray(msg.content)) {
                 return (
                   count +
-                  msg.content.filter((c) => c.type === "image_url").length
+                  msg.content.filter((c) => c.type === "input_image").length // ✅ Responses API format
                 );
               }
               return count;
             }, 0),
           });
 
-          // FINAL VALIDATION: Double-check that no removed images are in the request
+          // FINAL VALIDATION: Double-check that no removed images are in the request (using Responses API format)
           const finalImageValidation = messages.reduce((count, msg) => {
             if (msg.role === "user" && Array.isArray(msg.content)) {
               return (
-                count + msg.content.filter((c) => c.type === "image_url").length
+                count + msg.content.filter((c) => c.type === "input_image").length // ✅ Responses API format
               );
             }
             return count;
@@ -3834,7 +4186,7 @@ Fliplet.Widget.generateInterface({
               (msg) =>
                 msg.role === "user" &&
                 Array.isArray(msg.content) &&
-                msg.content.some((c) => c.type === "image_url")
+                msg.content.some((c) => c.type === "input_image"), // ✅ Responses API format
             ).length,
             currentAppStateImages: AppState.pastedImages.length,
             currentValidImages: AppState.pastedImages.filter(
@@ -3842,7 +4194,7 @@ Fliplet.Widget.generateInterface({
                 img &&
                 img.status === "uploaded" &&
                 img.flipletUrl &&
-                img.flipletFileId
+                img.flipletFileId,
             ).length,
           });
 
@@ -3854,25 +4206,25 @@ Fliplet.Widget.generateInterface({
                 img &&
                 img.status === "uploaded" &&
                 img.flipletUrl &&
-                img.flipletFileId
+                img.flipletFileId,
             ).length === 0
           ) {
             debugError(
-              "❌ [AI] CRITICAL ERROR: Request contains images but AppState has no valid images!"
+              "❌ [AI] CRITICAL ERROR: Request contains images but AppState has no valid images!",
             );
             debugError(
-              "❌ [AI] This should never happen - images were removed after filtering"
+              "❌ [AI] This should never happen - images were removed after filtering",
             );
 
-            // Force remove all images from the request
+            // Force remove all images from the request (using Responses API format)
             messages.forEach((msg) => {
               if (msg.role === "user" && Array.isArray(msg.content)) {
-                msg.content = msg.content.filter((c) => c.type !== "image_url");
+                msg.content = msg.content.filter((c) => c.type !== "input_image"); // ✅ Responses API format
               }
             });
 
             debugLog(
-              "🔧 [AI] Forced removal of all images from request due to state mismatch"
+              "🔧 [AI] Forced removal of all images from request due to state mismatch",
             );
           }
 
@@ -3956,40 +4308,58 @@ Fliplet.Widget.generateInterface({
           // Add reasoning if it's configured (for reasoning models)
           if (reasoningEffort) {
             requestBody.reasoning = {
-              effort: reasoningEffort
+              effort: reasoningEffort,
             };
           }
 
           // Log the final request body to verify what's being sent
-          debugLog("🚀 [AI] Final request body being sent to API (Responses API):", {
-            model: requestBody.model,
-            reasoning: requestBody.reasoning,
-            useResponses: requestBody.useResponses,
-            inputCount: requestBody.input.length,
-            hasTextFormat: !!requestBody.text,
-            hasImages: requestBody.input.some(
-              (msg) =>
-                msg.role === "user" &&
-                Array.isArray(msg.content) &&
-                msg.content.some((c) => c.type === "input_image")
-            ),
-            imageCount: requestBody.input.reduce((count, msg) => {
-              if (msg.role === "user" && Array.isArray(msg.content)) {
-                return (
-                  count +
-                  msg.content.filter((c) => c.type === "input_image").length
-                );
-              }
-              return count;
-            }, 0),
-            userMessageContent: requestBody.input.find(
-              (msg) => msg.role === "user"
-            )?.content,
-          });
+          const hasImages = requestBody.input.some(
+            (msg) =>
+              msg.role === "user" &&
+              Array.isArray(msg.content) &&
+              msg.content.some((c) => c.type === "input_image"),
+          );
+          const imageCount = requestBody.input.reduce((count, msg) => {
+            if (msg.role === "user" && Array.isArray(msg.content)) {
+              return (
+                count +
+                msg.content.filter((c) => c.type === "input_image").length
+              );
+            }
+            return count;
+          }, 0);
+
+          debugLog(
+            "🚀 [AI] Final request body being sent to API (Responses API):",
+            {
+              model: requestBody.model,
+              reasoning: requestBody.reasoning,
+              useResponses: requestBody.useResponses,
+              inputCount: requestBody.input.length,
+              hasTextFormat: !!requestBody.text,
+              hasJsonSchema: !!requestBody.text?.format?.schema,
+              hasImages: hasImages,
+              imageCount: imageCount,
+              streamEnabled: requestBody.stream,
+              userMessageContent: requestBody.input.find(
+                (msg) => msg.role === "user",
+              )?.content,
+            },
+          );
+
+          // ⚠️ CRITICAL WARNING: Structured outputs (json_schema) + images may have streaming issues
+          if (hasImages && requestBody.text?.format?.type === "json_schema") {
+            debugWarn(
+              "⚠️ [AI] WARNING: Using structured outputs (json_schema) WITH images. Streaming behavior may be affected.",
+            );
+            debugWarn(
+              "⚠️ [AI] If streaming doesn't work, the response will be received as a complete object instead.",
+            );
+          }
 
           // Initialize streaming variables
           let response;
-          let accumulatedText = '';
+          let accumulatedText = "";
           let eventCount = 0;
           let streamCompleted = false;
           let usageInfo = null;
@@ -4016,7 +4386,7 @@ Fliplet.Widget.generateInterface({
                   hasDelta: !!event.delta,
                   outputIndex: event.output_index,
                   contentIndex: event.content_index,
-                  timestamp: Date.now() - streamStartTime
+                  timestamp: Date.now() - streamStartTime,
                 });
 
                 // Detect phase from output item type (for reasoning models)
@@ -4024,7 +4394,7 @@ Fliplet.Widget.generateInterface({
                   debugLog(`📋 [AI] Output item added:`, {
                     itemId: event.item_id,
                     itemType: event.item?.type,
-                    itemRole: event.item?.role
+                    itemRole: event.item?.role,
                   });
 
                   // Update streaming status based on item type
@@ -4053,38 +4423,43 @@ Fliplet.Widget.generateInterface({
                   debugLog(`📝 [AI] Accumulated ${event.delta.length} chars. Total: ${accumulatedText.length}`);
                 }
 
-                if (event.type === 'response.content_part.added') {
+                if (event.type === "response.content_part.added") {
                   debugLog(`📄 [AI] Content part added:`, {
                     itemId: event.item_id,
-                    partType: event.part?.type
+                    partType: event.part?.type,
                   });
                 }
 
                 // Track when output item is done (text generation complete)
-                if (event.type === 'response.output_item.done') {
+                if (event.type === "response.output_item.done") {
                   debugLog(`✅ [AI] Output item done:`, {
                     outputIndex: event.output_index,
-                    item: event.item
+                    item: event.item,
                   });
                   // Update to completing phase when output is done
                   updateStreamingStatus('completing');
                 }
 
                 // Track when entire response is done and capture usage info
-                if (event.type === 'response.done') {
+                if (event.type === "response.done") {
                   streamCompleted = true;
                   if (event.response && event.response.usage) {
                     usageInfo = event.response.usage;
                   }
                   debugLog(`🎯 [AI] Response done event received:`, {
                     hasUsage: !!usageInfo,
-                    responseId: event.response?.id
+                    responseId: event.response?.id,
                   });
                 }
 
                 // Log progress every 10 text delta events
-                if (event.type === 'response.output_text.delta' && eventCount % 10 === 0) {
-                  debugLog(`⏱️ [AI] Stream progress: ${eventCount} events, ${accumulatedText.length} chars, ${Date.now() - streamStartTime}ms`);
+                if (
+                  event.type === "response.output_text.delta" &&
+                  eventCount % 10 === 0
+                ) {
+                  debugLog(
+                    `⏱️ [AI] Stream progress: ${eventCount} events, ${accumulatedText.length} chars, ${Date.now() - streamStartTime}ms`,
+                  );
                 }
               });
 
@@ -4100,20 +4475,25 @@ Fliplet.Widget.generateInterface({
                   totalEvents: eventCount,
                   accumulatedLength: accumulatedText.length,
                   duration: streamDuration,
-                  avgEventTime: eventCount > 0 ? (streamDuration / eventCount).toFixed(2) + 'ms' : 'N/A',
+                  avgEventTime:
+                    eventCount > 0
+                      ? (streamDuration / eventCount).toFixed(2) + "ms"
+                      : "N/A",
                   streamCompletedFlag: streamCompleted,
                   hasUsageInfo: !!usageInfo,
-                  hasFinalResponse: !!finalResponse
+                  hasFinalResponse: !!finalResponse,
                 });
 
                 // Log reasoning tokens if available (for reasoning models)
                 // Use usageInfo captured from response.done event
-                if (usageInfo &&
-                    usageInfo.output_tokens_details &&
-                    usageInfo.output_tokens_details.reasoning_tokens) {
+                if (
+                  usageInfo &&
+                  usageInfo.output_tokens_details &&
+                  usageInfo.output_tokens_details.reasoning_tokens
+                ) {
                   debugLog(
                     "🧠 [AI] Reasoning tokens used:",
-                    usageInfo.output_tokens_details.reasoning_tokens
+                    usageInfo.output_tokens_details.reasoning_tokens,
                   );
                 }
 
@@ -4128,7 +4508,7 @@ Fliplet.Widget.generateInterface({
                   errorMessage: error.message,
                   eventsReceived: eventCount,
                   accumulatedLength: accumulatedText.length,
-                  duration: Date.now() - streamStartTime
+                  duration: Date.now() - streamStartTime,
                 });
 
                 // Clear streaming promise reference on error
@@ -4153,31 +4533,81 @@ Fliplet.Widget.generateInterface({
             // For streaming, use accumulated text directly since finalResponse may be undefined
             // The Fliplet.AI streaming API doesn't return a complete response object in .then()
             let aiResponse;
+
+            // DIAGNOSTIC: Check if we got any streaming events
+            debugLog("📊 [AI] Stream completion diagnostics:", {
+              eventCount: eventCount,
+              accumulatedTextLength: accumulatedText.length,
+              hasResponseObject: !!response,
+              hasResponseOutput: !!(response && response.output),
+              streamCompleted: streamCompleted,
+              hasImages: hasImages,
+              imageCount: imageCount,
+            });
+
+            // If we didn't get ANY events but have a response object, it means streaming didn't work
+            if (eventCount === 0 && response && response.output) {
+              debugWarn(
+                "⚠️ [AI] No streaming events received, but got complete response object.",
+              );
+              debugWarn(
+                "⚠️ [AI] This suggests the API returned the full response at once instead of streaming.",
+              );
+              debugWarn(
+                "⚠️ [AI] This is expected when using json_schema + images together.",
+              );
+            }
+
             if (response && response.output) {
               // If we have a complete response object, extract from it
-              aiResponse = extractTextFromResponsesAPI(response, accumulatedText);
+              aiResponse = extractTextFromResponsesAPI(
+                response,
+                accumulatedText,
+              );
+              debugLog(
+                "📥 [AI] Extracted response from complete response object:",
+                {
+                  source: "response.output",
+                  length: aiResponse.length,
+                },
+              );
             } else if (accumulatedText) {
               // Otherwise use the accumulated text from streaming
-              debugLog("📥 [AI] Using accumulated text from streaming (finalResponse was undefined)");
+              debugLog(
+                "📥 [AI] Using accumulated text from streaming (finalResponse was undefined)",
+              );
               aiResponse = accumulatedText;
             } else {
+              // This is the problematic case - no response at all
+              debugError(
+                "❌ [AI] CRITICAL: No response received - neither streaming nor complete response!",
+              );
+              debugError("❌ [AI] Stream stats:", {
+                eventCount: eventCount,
+                hasResponse: !!response,
+                hasAccumulatedText: !!accumulatedText,
+                streamCompleted: streamCompleted,
+                hasImages: hasImages,
+              });
               throw new Error("No response received from streaming API");
             }
 
             debugLog("📥 [AI] Final response ready for parsing:", {
               length: aiResponse.length,
-              preview: aiResponse.substring(0, 200) + "..."
+              preview: aiResponse.substring(0, 200) + "...",
+              eventCount: eventCount,
+              wasStreamed: eventCount > 0,
+              wasComplete: eventCount === 0 && !!response,
             });
 
             return aiResponse;
-
           } catch (error) {
             // Existing timeout detection
             if (error.name === "AbortError") {
               debugError("⚠️ Timeout!", {
                 eventsReceived: eventCount,
                 partialLength: accumulatedText.length,
-                duration: Date.now() - streamStartTime
+                duration: Date.now() - streamStartTime,
               });
               throw new Error("AI error occurred, please try again.");
             }
@@ -4193,7 +4623,7 @@ Fliplet.Widget.generateInterface({
             ) {
               debugError("⚠️ Timeout detected:", {
                 eventsReceived: eventCount,
-                partialLength: accumulatedText.length
+                partialLength: accumulatedText.length,
               });
               throw new Error("AI error occurred, please try again.");
             }
@@ -4221,7 +4651,7 @@ Fliplet.Widget.generateInterface({
 
           if (changeLog.js && changeLog.js.length > 0) {
             summaryParts.push(
-              `⚡ JavaScript: ${changeLog.js.length} change(s)`
+              `⚡ JavaScript: ${changeLog.js.length} change(s)`,
             );
           }
 
@@ -4241,11 +4671,11 @@ Fliplet.Widget.generateInterface({
         function applyHTMLDiff(currentHTML, diff) {
           console.assert(
             typeof currentHTML === "string",
-            "currentHTML must be a string"
+            "currentHTML must be a string",
           );
           console.assert(
             typeof diff === "object" && diff !== null,
-            "diff must be an object"
+            "diff must be an object",
           );
 
           debugLog("🔧 Applying HTML diff:", {
@@ -4262,7 +4692,7 @@ Fliplet.Widget.generateInterface({
                 if (diff.target.startsWith(".")) {
                   // Class-based targeting with pseudo-selector support
                   const selectorMatch = diff.target.match(
-                    /^\.([^:]+)(?::(.+))?$/
+                    /^\.([^:]+)(?::(.+))?$/,
                   );
                   if (selectorMatch) {
                     const className = selectorMatch[1];
@@ -4285,7 +4715,7 @@ Fliplet.Widget.generateInterface({
                         // Find all elements with the class
                         const classRegex = new RegExp(
                           `<[^>]*class="[^"]*${className}[^"]*"[^>]*>.*?</[^>]*>`,
-                          "gis"
+                          "gis",
                         );
                         const matches = [...modifiedHTML.matchAll(classRegex)];
 
@@ -4300,14 +4730,14 @@ Fliplet.Widget.generateInterface({
                             modifiedHTML.slice(insertAfter);
                           debugLog(
                             "✅ Added content after nth-child element:",
-                            position
+                            position,
                           );
                         } else {
                           debugWarn(
                             "⚠️ nth-child position out of range:",
                             position,
                             "of",
-                            matches.length
+                            matches.length,
                           );
                         }
                       }
@@ -4315,16 +4745,16 @@ Fliplet.Widget.generateInterface({
                       // Regular class targeting
                       const targetRegex = new RegExp(
                         `(<[^>]*class="[^"]*${className}[^"]*"[^>]*>)`,
-                        "i"
+                        "i",
                       );
                       if (targetRegex.test(modifiedHTML)) {
                         modifiedHTML = modifiedHTML.replace(
                           targetRegex,
-                          `$1${diff.content}`
+                          `$1${diff.content}`,
                         );
                         debugLog(
                           "✅ Added content to element with class:",
-                          className
+                          className,
                         );
                       } else {
                         debugWarn("⚠️ Target class not found:", className);
@@ -4336,12 +4766,12 @@ Fliplet.Widget.generateInterface({
                   const targetId = diff.target.replace("#", "");
                   const targetRegex = new RegExp(
                     `(<[^>]*id="${targetId}"[^>]*>)`,
-                    "i"
+                    "i",
                   );
                   if (targetRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       targetRegex,
-                      `$1${diff.content}`
+                      `$1${diff.content}`,
                     );
                     debugLog("✅ Added content to element with ID:", targetId);
                   } else {
@@ -4351,12 +4781,12 @@ Fliplet.Widget.generateInterface({
                   // Element-based targeting
                   const targetRegex = new RegExp(
                     `(<${diff.target}[^>]*>)`,
-                    "i"
+                    "i",
                   );
                   if (targetRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       targetRegex,
-                      `$1${diff.content}`
+                      `$1${diff.content}`,
                     );
                     debugLog("✅ Added content to element:", diff.target);
                   } else {
@@ -4369,26 +4799,26 @@ Fliplet.Widget.generateInterface({
                   const referenceRegex = new RegExp(
                     `(${diff.reference.replace(
                       /[.*+?^${}()|[\]\\]/g,
-                      "\\$&"
+                      "\\$&",
                     )})`,
-                    "i"
+                    "i",
                   );
                   modifiedHTML = modifiedHTML.replace(
                     referenceRegex,
-                    `${diff.content}$1`
+                    `${diff.content}$1`,
                   );
                   debugLog("✅ Added content before reference");
                 } else if (diff.position === "after" && diff.reference) {
                   const referenceRegex = new RegExp(
                     `(${diff.reference.replace(
                       /[.*+?^${}()|[\]\\]/g,
-                      "\\$&"
+                      "\\$&",
                     )})`,
-                    "i"
+                    "i",
                   );
                   modifiedHTML = modifiedHTML.replace(
                     referenceRegex,
-                    `$1${diff.content}`
+                    `$1${diff.content}`,
                   );
                   debugLog("✅ Added content after reference");
                 }
@@ -4398,7 +4828,7 @@ Fliplet.Widget.generateInterface({
                 if (bodyRegex.test(modifiedHTML)) {
                   modifiedHTML = modifiedHTML.replace(
                     bodyRegex,
-                    `${diff.content}</body>`
+                    `${diff.content}</body>`,
                   );
                   debugLog("✅ Added content to end of body");
                 } else {
@@ -4415,7 +4845,7 @@ Fliplet.Widget.generateInterface({
                   const className = diff.target.replace(".", "");
                   const removeRegex = new RegExp(
                     `<[^>]*class="[^"]*${className}[^"]*"[^>]*>.*?</[^>]*>`,
-                    "gis"
+                    "gis",
                   );
                   modifiedHTML = modifiedHTML.replace(removeRegex, "");
                   debugLog("✅ Removed element with class:", className);
@@ -4423,14 +4853,14 @@ Fliplet.Widget.generateInterface({
                   const targetId = diff.target.replace("#", "");
                   const removeRegex = new RegExp(
                     `<[^>]*id="${targetId}"[^>]*>.*?</[^>]*>`,
-                    "gis"
+                    "gis",
                   );
                   modifiedHTML = modifiedHTML.replace(removeRegex, "");
                   debugLog("✅ Removed element with ID:", targetId);
                 } else {
                   const removeRegex = new RegExp(
                     `<${diff.target}[^>]*>.*?</${diff.target}>`,
-                    "gis"
+                    "gis",
                   );
                   modifiedHTML = modifiedHTML.replace(removeRegex, "");
                   debugLog("✅ Removed element:", diff.target);
@@ -4445,53 +4875,53 @@ Fliplet.Widget.generateInterface({
                   const className = diff.target.replace(".", "");
                   const modifyRegex = new RegExp(
                     `(<[^>]*class="[^"]*${className}[^"]*"[^>]*>).*?(</[^>]*>)`,
-                    "gis"
+                    "gis",
                   );
                   if (modifyRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       modifyRegex,
-                      `$1${diff.content}$2`
+                      `$1${diff.content}$2`,
                     );
                     debugLog("✅ Modified element with class:", className);
                   } else {
                     debugWarn(
                       "⚠️ Target class not found for modification:",
-                      className
+                      className,
                     );
                   }
                 } else if (diff.target.startsWith("#")) {
                   const targetId = diff.target.replace("#", "");
                   const modifyRegex = new RegExp(
                     `(<[^>]*id="${targetId}"[^>]*>).*?(</[^>]*>)`,
-                    "gis"
+                    "gis",
                   );
                   if (modifyRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       modifyRegex,
-                      `$1${diff.content}$2`
+                      `$1${diff.content}$2`,
                     );
                     debugLog("✅ Modified element with ID:", targetId);
                   } else {
                     debugWarn(
                       "⚠️ Target ID not found for modification:",
-                      targetId
+                      targetId,
                     );
                   }
                 } else {
                   const modifyRegex = new RegExp(
                     `(<${diff.target}[^>]*>).*?(</${diff.target}>)`,
-                    "gis"
+                    "gis",
                   );
                   if (modifyRegex.test(modifiedHTML)) {
                     modifiedHTML = modifiedHTML.replace(
                       modifyRegex,
-                      `$1${diff.content}$2`
+                      `$1${diff.content}$2`,
                     );
                     debugLog("✅ Modified element:", diff.target);
                   } else {
                     debugWarn(
                       "⚠️ Target element not found for modification:",
-                      diff.target
+                      diff.target,
                     );
                   }
                 }
@@ -4515,11 +4945,11 @@ Fliplet.Widget.generateInterface({
         function applyCSSDiff(currentCSS, diff) {
           console.assert(
             typeof currentCSS === "string",
-            "currentCSS must be a string"
+            "currentCSS must be a string",
           );
           console.assert(
             typeof diff === "object" && diff !== null,
-            "diff must be an object"
+            "diff must be an object",
           );
 
           debugLog("🔧 Applying CSS diff:", {
@@ -4547,7 +4977,7 @@ Fliplet.Widget.generateInterface({
             // Look for the selector with flexible whitespace handling
             const selectorRegex = new RegExp(
               `(${escapedSelector}\\s*\\{)([^}]*)(\\})`,
-              "gis"
+              "gis",
             );
 
             debugLog("🔍 Normalized selector:", normalizedSelector);
@@ -4569,14 +4999,14 @@ Fliplet.Widget.generateInterface({
 
                   // Apply each change
                   for (const [property, value] of Object.entries(
-                    diff.changes
+                    diff.changes,
                   )) {
                     const propertyRegex = new RegExp(
                       `${property.replace(
                         /[.*+?^${}()|[\]\\]/g,
-                        "\\$&"
+                        "\\$&",
                       )}\\s*:[^;]*;?`,
-                      "gi"
+                      "gi",
                     );
                     const newRule = `${property}: ${value};`;
 
@@ -4586,7 +5016,7 @@ Fliplet.Widget.generateInterface({
                       // Replace existing property
                       newProperties = newProperties.replace(
                         propertyRegex,
-                        newRule
+                        newRule,
                       );
                       debugLog("✅ Replaced existing property");
                     } else {
@@ -4604,13 +5034,13 @@ Fliplet.Widget.generateInterface({
                   const result = opening + newProperties + closing;
                   debugLog("🏁 CSS replacement completed");
                   return result;
-                }
+                },
               );
             } else {
               debugWarn("⚠️ CSS selector not found:", normalizedSelector);
               debugLog(
                 "🔍 Available CSS content preview:",
-                currentCSS.substring(0, 200) + "..."
+                currentCSS.substring(0, 200) + "...",
               );
             }
           } else if (diff.operation === "add" && diff.content) {
@@ -4620,7 +5050,7 @@ Fliplet.Widget.generateInterface({
           } else {
             debugWarn(
               "⚠️ CSS diff operation not supported or missing required fields:",
-              diff
+              diff,
             );
           }
 
@@ -4637,11 +5067,11 @@ Fliplet.Widget.generateInterface({
         function applyJSDiff(currentJS, diff) {
           console.assert(
             typeof currentJS === "string",
-            "currentJS must be a string"
+            "currentJS must be a string",
           );
           console.assert(
             typeof diff === "object" && diff !== null,
-            "diff must be an object"
+            "diff must be an object",
           );
 
           debugLog("🔧 Applying JS diff:", {
@@ -4660,13 +5090,13 @@ Fliplet.Widget.generateInterface({
                   const referenceRegex = new RegExp(
                     `(${diff.reference.replace(
                       /[.*+?^${}()|[\]\\]/g,
-                      "\\$&"
+                      "\\$&",
                     )})`,
-                    "i"
+                    "i",
                   );
                   modifiedJS = modifiedJS.replace(
                     referenceRegex,
-                    `${diff.content}\n\n$1`
+                    `${diff.content}\n\n$1`,
                   );
                   debugLog("✅ Added JS content before reference");
                 } else if (diff.position === "after" && diff.reference) {
@@ -4674,13 +5104,13 @@ Fliplet.Widget.generateInterface({
                   const referenceRegex = new RegExp(
                     `(${diff.reference.replace(
                       /[.*+?^${}()|[\]\\]/g,
-                      "\\$&"
+                      "\\$&",
                     )})`,
-                    "i"
+                    "i",
                   );
                   modifiedJS = modifiedJS.replace(
                     referenceRegex,
-                    `$1\n\n${diff.content}`
+                    `$1\n\n${diff.content}`,
                   );
                   debugLog("✅ Added JS content after reference");
                 } else {
@@ -4702,50 +5132,50 @@ Fliplet.Widget.generateInterface({
                     // document.addEventListener('DOMContentLoaded', function() { ... });
                     new RegExp(
                       `(document\\.addEventListener\\s*\\(\\s*['"]DOMContentLoaded['"]\\s*,\\s*function\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\}\\s*\\);?)`,
-                      "gi"
+                      "gi",
                     ),
                     // document.addEventListener('DOMContentLoaded', () => { ... });
                     new RegExp(
                       `(document\\.addEventListener\\s*\\(\\s*['"]DOMContentLoaded['"]\\s*,\\s*\\([^)]*\\)\\s*=>\\s*\\{)([\\s\\S]*?)(\\}\\s*\\);?)`,
-                      "gi"
+                      "gi",
                     ),
                   ];
                 } else {
                   // Handle different function declaration patterns
                   const escapedName = diff.functionName.replace(
                     /[.*+?^${}()|[\]\\]/g,
-                    "\\$&"
+                    "\\$&",
                   );
                   targetPatterns = [
                     // function name() { }
                     new RegExp(
                       `(function\\s+${escapedName}\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\})`,
-                      "gis"
+                      "gis",
                     ),
                     // const name = function() { }
                     new RegExp(
                       `(const\\s+${escapedName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\})`,
-                      "gis"
+                      "gis",
                     ),
                     // let name = function() { }
                     new RegExp(
                       `(let\\s+${escapedName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\})`,
-                      "gis"
+                      "gis",
                     ),
                     // var name = function() { }
                     new RegExp(
                       `(var\\s+${escapedName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\})`,
-                      "gis"
+                      "gis",
                     ),
                     // name: function() { }
                     new RegExp(
                       `(${escapedName}\\s*:\\s*function\\s*\\([^)]*\\)\\s*\\{)([\\s\\S]*?)(\\})`,
-                      "gis"
+                      "gis",
                     ),
                     // Arrow functions: const name = () => { }
                     new RegExp(
                       `(const\\s+${escapedName}\\s*=\\s*\\([^)]*\\)\\s*=>\\s*\\{)([\\s\\S]*?)(\\})`,
-                      "gis"
+                      "gis",
                     ),
                   ];
                 }
@@ -4761,7 +5191,7 @@ Fliplet.Widget.generateInterface({
                           return (
                             opening + content + "\n\n" + diff.content + closing
                           );
-                        }
+                        },
                       );
                     } else {
                       // Replace entire function content
@@ -4778,11 +5208,11 @@ Fliplet.Widget.generateInterface({
                 if (!replaced) {
                   debugWarn(
                     "⚠️ JS function not found for modification:",
-                    diff.functionName
+                    diff.functionName,
                   );
                   debugLog(
                     "🔍 Available JS content preview:",
-                    modifiedJS.substring(0, 200) + "..."
+                    modifiedJS.substring(0, 200) + "...",
                   );
                 }
               } else if (diff.target && diff.content) {
@@ -4791,7 +5221,7 @@ Fliplet.Widget.generateInterface({
                   diff.target.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
                     return "\\" + match;
                   }),
-                  "gi"
+                  "gi",
                 );
                 if (targetRegex.test(modifiedJS)) {
                   modifiedJS = modifiedJS.replace(targetRegex, function () {
@@ -4810,27 +5240,27 @@ Fliplet.Widget.generateInterface({
                 const functionPatterns = [
                   new RegExp(
                     `function\\s+${diff.functionName}\\s*\\([^)]*\\)\\s*\\{[^}]*\\}`,
-                    "gis"
+                    "gis",
                   ),
                   new RegExp(
                     `const\\s+${diff.functionName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{[^}]*\\};?`,
-                    "gis"
+                    "gis",
                   ),
                   new RegExp(
                     `let\\s+${diff.functionName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{[^}]*\\};?`,
-                    "gis"
+                    "gis",
                   ),
                   new RegExp(
                     `var\\s+${diff.functionName}\\s*=\\s*function\\s*\\([^)]*\\)\\s*\\{[^}]*\\};?`,
-                    "gis"
+                    "gis",
                   ),
                   new RegExp(
                     `${diff.functionName}\\s*:\\s*function\\s*\\([^)]*\\)\\s*\\{[^}]*\\},?`,
-                    "gis"
+                    "gis",
                   ),
                   new RegExp(
                     `const\\s+${diff.functionName}\\s*=\\s*\\([^)]*\\)\\s*=>\\s*\\{[^}]*\\};?`,
-                    "gis"
+                    "gis",
                   ),
                 ];
 
@@ -4847,7 +5277,7 @@ Fliplet.Widget.generateInterface({
                 if (!removed) {
                   debugWarn(
                     "⚠️ JS function not found for removal:",
-                    diff.functionName
+                    diff.functionName,
                   );
                 }
               } else if (diff.target) {
@@ -4856,7 +5286,7 @@ Fliplet.Widget.generateInterface({
                   diff.target.replace(/[.*+?^${}()|[\]\\]/g, function (match) {
                     return "\\" + match;
                   }),
-                  "gi"
+                  "gi",
                 );
                 modifiedJS = modifiedJS.replace(targetRegex, "");
                 debugLog("✅ Removed JS target content");
@@ -4886,17 +5316,17 @@ Fliplet.Widget.generateInterface({
           // Remove external script references that would cause 404 errors
           sanitizedHTML = sanitizedHTML.replace(
             /<script[^>]+src=["'][^"']*["'][^>]*><\/script>/gi,
-            ""
+            "",
           );
           sanitizedHTML = sanitizedHTML.replace(
             /<script[^>]+src=["'][^"']*["'][^>]*\/>/gi,
-            ""
+            "",
           );
 
           // Remove external CSS link references
           sanitizedHTML = sanitizedHTML.replace(
             /<link[^>]+rel=["']?stylesheet["']?[^>]*>/gi,
-            ""
+            "",
           );
 
           // Remove external image references that might not exist (optional - comment out if you want to keep images)
@@ -4911,7 +5341,7 @@ Fliplet.Widget.generateInterface({
 
           if (originalScripts > 0 || originalLinks > 0) {
             debugLog(
-              `🧹 Sanitized: removed ${originalScripts} external scripts, ${originalLinks} external stylesheets`
+              `🧹 Sanitized: removed ${originalScripts} external scripts, ${originalLinks} external stylesheets`,
             );
           }
 
@@ -4927,8 +5357,7 @@ Fliplet.Widget.generateInterface({
 
           try {
             // Build complete HTML document
-            const rawHTMLContent =
-              AppState.currentHTML || "";
+            const rawHTMLContent = AppState.currentHTML || "";
             const htmlContent = sanitizeHTML(rawHTMLContent);
             const cssContent = AppState.currentCSS || "";
             const jsContent = AppState.currentJS || "";
@@ -4951,7 +5380,7 @@ Fliplet.Widget.generateInterface({
           try {
             // Log what we're saving to help debug image preservation issues
             const messagesWithImages = AppState.chatHistory.filter(
-              (item) => item.images && item.images.length > 0
+              (item) => item.images && item.images.length > 0,
             );
             if (messagesWithImages.length > 0) {
               debugLog("💾 Saving chat history to Fliplet field with images:", {
@@ -4972,7 +5401,7 @@ Fliplet.Widget.generateInterface({
 
             // Save to Fliplet field
             Fliplet.Helper.field("chatHistory").set(
-              JSON.stringify(AppState.chatHistory)
+              JSON.stringify(AppState.chatHistory),
             );
 
             debugLog("✅ Chat history saved to Fliplet field successfully");
@@ -4996,7 +5425,7 @@ Fliplet.Widget.generateInterface({
                 const filteredHistory = parsedHistory
                   .filter(
                     (item) =>
-                      item.type !== "system" && item.message && item.type
+                      item.type !== "system" && item.message && item.type,
                   )
                   .map((item) => ({
                     message: item.message,
@@ -5007,7 +5436,7 @@ Fliplet.Widget.generateInterface({
 
                 // Log what we loaded to help debug image preservation issues
                 const messagesWithImages = filteredHistory.filter(
-                  (item) => item.images && item.images.length > 0
+                  (item) => item.images && item.images.length > 0,
                 );
                 if (messagesWithImages.length > 0) {
                   debugLog(
@@ -5025,7 +5454,7 @@ Fliplet.Widget.generateInterface({
                           flipletUrl: !!img.flipletUrl,
                         })),
                       })),
-                    }
+                    },
                   );
                 }
 
@@ -5042,8 +5471,8 @@ Fliplet.Widget.generateInterface({
                     item.type === "user"
                       ? "You"
                       : item.type === "ai"
-                      ? "AI"
-                      : "";
+                        ? "AI"
+                        : "";
 
                   // Build message content
                   let messageContent = `${
@@ -5099,7 +5528,7 @@ Fliplet.Widget.generateInterface({
           } catch (error) {
             debugError(
               "Failed to load chat history from Fliplet field:",
-              error
+              error,
             );
           }
           return false;
@@ -5114,26 +5543,26 @@ Fliplet.Widget.generateInterface({
           message,
           type,
           images = [],
-          skipStorage = false
+          skipStorage = false,
         ) {
           DOM.resetBtn.style.display = "block";
           console.assert(
             typeof message === "string",
-            "message must be a string"
+            "message must be a string",
           );
           console.assert(
             ["user", "ai", "system"].includes(type),
-            "type must be user, ai, or system"
+            "type must be user, ai, or system",
           );
 
           const messageDiv = document.createElement("div");
           messageDiv.className = `message ${type}-message`;
 
           const prefix = type === "user" ? "You" : type === "ai" ? "AI" : "";
-          
+
           // Build message content
           let processedMessage;
-          
+
           if (type === "ai") {
             // Convert markdown to HTML for AI responses
             const converter = new showdown.Converter();
@@ -5144,7 +5573,7 @@ Fliplet.Widget.generateInterface({
             // Escape HTML for user and system messages for security
             processedMessage = escapeHTML(message);
           }
-          
+
           let messageContent = `${
             prefix ? `<strong>${prefix}</strong>: ` : ""
           }${processedMessage}`;
@@ -5163,7 +5592,7 @@ Fliplet.Widget.generateInterface({
                 return `<div class="chat-image-container">
                 <img src="${imageSrc}" alt="${img.name}" class="chat-image" />
                 <div class="chat-image-info">${img.name} (${formatFileSize(
-                  img.size
+                  img.size,
                 )})</div>
                </div>`;
               })
@@ -5221,7 +5650,9 @@ Fliplet.Widget.generateInterface({
               images: imagesCopy, // Store copy of images in history
               dataSourceId: selectedDataSourceId,
               dataSourceName: selectedDataSourceName,
-              dataSourceColumns: dataSourceColumns ? [...dataSourceColumns] : []
+              dataSourceColumns: dataSourceColumns
+                ? [...dataSourceColumns]
+                : [],
             };
 
             AppState.chatHistory.push(historyItem);
@@ -5262,8 +5693,8 @@ Fliplet.Widget.generateInterface({
           const div = document.createElement("div");
           div.textContent = text;
           // Replace newlines with <br> tags to preserve them in HTML
-          const escapedHTML = div.innerHTML.replace(/\n/g, '<br>');
-          
+          const escapedHTML = div.innerHTML.replace(/\n/g, "<br>");
+
           return escapedHTML;
         }
 
@@ -5388,7 +5819,7 @@ Fliplet.Widget.generateInterface({
           // Set the height to match the content, respecting min/max bounds
           const newHeight = Math.max(
             minHeight,
-            Math.min(scrollHeight, maxHeight)
+            Math.min(scrollHeight, maxHeight),
           );
           textarea.style.height = newHeight + "px";
 
@@ -5491,7 +5922,7 @@ Fliplet.Widget.generateInterface({
 
           // Also check DOM elements
           const containers = document.querySelectorAll(
-            ".pasted-image-container"
+            ".pasted-image-container",
           );
           debugLog("🔍 DOM containers found:", containers.length);
           containers.forEach((container, index) => {
@@ -5575,7 +6006,7 @@ function logAiComponentUsage(data) {
         pageId,
       },
     },
-    "ai.feature.component"
+    "ai.feature.component",
   );
 }
 
@@ -5590,18 +6021,21 @@ async function getCurrentPageSettings() {
 
 async function populateCurrentPageContent() {
   try {
-    debugLog("🔍 [populateCurrentPageContent] Starting to fetch page content...");
+    debugLog(
+      "🔍 [populateCurrentPageContent] Starting to fetch page content...",
+    );
     const currentSettings = await getCurrentPageSettings();
 
     if (currentSettings && currentSettings.page) {
       // Extract widget-specific HTML content from richLayout
       const htmlFromPage = extractHtmlContent(
-        currentSettings.page.richLayout || ""
+        currentSettings.page.richLayout || "",
       );
 
       // CRITICAL FIX: If extractHtmlContent returns empty, use the stored Helper field value
       // This handles the case where the HTML hasn't been rendered to the page yet
-      const existingHtmlInHelper = Fliplet.Helper.field("layoutHTML").get() || "";
+      const existingHtmlInHelper =
+        Fliplet.Helper.field("layoutHTML").get() || "";
 
       const htmlContent = htmlFromPage || existingHtmlInHelper;
 
@@ -5609,13 +6043,14 @@ async function populateCurrentPageContent() {
         htmlFromPageLength: htmlFromPage.length,
         existingHelperLength: existingHtmlInHelper.length,
         finalHtmlLength: htmlContent.length,
-        usingFallback: htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
+        usingFallback:
+          htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
       });
 
       // Extract widget-specific CSS content
       const cssFromPage = extractCodeBetweenDelimiters(
         "css",
-        currentSettings.page.settings.customSCSS || ""
+        currentSettings.page.settings.customSCSS || "",
       );
 
       // CRITICAL FIX: Fallback to Helper field if extraction returns empty
@@ -5625,7 +6060,7 @@ async function populateCurrentPageContent() {
       // Extract widget-specific JavaScript content
       const jsFromPage = extractCodeBetweenDelimiters(
         "js",
-        currentSettings.page.settings.customJS || ""
+        currentSettings.page.settings.customJS || "",
       );
 
       // CRITICAL FIX: Fallback to Helper field if extraction returns empty
@@ -5639,9 +6074,12 @@ async function populateCurrentPageContent() {
         cssFinalLength: cssContent.length,
         jsFromPageLength: jsFromPage.length,
         jsFinalLength: jsContent.length,
-        htmlUsingFallback: htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
-        cssUsingFallback: cssFromPage.length === 0 && existingCssInHelper.length > 0,
-        jsUsingFallback: jsFromPage.length === 0 && existingJsInHelper.length > 0,
+        htmlUsingFallback:
+          htmlFromPage.length === 0 && existingHtmlInHelper.length > 0,
+        cssUsingFallback:
+          cssFromPage.length === 0 && existingCssInHelper.length > 0,
+        jsUsingFallback:
+          jsFromPage.length === 0 && existingJsInHelper.length > 0,
       });
 
       // Populate the Helper fields with widget-specific content
@@ -5664,7 +6102,9 @@ function extractHtmlContent(richLayout) {
   let $wrapper = $("<div>").html(richLayout);
 
   // Find the widget-specific container and extract its content
-  const $widgetContainer = $wrapper.find(`.ai-feature-dev-${getGuidFromComponent()}`);
+  const $widgetContainer = $wrapper.find(
+    `.ai-feature-${getGuidFromComponent()}`,
+  );
 
   if ($widgetContainer.length > 0) {
     return $widgetContainer.html() || "";
@@ -5677,11 +6117,11 @@ function extractCodeBetweenDelimiters(type, code) {
   let start, end;
 
   if (type === "js") {
-    start = `// start-ai-feature-dev ${getGuidFromComponent()}`;
-    end = `// end-ai-feature-dev ${getGuidFromComponent()}`;
+    start = `// start-ai-feature ${getGuidFromComponent()}`;
+    end = `// end-ai-feature ${getGuidFromComponent()}`;
   } else if (type === "css") {
-    start = `/* start-ai-feature-dev ${getGuidFromComponent()} */`;
-    end = `/* end-ai-feature-dev ${getGuidFromComponent()} */`;
+    start = `/* start-ai-feature ${getGuidFromComponent()} */`;
+    end = `/* end-ai-feature ${getGuidFromComponent()} */`;
   }
 
   // Find the start and end positions

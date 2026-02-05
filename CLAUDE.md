@@ -114,7 +114,7 @@ Two response types required from AI:
 
 **GUID System:**
 - Each component instance has unique `guid` field
-- Selectors prefixed: `.ai-feature-dev-${guid}`
+- Selectors prefixed: `.ai-feature-${guid}`
 - Enables multiple instances per page
 - Used for code isolation and cleanup
 
@@ -240,5 +240,5 @@ The system prompt is ~1,900 lines and includes complete documentation for Fliple
 3. **Template escaping** - Forget `\{{` and save fails
 4. **Column spaces** - Must use bracket notation: `data['First Name']`
 5. **Promise chains** - Missing `return` breaks async flow
-6. **Selector specificity** - Forgetting `.ai-feature-dev-${guid}` causes style conflicts
+6. **Selector specificity** - Forgetting `.ai-feature-${guid}` causes style conflicts
 7. **Legacy migration** - Old widgetId-based delimiters must be converted to GUID format

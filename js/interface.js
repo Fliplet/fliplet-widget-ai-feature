@@ -11,6 +11,29 @@ Fliplet.Widget.setCancelButtonLabel("Close");
 Fliplet.Widget.generateInterface({
   fields: [
     {
+      type: "html",
+      html: `<div class="alert alert-info">
+              <div>
+                <i class="fa fa-info-circle"></i>
+                <strong>New Version Available!</strong>
+              </div>
+              <p>
+                There is a new version of the AI Feature component available. Your existing component won't be affected.
+              </p>
+              <p>To try the new version:<br></p>
+              <ol style="margin-top: 5px">
+                <li>Add a new <strong>AI Feature</strong> component from the <strong>Add Components</strong> panel to your screen.</li>
+                <li>Copy your prompt text from this component and paste it into the new one.</li>
+                <li>Generate your feature in the new component.</li>
+              </ol>
+              <p>
+                <a href="https://help.fliplet.com/ai-feature-component/" target="_blank">View support article</a> for more information.
+              </p>
+            </div>
+            <p>Use this component to generate features within a screen using AI. The code created will be available in the developer tools.</p>
+            <p>Select a data source if you want your feature to use a data source.</p>`,
+    },
+    {
       type: "hidden",
       name: "chatGUID",
       label: "Chat GUID",

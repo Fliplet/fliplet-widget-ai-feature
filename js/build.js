@@ -20,7 +20,7 @@ Fliplet.Widget.instance({
         $(".ai-feature-content").hide();
       }
 
-      AI.fields = _.assign(
+      AI.fields = Object.assign(
         {
           dataSourceId: "",
           dataSourceName: "",

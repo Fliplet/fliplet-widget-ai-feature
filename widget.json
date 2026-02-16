@@ -26,7 +26,8 @@
       "fliplet-datasources",
       "fliplet-communicate",
       "fliplet-csv",
-      "fliplet-socket"
+      "fliplet-socket",
+      "lodash"
     ],
     "assets": [
       "css/build.css",

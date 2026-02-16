@@ -1,7 +1,7 @@
 {
   "name": "AI feature",
   "package": "com.fliplet.ai-feature",
-  "version": "2.0.0",
+  "version": "3.0.0",
   "icon": "img/icon.png",
   "tags": ["type:component", "category:text", "beta:true"],
   "provider_only": false,
@@ -14,7 +14,7 @@
   },
   "html_tag": "div",
   "interface": {
-    "dependencies": ["fliplet-core", "fliplet-studio-ui", "fliplet-datasources", "fliplet-media"],
+    "dependencies": ["fliplet-core", "fliplet-studio-ui", "fliplet-datasources", "fliplet-media", "fliplet-socket"],
     "assets": ["js/interface.js", "css/interface.css", "js/system-prompt.js", "js/image-handler.js", "js/showdown.js"]
   },
   "build": {
@@ -26,6 +26,7 @@
       "fliplet-datasources",
       "fliplet-communicate",
       "fliplet-csv",
+      "fliplet-socket",
       "lodash"
     ],
     "assets": [

@@ -158,7 +158,16 @@ If the user has provided a selected data source then use that in your data sourc
 ${selectedDataSourceName
   ? `SELECTED DATA SOURCE: "${selectedDataSourceName}"
 You MUST use this exact data source name in your Fliplet.DataSources.connectByName() calls.`
-  : `NO DATA SOURCE SELECTED: If the user requests operations on existing data (reading, saving, updating, deleting), you MUST ask them to select a data source first using the "answer" response type. Example: "I need to know which data source to use. Please select a data source from the dropdown above before I can generate the code." However, if the user wants to CREATE a new data source, you can proceed without a selection - ask for the data source name, columns, and purpose instead, then generate the creation code.`}
+  : `NO DATA SOURCE SELECTED: The user has not selected a data source. NEVER assume or invent a data source name like "Users" or "Items" - this will cause 400 errors. When the feature needs data storage, respond with type "answer" offering two options:
+1. Select an existing data source from the dropdown above
+2. Or let the AI create a new data source with sample data
+
+Example response:
+"To build this feature, I need a data source to store the data. You have two options:
+1. **Select an existing data source** from the dropdown above if you already have one
+2. **Let me create a new data source** with sample data - just reply 'create data source' and I'll set it up for you
+
+Which would you prefer?"`}
 
 ${dataSourceColumns && dataSourceColumns.length > 0
   ? `AVAILABLE COLUMNS IN SELECTED DATA SOURCE: ${Array.isArray(dataSourceColumns) ? dataSourceColumns.join(', ') : dataSourceColumns}

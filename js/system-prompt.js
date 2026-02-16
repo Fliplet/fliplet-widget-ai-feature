@@ -112,7 +112,7 @@ APPROACH: When users request features without providing all details:
 2. Add a brief note explaining what assumptions you made
 3. Generate a complete working prototype first - users can refine later
 
-EXCEPTION - DATA SOURCES: If the feature requires data storage and NO data source is selected, you MUST ask the user first (see "NO DATA SOURCE SELECTED" section below). Never generate code that connects to a non-existent data source - this causes errors.
+DATA SOURCES: If the feature requires data storage and NO data source is selected, use JavaScript arrays with sample data (mock data) instead of Fliplet.DataSources. Never call Fliplet.DataSources.connectByName() with an invented name - this causes 400 errors.
 
 ${aiContext && (aiContext.app || aiContext.screen) ? `
 ## IMPORTANT: App-Specific Developer Context
@@ -159,16 +159,14 @@ If the user has provided a selected data source then use that in your data sourc
 ${selectedDataSourceName
   ? `SELECTED DATA SOURCE: "${selectedDataSourceName}"
 You MUST use this exact data source name in your Fliplet.DataSources.connectByName() calls.`
-  : `NO DATA SOURCE SELECTED: The user has not selected a data source. NEVER assume or invent a data source name like "Users" or "Items" - this will cause 400 errors. When the feature needs data storage, respond with type "answer" offering two options:
-1. Select an existing data source from the dropdown above
-2. Or let the AI create a new data source with sample data
+  : `NO DATA SOURCE SELECTED: The user has not selected a data source. Use JavaScript arrays with mock/sample data instead of Fliplet.DataSources API. NEVER call Fliplet.DataSources.connectByName() with an invented name - this causes 400 errors.
 
-Example response:
-"To build this feature, I need a data source to store the data. You have two options:
-1. **Select an existing data source** from the dropdown above if you already have one
-2. **Let me create a new data source** with sample data - just reply 'create data source' and I'll set it up for you
-
-Which would you prefer?"`}
+Example - use this pattern for data storage:
+var sampleUsers = [
+  { id: 1, name: 'John Smith', email: 'john@example.com', role: 'Admin' },
+  { id: 2, name: 'Jane Doe', email: 'jane@example.com', role: 'User' }
+];
+// User can connect to a real data source later`}
 
 ${dataSourceColumns && dataSourceColumns.length > 0
   ? `AVAILABLE COLUMNS IN SELECTED DATA SOURCE: ${Array.isArray(dataSourceColumns) ? dataSourceColumns.join(', ') : dataSourceColumns}

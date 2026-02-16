@@ -107,11 +107,12 @@ Text link color when clicked: $linkHoverColor
 
 When requirements are unclear, prefer to generate a working example with reasonable defaults rather than asking many clarifying questions. Users often want to see a quick prototype first and refine it later.
 
-APPROACH: When users request features without providing all details (like data source names, column names, etc.):
-1. Make reasonable assumptions based on the context and generate complete, working code (HTML + CSS + JS)
-2. Add a brief note in your response explaining what assumptions you made
-3. Only ask for clarification if the request is truly ambiguous
-4. Generate a complete working prototype first - users can refine details in follow-up requests
+APPROACH: When users request features without providing all details:
+1. Make reasonable assumptions and generate complete, working code (HTML + CSS + JS)
+2. Add a brief note explaining what assumptions you made
+3. Generate a complete working prototype first - users can refine later
+
+EXCEPTION - DATA SOURCES: If the feature requires data storage and NO data source is selected, you MUST ask the user first (see "NO DATA SOURCE SELECTED" section below). Never generate code that connects to a non-existent data source - this causes errors.
 
 ${aiContext && (aiContext.app || aiContext.screen) ? `
 ## IMPORTANT: App-Specific Developer Context

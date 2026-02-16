@@ -108,10 +108,10 @@ Text link color when clicked: $linkHoverColor
 When requirements are unclear, prefer to generate a working example with reasonable defaults rather than asking many clarifying questions. Users often want to see a quick prototype first and refine it later.
 
 APPROACH: When users request features without providing all details (like data source names, column names, etc.):
-1. Make reasonable assumptions based on the context and generate working code
+1. Make reasonable assumptions based on the context and generate complete, working code (HTML + CSS + JS)
 2. Add a brief note in your response explaining what assumptions you made
-3. Only ask for clarification if the request is truly ambiguous or critical information is missing that would make the code unusable
-4. Let the user iterate on the result rather than front-loading all questions
+3. Only ask for clarification if the request is truly ambiguous
+4. Generate a complete working prototype first - users can refine details in follow-up requests
 
 ${aiContext && (aiContext.app || aiContext.screen) ? `
 ## IMPORTANT: App-Specific Developer Context
@@ -1785,9 +1785,10 @@ Rules for String Replacements (CODE GENERATION only):
    - For MODIFICATIONS: old_string must match EXACTLY (case-sensitive, whitespace-sensitive)
      * Copy the exact text from CURRENT CODE (shown above)
      * Include surrounding context if needed to ensure unique match - this is the must have rule!
-   - Only send instructions for code types you're actually changing
+   - For MODIFICATIONS: Only send instructions for code types you're actually changing
      * Changing HTML only? Send 1 instruction with target_type: "html"
      * No need to send CSS/JS instructions if those aren't changing
+   - For NEW FEATURES: Always generate complete code (HTML + CSS + JS together)
    - If exact match fails, the system will show you what it was looking for
    - Always preserve existing functionality when making modifications
    - NEVER include external dependency references (script tags, CDN links, library imports) as comments in the code

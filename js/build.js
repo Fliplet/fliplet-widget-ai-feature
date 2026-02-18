@@ -240,30 +240,29 @@ Fliplet.Widget.instance({
           event?.type == "removed" &&
           widgetId == event?.removed[0]?.widgetId
         ) {
-          var currentSettings = await getCurrentPageSettings();
+          // var currentSettings = await getCurrentPageSettings();
 
-          var cleanedHtml = removeHtmlCode(currentSettings);
+          // var cleanedHtml = removeHtmlCode(currentSettings);
 
-          const layoutResponse = await saveLayoutToDeveloperOptions(
-            cleanedHtml
-          );
+          // const layoutResponse = await saveLayoutToDeveloperOptions(
+          //   cleanedHtml
+          // );
 
-          const cleanedCss = removeCodeWithinDelimiters(
-            "css",
-            currentSettings.page.settings.customSCSS
-          );
-          const cleanedJs = removeCodeWithinDelimiters(
-            "js",
-            currentSettings.page.settings.customJS
-          );
-          await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
+          // const cleanedCss = removeCodeWithinDelimiters(
+          //   "css",
+          //   currentSettings.page.settings.customSCSS
+          // );
+          // const cleanedJs = removeCodeWithinDelimiters(
+          //   "js",
+          //   currentSettings.page.settings.customJS
+          // );
+          // await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
 
-          // reload page preview
-          setTimeout(() => {
-            Fliplet.Studio.emit("reload-page-preview");
-          }, 1000);
+          // // reload page preview
+          // Fliplet.Studio.emit("reload-page-preview");
 
-          return { cleanedHtml, layoutResponse };
+          // return { cleanedHtml, layoutResponse };
+          return true;
         }
       });
 

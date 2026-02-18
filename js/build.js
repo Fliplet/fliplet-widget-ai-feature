@@ -259,7 +259,7 @@ Fliplet.Widget.instance({
           await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
 
           // reload page preview
-          Fliplet.Studio.emit("reload-page-preview");
+          // Fliplet.Studio.emit("reload-page-preview");
 
           return { cleanedHtml, layoutResponse };
         }

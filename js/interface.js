@@ -1712,19 +1712,52 @@ Available functions:
                 ? targetCode.substring(0, 300) + "..."
                 : targetCode;
 
-            // Show character-by-character comparison of first 50 chars
+            // When old_string is a fragment (shorter than file), find where its start might be
+            const isFragment = oldString.length < targetCode.length;
+            const firstLineOfOld = oldString.split(/\r?\n/)[0] || oldString.substring(0, 80);
+            const anchorLength = Math.min(60, firstLineOfOld.length, oldString.length);
+            const anchor = oldString.substring(0, anchorLength);
+            const anchorIndex = anchorLength > 10 ? targetCode.indexOf(anchor) : -1;
+
             let charComparison = "";
-            const compareLength = Math.min(50, Math.min(oldString.length, targetCode.length));
-            for (let i = 0; i < compareLength; i++) {
-              const oldChar = oldString[i];
-              const targetChar = targetCode[i];
-              if (oldChar === targetChar) {
-                charComparison += oldChar === '\n' ? '\\n' : oldChar === '\r' ? '\\r' : oldChar === '\t' ? '\\t' : oldChar;
-              } else {
-                const oldRepr = oldChar === '\n' ? '\\n' : oldChar === '\r' ? '\\r' : oldChar === '\t' ? '\\t' : oldChar === ' ' ? '␣' : oldChar;
-                const targetRepr = targetChar === '\n' ? '\\n' : targetChar === '\r' ? '\\r' : targetChar === '\t' ? '\\t' : targetChar === ' ' ? '␣' : targetChar;
-                charComparison += `[DIFF: '${oldRepr}' vs '${targetRepr}']`;
-                break; // Stop at first difference
+            let compareHint = "";
+
+            if (isFragment && anchorIndex >= 0) {
+              // Fragment: compare at position where snippet might start
+              const compareLength = Math.min(80, oldString.length, targetCode.length - anchorIndex);
+              for (let i = 0; i < compareLength; i++) {
+                const oldChar = oldString[i];
+                const targetChar = targetCode[anchorIndex + i];
+                if (oldChar === targetChar) {
+                  charComparison += oldChar === '\n' ? '\\n' : oldChar === '\r' ? '\\r' : oldChar === '\t' ? '\\t' : oldChar === ' ' ? '␣' : oldChar;
+                } else {
+                  const oldRepr = oldChar === '\n' ? '\\n' : oldChar === '\r' ? '\\r' : oldChar === '\t' ? '\\t' : oldChar === ' ' ? '␣' : oldChar;
+                  const targetRepr = targetChar === '\n' ? '\\n' : targetChar === '\r' ? '\\r' : targetChar === '\t' ? '\\t' : targetChar === ' ' ? '␣' : targetChar;
+                  charComparison += `[DIFF at offset ${i}: '${oldRepr}' vs '${targetRepr}']`;
+                  compareHint = ` First difference at character ${i} within the snippet (file position ~${anchorIndex + i}).`;
+                  break;
+                }
+              }
+              if (!compareHint && oldString.length > targetCode.length - anchorIndex) {
+                compareHint = " Snippet is longer than remaining file content at that position.";
+              }
+            } else {
+              // Whole-file or anchor not found: compare from start (original behaviour)
+              const compareLength = Math.min(50, Math.min(oldString.length, targetCode.length));
+              for (let i = 0; i < compareLength; i++) {
+                const oldChar = oldString[i];
+                const targetChar = targetCode[i];
+                if (oldChar === targetChar) {
+                  charComparison += oldChar === '\n' ? '\\n' : oldChar === '\r' ? '\\r' : oldChar === '\t' ? '\\t' : oldChar === ' ' ? '␣' : oldChar;
+                } else {
+                  const oldRepr = oldChar === '\n' ? '\\n' : oldChar === '\r' ? '\\r' : oldChar === '\t' ? '\\t' : oldChar === ' ' ? '␣' : oldChar;
+                  const targetRepr = targetChar === '\n' ? '\\n' : targetChar === '\r' ? '\\r' : targetChar === '\t' ? '\\t' : targetChar === ' ' ? '␣' : targetChar;
+                  charComparison += `[DIFF: '${oldRepr}' vs '${targetRepr}']`;
+                  if (isFragment) {
+                    compareHint = " old_string is a snippet but its start was not found in the file (or file starts differently).";
+                  }
+                  break;
+                }
               }
             }
 
@@ -1735,12 +1768,13 @@ Available functions:
               error += `Current ${targetType} is empty. The system auto-detects blank screens - this error should not occur for empty code.`;
             } else {
               error += `Current ${targetType} preview (${targetCode.length} chars):\n"${codePreview.replace(/\n/g, '\\n').replace(/\r/g, '\\r')}"\n\n`;
-              
               if (charComparison) {
-                error += `Character comparison (first ${compareLength} chars):\n"${charComparison}"\n\n`;
+                error += `Character comparison: "${charComparison}"${compareHint}\n\n`;
               }
-              
-              error += `💡 Tip: Make sure old_string matches exactly (including spacing, quotes, and line breaks).\n`;
+              if (isFragment && anchorIndex === -1) {
+                error += `💡 The snippet you're replacing doesn't appear to start anywhere in the current file (search for its first line failed). The file may have been reformatted or the snippet may be from a different version.\n`;
+              }
+              error += `💡 Tip: old_string must match existing code exactly (including spaces, comments, and line breaks).\n`;
               error += `💡 The system tried whitespace-normalized matching but it also failed.`;
             }
 

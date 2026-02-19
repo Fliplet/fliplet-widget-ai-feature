@@ -1493,6 +1493,23 @@ Available functions:
               index += oldString.length;
             }
 
+            // CASE 2a: If exact match fails, try trailing-newline tolerance (common 1-char mismatch)
+            if (count === 0) {
+              const oldTrimmedEnd = oldString.replace(/\r?\n+$/, "");
+              const targetTrimmedEnd = normalizedTargetCode.replace(/\r?\n+$/, "");
+              if (oldTrimmedEnd === targetTrimmedEnd) {
+                // Only difference is trailing newline(s); treat as full-content match
+                debugLog("✅ [StringReplacement] Matched with trailing-newline tolerance (full content)");
+                return {
+                  success: true,
+                  newCode: newString,
+                  location: "entire content (trailing-newline normalized)",
+                  oldLength: normalizedTargetCode.length,
+                  newLength: newString.length,
+                };
+              }
+            }
+
             // CASE 2b: If exact match fails, try whitespace-normalized matching
             if (count === 0) {
               debugLog("⚠️ [StringReplacement] Exact match failed, trying whitespace-normalized matching...");

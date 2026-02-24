@@ -243,6 +243,7 @@ Fliplet.Widget.instance({
           var currentSettings = await getCurrentPageSettings();
 
           var cleanedHtml = removeHtmlCode(currentSettings);
+          cleanedHtml = cleanedHtml.replaceAll(`<fl-ai-feature cid="${widgetId}"></fl-ai-feature>`, '');
 
           const layoutResponse = await saveLayoutToDeveloperOptions(
             cleanedHtml

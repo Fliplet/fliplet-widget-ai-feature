@@ -1882,20 +1882,15 @@ Example "string_replacement" response:
 Note: Always include all four fields to maintain consistent JSON structure for validation.
 
 CRITICAL WHITESPACE MATCHING RULES (READ CAREFULLY):
-⚠️ The system no longer normalizes line endings or whitespace - exact matching is required!
+⚠️ old_string must match the stored code EXACTLY. Any extra or missing newline, space, or character causes the replacement to fail.
 
 When creating old_string for MODIFICATIONS:
-1. Copy the text EXACTLY from "CURRENT COMPLETE [HTML/CSS/JAVASCRIPT]" shown above
-2. Always use a unique block of code as "old_string" — never generic tags like "</div>".
-Expand the selection until it matches only one place in the file, using surrounding context, classes, IDs, or multiple lines to ensure uniqueness.
-3. Preserve ALL whitespace characters:
-   - Spaces vs tabs (don't convert one to the other)
-   - Line breaks (\\n or \\r\\n - keep them as-is)
-   - Indentation levels (count spaces/tabs carefully)
-   - Trailing whitespace on lines
-4. If unsure about exact whitespace, include MORE surrounding context to ensure unique match
-5. Line endings matter: Don't assume LF when code uses CRLF or vice versa
-6. When the match fails, the error message will show you exactly what you searched for vs what exists
+1. Copy the text CHARACTER-FOR-CHARACTER from the "CURRENT COMPLETE [HTML/CSS/JAVASCRIPT]" block(s) shown above. Do not retype or reformat—copy the exact segment you want to replace.
+2. Do NOT add extra newlines at the start or end of old_string. If the current code block starts with "\\n  <div", your old_string must start with "\\n  <div" (one newline, two spaces), not "\\n\\n  <div" (two newlines). Same for the end: match trailing newlines/whitespace exactly.
+3. Always use a unique block of code as "old_string" — never generic tags like "</div>". Expand the selection until it matches only one place in the file, using surrounding context, classes, IDs, or multiple lines to ensure uniqueness.
+4. Preserve ALL whitespace: spaces vs tabs, line breaks (\\n or \\r\\n as in the block), indentation, and trailing whitespace on lines. Do not normalize or "pretty-print".
+5. For new_string: use the same line-ending and indentation style as the existing code so the result stays consistent.
+6. When the match fails, the error message will show you exactly what you searched for vs what exists.
 
 CRITICAL - DO NOT INCLUDE DELIMITERS:
 ⚠️ NEVER include delimiter comments in your old_string or new_string!
@@ -1934,8 +1929,8 @@ Rules for String Replacements (CODE GENERATION only):
      * You can use ANY value for old_string (it will be ignored)
      * Recommended: Use old_string: "" for blank screens to make intent clear
    - For MODIFICATIONS: old_string must match EXACTLY (case-sensitive, whitespace-sensitive)
-     * Copy the exact text from CURRENT CODE (shown above)
-     * Include surrounding context if needed to ensure unique match - this is the must have rule!
+     * Copy the exact text from the CURRENT COMPLETE [HTML/CSS/JAVASCRIPT] blocks above—character-for-character, including exact leading/trailing newlines and spaces. Do not add or remove any newline or space.
+     * Include surrounding context if needed to ensure unique match—this is the must-have rule!
    - Only send instructions for code types you're actually changing
      * Changing HTML only? Send 1 instruction with target_type: "html"
      * No need to send CSS/JS instructions if those aren't changing
@@ -2019,7 +2014,13 @@ Planning & progress reporting for complex requests:
         prompt += `\nCURRENT COMPLETE JAVASCRIPT:\n\`\`\`javascript\n${currentCode.js}\n\`\`\`\n`;
       }
 
-      prompt += `\nEXAMPLE - To add a phone field to an existing form:
+      prompt += `\nCRITICAL - old_string MUST BE AN EXACT COPY OF THE CODE ABOVE:
+- For old_string: Copy the exact text character-for-character from the CURRENT COMPLETE block(s) above. Do NOT add or remove any character: no extra leading or trailing newlines, no extra spaces, no changed line endings. The system compares your old_string to the stored code; any difference causes the replacement to fail.
+- For new_string: Use the same style as the existing code: same line endings (use \\n for newlines in your JSON output), same indentation (e.g. 2 or 4 spaces). Do NOT add extra blank lines at the start or end unless the original block had them.
+- When writing JSON: In string values use \\n for newlines and \\" for literal double-quotes so the output is valid JSON. The system will interpret these correctly.
+- Best practice: Select the exact segment to replace in the block above, copy it verbatim as old_string, then write new_string with your changes while keeping the same leading/trailing whitespace and line-ending style.
+
+EXAMPLE - To add a phone field to an existing form:
 
 REPLACE html:
 OLD: </form>

@@ -2051,7 +2051,7 @@ Planning & progress reporting for complex requests:
 
     prompt += `\nCRITICAL - old_string MUST BE AN EXACT COPY OF THE CODE ABOVE:
 - For old_string: Copy the exact text character-for-character from the CURRENT COMPLETE block(s) above, including all whitespace, indentation, blank lines, and line endings. Do NOT normalize, trim, re-indent, reformat, or change anything. Any difference — even a single space or newline — will cause the replacement to fail.
-- For new_string: Follow the existing codebase conventions. Match the current indentation style (tabs vs spaces and number of spaces), line endings, naming conventions (camelCase, snake_case, etc.), comment style, and file organization patterns. Do not introduce new dependencies without good reason. When multiple approaches are possible, prefer the one most consistent with the surrounding code.
+- For new_string: Follow the existing codebase conventions. Match the current indentation style (tabs vs spaces and number of spaces), line endings, naming conventions (camelCase, snake_case, etc.), and comment style. Do not introduce new dependencies without good reason. When multiple approaches are possible, prefer the one most consistent with the surrounding code.
 - When writing JSON: In string values use \\n for newlines and \\" for literal double-quotes so the output is valid JSON. The system will interpret these correctly.
 - Best practice: Select the exact segment to replace in the block above, copy it verbatim as old_string, then write new_string with your changes while keeping the same leading/trailing whitespace and line-ending style.
 

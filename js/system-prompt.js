@@ -3,18 +3,31 @@
  * @param {Object} context - Context object
  * @returns {string} System prompt
  */
-function buildSystemPromptWithContext(context, pastedImages = [], AppState, dataSourceColumns, selectedDataSourceName, componentGuid, aiContext = {}) {
-    debugLog("📝 [AI] Building system prompt with context...");
-    debugLog("📝 [AI] Images passed to system prompt:", {
-      passedImagesCount: pastedImages.length,
-      passedImages: pastedImages.map(img => ({ id: img.id, name: img.name, status: img.status })),
-      currentAppStateImages: AppState.pastedImages.length,
-      currentAppStateValidImages: AppState.pastedImages.filter(img =>
-        img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
-      ).length
-    });
+function buildSystemPromptWithContext(
+  context,
+  pastedImages = [],
+  AppState,
+  dataSourceColumns,
+  selectedDataSourceName,
+  componentGuid,
+  aiContext = {},
+) {
+  debugLog("📝 [AI] Building system prompt with context...");
+  debugLog("📝 [AI] Images passed to system prompt:", {
+    passedImagesCount: pastedImages.length,
+    passedImages: pastedImages.map((img) => ({
+      id: img.id,
+      name: img.name,
+      status: img.status,
+    })),
+    currentAppStateImages: AppState.pastedImages.length,
+    currentAppStateValidImages: AppState.pastedImages.filter(
+      (img) =>
+        img && img.status === "uploaded" && img.flipletUrl && img.flipletFileId,
+    ).length,
+  });
 
-          let prompt = `You are an expert web developer chat assistant for a Fliplet app. Your job is to help users create and modify HTML, CSS, and JavaScript code reliably.
+  let prompt = `You are an expert web developer chat assistant for a Fliplet app. Your job is to help users create and modify HTML, CSS, and JavaScript code reliably.
 
 General instructions:
 
@@ -122,29 +135,45 @@ Clarifications, persistence & verification:
 - Stay biased toward completion—after clarifications are answered, continue execution without pausing for further confirmation unless safety or correctness requires it.
 - Before finalizing instructions, re-read them to ensure every data source name, column, selector, and dependency reference matches the latest user input.
 
-${aiContext && (aiContext.app || aiContext.screen) ? `
+${
+  aiContext && (aiContext.app || aiContext.screen)
+    ? `
 ## IMPORTANT: App-Specific Developer Context
 
 The developer has provided the following custom documentation for this app. You MUST follow these conventions and use these custom APIs/functions when they are relevant to the user's request. These take PRIORITY over generic implementations.
 
-${aiContext.app ? `### App-Level Context (applies to all screens)
+${
+  aiContext.app
+    ? `### App-Level Context (applies to all screens)
 ${aiContext.app}
-` : ''}${aiContext.screen ? `
+`
+    : ""
+}${
+        aiContext.screen
+          ? `
 
 ### Screen-Level Context (specific to this screen)
 ${aiContext.screen}
-` : ''}
+`
+          : ""
+      }
 
 When generating code:
 
 - ALWAYS check if a custom function/API from the context above can fulfill the requirement
 - PREFER using the documented custom APIs over creating new implementations
 - FOLLOW the conventions and patterns described in the context
-` : ''}
+`
+    : ""
+}
 
           ${(() => {
-            const validImages = pastedImages.filter(img =>
-              img && img.status === 'uploaded' && img.flipletUrl && img.flipletFileId
+            const validImages = pastedImages.filter(
+              (img) =>
+                img &&
+                img.status === "uploaded" &&
+                img.flipletUrl &&
+                img.flipletFileId,
             );
             return validImages.length > 0
               ? `IMPORTANT: The user has attached ${validImages.length} valid image(s) to analyze. These images are being sent directly to you in OpenAI's image input format, so you can see and analyze them directly. Please examine these images carefully and incorporate their content into your response. The images may contain:
@@ -155,7 +184,7 @@ When generating code:
 - Color schemes or styling references
 
 When analyzing images, describe what you see and how you'll implement it in the code.`
-              : '';
+              : "";
           })()}
 
 API Documentation:
@@ -171,17 +200,21 @@ Data source information can be attached to individual messages. When a user mess
 
 IMPORTANT: Each user message may reference a different data source. Always check the current message for data source context.
 
-${selectedDataSourceName
-  ? `CURRENTLY SELECTED DATA SOURCE: "${selectedDataSourceName}"
+${
+  selectedDataSourceName
+    ? `CURRENTLY SELECTED DATA SOURCE: "${selectedDataSourceName}"
 You MUST use this exact data source name in your Fliplet.DataSources.connectByName() calls for the current request.`
-  : `NO DATA SOURCE CURRENTLY SELECTED: If the user requests data source operations (reading, saving, updating data) without specifying a data source in their message, you MUST ask them to select a data source first using the "answer" response type. Example: "I need to know which data source to use. Please select a data source from the dropdown above before I can generate the code."`}
+    : `NO DATA SOURCE CURRENTLY SELECTED: If the user requests data source operations (reading, saving, updating data) without specifying a data source in their message, you MUST ask them to select a data source first using the "answer" response type. Example: "I need to know which data source to use. Please select a data source from the dropdown above before I can generate the code."`
+}
 
-${dataSourceColumns && dataSourceColumns.length > 0
-  ? `AVAILABLE COLUMNS IN CURRENTLY SELECTED DATA SOURCE: ${Array.isArray(dataSourceColumns) ? dataSourceColumns.join(', ') : dataSourceColumns}
+${
+  dataSourceColumns && dataSourceColumns.length > 0
+    ? `AVAILABLE COLUMNS IN CURRENTLY SELECTED DATA SOURCE: ${Array.isArray(dataSourceColumns) ? dataSourceColumns.join(", ") : dataSourceColumns}
 You MUST use only these exact column names when referencing data. Do not assume or create new column names.`
-  : selectedDataSourceName
-    ? 'No column information available for this data source. Ask the user what columns exist before generating data source code.'
-    : ''}
+    : selectedDataSourceName
+      ? "No column information available for this data source. Ask the user what columns exist before generating data source code."
+      : ""
+}
 
 NOTE: If a previous message in the conversation used a different data source, that context is preserved in the message history. Pay attention to which data source is relevant for each specific request.
 
@@ -1949,14 +1982,18 @@ Rules for Informational Responses (ANSWER format):
    - Include examples when helpful for understanding
    - No code generation is needed for these responses
 
-${context.intent ? `USER REQUEST TYPE: ${context.intent}
+${
+  context.intent
+    ? `USER REQUEST TYPE: ${context.intent}
 
 Intent Guide:
 - "create_new": User wants to build something from scratch → Use string_replacement format for blank screens
 - "modify_existing": User wants to change existing code → Use exact string matching from CURRENT CODE
 - "ask_question": User wants information, not code → Use "answer" response type
 - "debug": User has an error to fix → Identify issue, provide fix with exact string replacement
-` : ''}
+`
+    : ""
+}
 
 RESPONSE STRATEGY FOR THIS REQUEST:
 - If user wants to CREATE or MODIFY code: Use "string_replacement" type with precise replacement instructions
@@ -1985,38 +2022,36 @@ Planning & progress reporting for complex requests:
 - Before sending instructions, confirm each old_string you plan to replace is unique and that the new code satisfies all dependency, selector, and template-escaping requirements.
 `;
 
-    // Add context about existing code structure
-    if (!context.isFirstGeneration) {
-      prompt += `\nEXISTING CODE STRUCTURE:
-- HTML Components: ${
-        context.codeStructure.htmlComponents.join(", ") || "none"
-      }
+  // Add context about existing code structure
+  if (!context.isFirstGeneration) {
+    prompt += `\nEXISTING CODE STRUCTURE:
+- HTML Components: ${context.codeStructure.htmlComponents.join(", ") || "none"}
 - CSS Organization: ${context.codeStructure.cssOrganization}
 - JS Patterns: ${context.codeStructure.jsPatterns}
 `;
 
-      // For modifications, always include the COMPLETE current code
-      const currentCode = {
-        html: AppState.currentHTML,
-        css: AppState.currentCSS,
-        js: AppState.currentJS,
-      };
+    // For modifications, always include the COMPLETE current code
+    const currentCode = {
+      html: AppState.currentHTML,
+      css: AppState.currentCSS,
+      js: AppState.currentJS,
+    };
 
-      if (currentCode.html.trim()) {
-        prompt += `\nCURRENT COMPLETE HTML:\n\`\`\`html\n${currentCode.html}\n\`\`\`\n`;
-      }
+    if (currentCode.html.trim()) {
+      prompt += `\nCURRENT COMPLETE HTML:\n\`\`\`html\n${currentCode.html}\n\`\`\`\n`;
+    }
 
-      if (currentCode.css.trim()) {
-        prompt += `\nCURRENT COMPLETE CSS:\n\`\`\`css\n${currentCode.css}\n\`\`\`\n`;
-      }
+    if (currentCode.css.trim()) {
+      prompt += `\nCURRENT COMPLETE CSS:\n\`\`\`css\n${currentCode.css}\n\`\`\`\n`;
+    }
 
-      if (currentCode.js.trim()) {
-        prompt += `\nCURRENT COMPLETE JAVASCRIPT:\n\`\`\`javascript\n${currentCode.js}\n\`\`\`\n`;
-      }
+    if (currentCode.js.trim()) {
+      prompt += `\nCURRENT COMPLETE JAVASCRIPT:\n\`\`\`javascript\n${currentCode.js}\n\`\`\`\n`;
+    }
 
-      prompt += `\nCRITICAL - old_string MUST BE AN EXACT COPY OF THE CODE ABOVE:
-- For old_string: Copy the exact text character-for-character from the CURRENT COMPLETE block(s) above. Do NOT add or remove any character: no extra leading or trailing newlines, no extra spaces, no changed line endings. The system compares your old_string to the stored code; any difference causes the replacement to fail.
-- For new_string: Use the same style as the existing code: same line endings (use \\n for newlines in your JSON output), same indentation (e.g. 2 or 4 spaces). Do NOT add extra blank lines at the start or end unless the original block had them.
+    prompt += `\nCRITICAL - old_string MUST BE AN EXACT COPY OF THE CODE ABOVE:
+- For old_string: Copy the exact text character-for-character from the CURRENT COMPLETE block(s) above, including all whitespace, indentation, blank lines, and line endings. Do NOT normalize, trim, re-indent, reformat, or change anything. Any difference — even a single space or newline — will cause the replacement to fail.
+- For new_string: Follow the existing codebase conventions. Match the current indentation style (tabs vs spaces and number of spaces), line endings, naming conventions (camelCase, snake_case, etc.), and comment style. Do not introduce new dependencies without good reason. When multiple approaches are possible, prefer the one most consistent with the surrounding code.
 - When writing JSON: In string values use \\n for newlines and \\" for literal double-quotes so the output is valid JSON. The system will interpret these correctly.
 - Best practice: Select the exact segment to replace in the block above, copy it verbatim as old_string, then write new_string with your changes while keeping the same leading/trailing whitespace and line-ending style.
 
@@ -2032,8 +2067,8 @@ NEW:     <div class="form-group">
 DESC: Added phone number field to form
 
 This is much more reliable than generating the entire form again!`;
-    } else {
-      prompt += `\n
+  } else {
+    prompt += `\n
 IMPORTANT: This is a NEW PROJECT with blank/empty code.
 
 The system AUTO-DETECTS blank screens and inserts code directly.
@@ -2058,22 +2093,22 @@ Example for blank HTML screen:
 }
 
 CRITICAL: Always use string_replacement format for code generation. Do NOT use markdown code blocks.`;
-    }
-
-    debugLog("✅ [AI] System prompt built");
-    debugLog(
-      "📄 [AI] Full system prompt being sent:",
-      prompt.substring(0, 500) + "..."
-    );
-
-    // Log if we're including existing code
-    if (!context.isFirstGeneration) {
-      debugLog("🔄 [AI] Including existing code in prompt:", {
-        htmlLength: AppState.currentHTML.length,
-        cssLength: AppState.currentCSS.length,
-        jsLength: AppState.currentJS.length,
-      });
-    }
-
-    return prompt;
   }
+
+  debugLog("✅ [AI] System prompt built");
+  debugLog(
+    "📄 [AI] Full system prompt being sent:",
+    prompt.substring(0, 500) + "...",
+  );
+
+  // Log if we're including existing code
+  if (!context.isFirstGeneration) {
+    debugLog("🔄 [AI] Including existing code in prompt:", {
+      htmlLength: AppState.currentHTML.length,
+      cssLength: AppState.currentCSS.length,
+      jsLength: AppState.currentJS.length,
+    });
+  }
+
+  return prompt;
+}

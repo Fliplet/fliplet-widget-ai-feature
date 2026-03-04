@@ -3419,6 +3419,7 @@ Available functions:
             temperature: AIConfig.temperature,
             // max_tokens: CONFIG.MAX_TOKENS,
             // reasoning_effort: "low",
+            _widgetPackage: "com.fliplet.ai-feature",
             response_format: {
               type: "json_schema",
               json_schema: {

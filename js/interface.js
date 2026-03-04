@@ -1407,7 +1407,12 @@ Available functions:
             // This ensures oldString and targetCode are in the same format for comparison
             oldString = this.normalizeEscapedCharacters(oldString);
             newString = this.normalizeEscapedCharacters(newString);
-            const normalizedTargetCode = this.normalizeEscapedCharacters(targetCode);
+            let normalizedTargetCode = this.normalizeEscapedCharacters(targetCode);
+
+            // Normalize line endings (CRLF/CR -> LF) so stored code and AI instructions match
+            const normalizeLineEndings = (s) => (s || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+            oldString = normalizeLineEndings(oldString);
+            normalizedTargetCode = normalizeLineEndings(normalizedTargetCode);
 
             // Log if delimiters were found and stripped
             if (oldString !== instruction.old_string || newString !== instruction.new_string) {
@@ -1493,17 +1498,40 @@ Available functions:
               index += oldString.length;
             }
 
-            // CASE 2a: If exact match fails, try trailing-newline tolerance (common 1-char mismatch)
+            // CASE 2a: If exact match fails, try trailing-newline / trailing-whitespace tolerance
             if (count === 0) {
               const oldTrimmedEnd = oldString.replace(/\r?\n+$/, "");
               const targetTrimmedEnd = normalizedTargetCode.replace(/\r?\n+$/, "");
               if (oldTrimmedEnd === targetTrimmedEnd) {
-                // Only difference is trailing newline(s); treat as full-content match
                 debugLog("✅ [StringReplacement] Matched with trailing-newline tolerance (full content)");
                 return {
                   success: true,
                   newCode: newString,
                   location: "entire content (trailing-newline normalized)",
+                  oldLength: normalizedTargetCode.length,
+                  newLength: newString.length,
+                };
+              }
+              // Try full trailing whitespace tolerance (e.g. "  \n" vs "  " or " \n" vs "")
+              const oldTrailingWs = oldString.replace(/\s+$/, "");
+              const targetTrailingWs = normalizedTargetCode.replace(/\s+$/, "");
+              if (oldTrailingWs === targetTrailingWs) {
+                debugLog("✅ [StringReplacement] Matched with trailing-whitespace tolerance (full content)");
+                return {
+                  success: true,
+                  newCode: newString,
+                  location: "entire content (trailing-whitespace normalized)",
+                  oldLength: normalizedTargetCode.length,
+                  newLength: newString.length,
+                };
+              }
+              // If only difference is leading/trailing whitespace, treat as full-content match
+              if (oldString.trim() === normalizedTargetCode.trim()) {
+                debugLog("✅ [StringReplacement] Matched with trim tolerance (full content)");
+                return {
+                  success: true,
+                  newCode: newString,
+                  location: "entire content (trim-normalized)",
                   oldLength: normalizedTargetCode.length,
                   newLength: newString.length,
                 };

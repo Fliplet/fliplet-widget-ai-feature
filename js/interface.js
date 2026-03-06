@@ -127,6 +127,7 @@ Fliplet.Widget.generateInterface({
             <div class="chat-btn-container">
               <span class="btn btn-primary" id="send-btn"><i class="fa fa-paper-plane"></i></span>
               <div class="image-paste-hint">💡 Tip: You can paste or drag and drop images!</div>
+              <div class="model-name"></div>
               <br class="clear" />
               <div class="uploaded-images">
                   <div class="no-images-placeholder">No images attached</div>
@@ -2382,6 +2383,8 @@ Fliplet.Widget.generateInterface({
           DOM.uploadedImages = document.querySelector(".uploaded-images");
 
           DOM.resetBtn.style.display = "none";
+
+          document.querySelector(".model-name").textContent = "Model: " + CONFIG.OPENAI_MODEL;
 
           // Initialize textarea styling and behavior
           setTimeout(() => {

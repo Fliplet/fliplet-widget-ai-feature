@@ -396,6 +396,7 @@
 }
 
 .interface .image-paste-hint {
+  display: inline;
   font-size: 11px;
   margin-top: 0;
   margin-left: 5px;
@@ -406,6 +407,7 @@
 }
 
 .interface .model-name {
+  display: inline;
   font-size: 11px;
   margin-top: 0;
   margin-left: 5px;

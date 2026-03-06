@@ -405,6 +405,16 @@
   pointer-events: none;
 }
 
+.interface .model-name {
+  font-size: 11px;
+  margin-top: 0;
+  margin-left: 5px;
+  padding-bottom: 5px;
+  text-align: left;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
 .interface .message img {
   max-width: 100%;
   max-height: 400px;

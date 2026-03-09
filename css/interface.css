@@ -396,6 +396,18 @@
 }
 
 .interface .image-paste-hint {
+  display: inline-block;
+  font-size: 11px;
+  margin-top: 0;
+  margin-left: 5px;
+  padding-bottom: 5px;
+  text-align: left;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.interface .model-name {
+  display: inline-block;
   font-size: 11px;
   margin-top: 0;
   margin-left: 5px;

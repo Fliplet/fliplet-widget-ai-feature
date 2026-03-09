@@ -49,24 +49,40 @@ All generated code MUST be fully responsive and work across mobile, tablet, and 
    - Use Bootstrap's table-responsive wrapper (<div class="table-responsive"><table>...</table></div>) for simple tables.
    - For data-heavy tables (4+ columns), provide a card-based stacked layout on mobile using media queries. Hide less important columns on small screens with Bootstrap's responsive utility classes (visible-xs, hidden-xs, visible-sm, hidden-sm, visible-md, hidden-md, visible-lg, hidden-lg).
 
-4. Touch-Friendly Targets: All interactive elements (buttons, links, checkboxes, form inputs) MUST have a minimum tap target size of 44x44px on mobile. Use adequate padding and spacing between clickable elements. Never use btn-xs for primary action buttons on mobile—use btn-sm or btn-default with sufficient padding instead.
+4. Touch-Friendly Targets: All interactive elements (buttons, links, checkboxes, radio buttons, form inputs) MUST have a minimum tap target size of 44x44px on mobile. This includes:
+   - Buttons: use min-height: 44px with adequate padding (at least 10px 14px). Never use btn-xs for action buttons on mobile—use btn-sm or btn-default instead.
+   - Checkboxes and radio buttons: style the parent label with min-height: 44px, padding: 10px, and display: flex/align-items: center so the entire label row is tappable. Alternatively use a custom checkbox/radio with a larger visual hit area.
+   - Links in lists: ensure line-height and padding create at least 44px of tappable height.
+   - Use adequate spacing (at least 8px) between adjacent interactive elements to prevent mis-taps.
 
 5. Flexible Sizing: Use relative units (%, em, rem, vw, vh) instead of fixed pixel values for widths. Set max-width rather than fixed width to prevent overflow on small screens. Avoid any fixed width wider than 320px without a responsive fallback.
 
-6. Responsive Typography: Use relative font sizes (em or rem). Body text should be at least 16px equivalent on mobile for readability. Subtext and secondary labels should be at least 13px. Headings should scale down on smaller screens.
+6. Responsive Typography: Use relative font sizes (em or rem). Body text should be at least 16px equivalent on mobile for readability. Subtext and secondary labels should be at least 13px. Headings should scale down on smaller screens using media queries. Example:
+   h2 { font-size: 1.5em; }
+   @media (min-width: 768px) { h2 { font-size: 1.75em; } }
+   @media (min-width: 1200px) { h2 { font-size: 2em; } }
 
-7. Text Overflow Handling: For content that may be long (descriptions, notes, names):
-   - Use CSS text truncation (text-overflow: ellipsis, overflow: hidden, white-space: nowrap) for single-line fields.
-   - Use -webkit-line-clamp with display: -webkit-box for multi-line truncation (2-3 lines max in list views).
-   - Show full content in detail/edit views or on hover/click.
+7. Text Overflow Handling: For content that may be long (descriptions, notes, names) in list views and cards, ALWAYS apply truncation:
+   - Single-line fields (titles, names): use text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
+   - Multi-line fields (descriptions, notes): use display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; (use 2-3 lines max in list/card views).
+   - Show full content only in detail/edit views, modals, or overlays—never in the list view itself.
+   - This is mandatory for any card-based or list-based layout to prevent rows/cards from becoming excessively tall.
 
 8. Responsive Images: Images must use max-width: 100% and height: auto. Use the Bootstrap class img-responsive on img tags. For background images use background-size: cover or contain.
 
 9. Responsive Forms: Form inputs should be full-width (width: 100%) on mobile using Bootstrap's form-control class. Stack labels above inputs on mobile. Group related fields in rows that collapse to single-column on mobile using the grid.
 
-10. Button Layout: Separate destructive actions (delete, clear) from primary actions (add, save) with visual spacing or alignment. On mobile, stack buttons vertically if there are more than 2 in a row. Use the pull-right class for primary actions and keep destructive buttons on the left or in a separate group.
+10. Button Layout: Separate destructive actions (delete, clear) from primary actions (add, save) with visual spacing or alignment. On mobile, stack buttons vertically if there are more than 2 in a row using a media query:
+   @media (max-width: 767px) {
+     .button-group .btn { display: block; width: 100%; margin-bottom: 8px; }
+   }
+   Use the pull-right class for primary actions and keep destructive buttons on the left or in a separate group.
 
 11. No Horizontal Overflow: Ensure all content fits within the viewport at every breakpoint. Never set fixed widths wider than the viewport. Test that no element causes horizontal scrolling.
+
+12. Use All Breakpoints: Always include styles for the large desktop breakpoint (@media (min-width: 1200px)) in addition to tablet and desktop. Use this to optimize spacing, font sizes, column widths, and layout density for wide screens.
+
+13. Flexbox Containers: When using display: flex with flex-direction: column for full-height layouts (e.g. overlays, sidebars), always set flex: 1 on the scrollable content area so it fills remaining space. Pair with overflow-y: auto and -webkit-overflow-scrolling: touch for smooth mobile scrolling.
 
 Design & Visual Style Guidelines:
 - Use clean, modern design with adequate whitespace, clear visual hierarchy, and consistent spacing.

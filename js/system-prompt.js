@@ -1923,7 +1923,12 @@ When creating old_string for MODIFICATIONS:
 3. Always use a unique block of code as "old_string" — never generic tags like "</div>". Expand the selection until it matches only one place in the file, using surrounding context, classes, IDs, or multiple lines to ensure uniqueness.
 4. Preserve ALL whitespace: spaces vs tabs, line breaks (\\n or \\r\\n as in the block), indentation, and trailing whitespace on lines. Do not normalize or "pretty-print".
 5. For new_string: use the same line-ending and indentation style as the existing code so the result stays consistent.
-6. When the match fails, the error message will show you exactly what you searched for vs what exists.
+6. Prefer the SMALLEST UNIQUE snippet for old_string instead of the entire file:
+   - Good: one function, one component, one media query block, or a small group of adjacent lines around the change.
+   - Bad: copying the whole HTML/CSS/JS file into old_string for a small edit.
+   - Expand old_string only as much as needed to make the match unique.
+7. Avoid pointless no-op instructions: do not include an instruction where old_string and new_string are identical unless you intentionally want to treat it as a no-op. If you are not changing a section, omit it from the instructions entirely.
+8. When the match fails, the error message will show you exactly what you searched for vs what exists.
 
 CRITICAL - DO NOT INCLUDE DELIMITERS:
 ⚠️ NEVER include delimiter comments in your old_string or new_string!
@@ -1963,7 +1968,7 @@ Rules for String Replacements (CODE GENERATION only):
      * Recommended: Use old_string: "" for blank screens to make intent clear
    - For MODIFICATIONS: old_string must match EXACTLY (case-sensitive, whitespace-sensitive)
      * Copy the exact text from the CURRENT COMPLETE [HTML/CSS/JAVASCRIPT] blocks above—character-for-character, including exact leading/trailing newlines and spaces. Do not add or remove any newline or space.
-     * Include surrounding context if needed to ensure unique match—this is the must-have rule!
+     * Include surrounding context if needed to ensure unique match—this is the must-have rule! Use the smallest snippet that is unique; do NOT use entire files for small edits.
    - Only send instructions for code types you're actually changing
      * Changing HTML only? Send 1 instruction with target_type: "html"
      * No need to send CSS/JS instructions if those aren't changing

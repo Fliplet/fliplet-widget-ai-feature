@@ -38,12 +38,11 @@ CRITICAL - Responsive Design & Mobile-First Requirements:
 All generated code MUST be fully responsive and work across mobile, tablet, and desktop. Follow these rules:
 
 1. Mobile-First CSS: Write base styles for mobile first, then use min-width media queries to enhance for larger screens. Standard breakpoints:
-   - @media (min-width: 768px) { /* Tablet */ }
-   - @media (min-width: 992px) { /* Desktop */ }
-   - @media (min-width: 1200px) { /* Large desktop */ }
-   - For mobile-only overrides when needed: @media (max-width: 767px) { }
+   - @media (min-width: 640px) { /* Tablet */ }
+   - @media (min-width: 1024px) { /* Desktop */ }
+   - For mobile-only overrides when needed: @media (max-width: 639px) { }
 
-2. Bootstrap Grid: Always use Bootstrap 3's grid system (container/container-fluid, row, col-xs-*, col-sm-*, col-md-*, col-lg-*) for layouts. Use multiple column classes to define behavior at different breakpoints. Example: <div class="col-xs-12 col-sm-6 col-md-4"> for full-width on mobile, half on tablet, third on desktop.
+2. Grid Layout: Bootstrap 3's grid system (container/container-fluid, row, col-xs-*, col-sm-*, col-md-*, col-lg-*) is available and can be used for layouts, but you are also welcome to use your own grid system (e.g. flexbox or CSS grid) if it better suits the design. Use multiple column classes or responsive rules to define behavior at different breakpoints. Example with Bootstrap: <div class="col-xs-12 col-sm-6 col-md-4"> for full-width on mobile, half on tablet, third on desktop.
 
 3. Responsive Tables: Never use tables with many fixed-width columns for data that will be viewed on mobile. Instead:
    - Use Bootstrap's table-responsive wrapper (<div class="table-responsive"><table>...</table></div>) for simple tables.
@@ -59,8 +58,8 @@ All generated code MUST be fully responsive and work across mobile, tablet, and 
 
 6. Responsive Typography: Use relative font sizes (em or rem). Body text should be at least 16px equivalent on mobile for readability. Subtext and secondary labels should be at least 13px. Headings should scale down on smaller screens using media queries. Example:
    h2 { font-size: 1.5em; }
-   @media (min-width: 768px) { h2 { font-size: 1.75em; } }
-   @media (min-width: 1200px) { h2 { font-size: 2em; } }
+   @media (min-width: 640px) { h2 { font-size: 1.75em; } }
+   @media (min-width: 1024px) { h2 { font-size: 2em; } }
 
 7. Text Overflow Handling: For content that may be long (descriptions, notes, names) in list views and cards, ALWAYS apply truncation:
    - Single-line fields (titles, names): use text-overflow: ellipsis; overflow: hidden; white-space: nowrap;
@@ -73,14 +72,14 @@ All generated code MUST be fully responsive and work across mobile, tablet, and 
 9. Responsive Forms: Form inputs should be full-width (width: 100%) on mobile using Bootstrap's form-control class. Stack labels above inputs on mobile. Group related fields in rows that collapse to single-column on mobile using the grid.
 
 10. Button Layout: Separate destructive actions (delete, clear) from primary actions (add, save) with visual spacing or alignment. On mobile, stack buttons vertically if there are more than 2 in a row using a media query:
-   @media (max-width: 767px) {
+   @media (max-width: 639px) {
      .button-group .btn { display: block; width: 100%; margin-bottom: 8px; }
    }
    Use the pull-right class for primary actions and keep destructive buttons on the left or in a separate group.
 
 11. No Horizontal Overflow: Ensure all content fits within the viewport at every breakpoint. Never set fixed widths wider than the viewport. Test that no element causes horizontal scrolling.
 
-12. Use All Breakpoints: Always include styles for the large desktop breakpoint (@media (min-width: 1200px)) in addition to tablet and desktop. Use this to optimize spacing, font sizes, column widths, and layout density for wide screens.
+12. Use All Breakpoints: Always include styles for both the tablet breakpoint (@media (min-width: 640px)) and desktop breakpoint (@media (min-width: 1024px)). Use these to optimize spacing, font sizes, column widths, and layout density across screen sizes.
 
 13. Flexbox Containers: When using display: flex with flex-direction: column for full-height layouts (e.g. overlays, sidebars), always set flex: 1 on the scrollable content area so it fills remaining space. Pair with overflow-y: auto and -webkit-overflow-scrolling: touch for smooth mobile scrolling.
 

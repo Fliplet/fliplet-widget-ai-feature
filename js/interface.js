@@ -1870,15 +1870,18 @@ Available functions:
               };
             }
 
-            // Check not identical (unless blank screen)
+            // Allow identical old_string/new_string for non-blank screens.
+            // These will be treated as successful no-op updates so that
+            // the engine does not report failures when AI re-sends the
+            // same code without modifications.
             if (
               !isBlankScreen &&
               instruction.old_string === instruction.new_string
             ) {
-              return {
-                valid: false,
-                error: "old_string and new_string cannot be identical",
-              };
+              debugLog(
+                "ℹ️ [StringReplacement] old_string and new_string are identical; treating as a no-op update.",
+              );
+              return { valid: true };
             }
 
             return { valid: true };

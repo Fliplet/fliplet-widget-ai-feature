@@ -1410,10 +1410,17 @@ Available functions:
             newString = this.normalizeEscapedCharacters(newString);
             let normalizedTargetCode = this.normalizeEscapedCharacters(targetCode);
 
-            // Normalize line endings (CRLF/CR -> LF) so stored code and AI instructions match
-            const normalizeLineEndings = (s) => (s || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-            oldString = normalizeLineEndings(oldString);
-            normalizedTargetCode = normalizeLineEndings(normalizedTargetCode);
+            // Normalize line endings (CRLF/CR -> LF) and strip trailing whitespace per line.
+            // Trailing spaces/tabs at line ends are semantically meaningless in HTML/CSS/JS
+            // and are the most common source of AI old_string mismatches — normalizing them
+            // upfront eliminates an entire class of matching failures globally.
+            const normalizeCode = (s) => (s || "")
+              .replace(/\r\n/g, "\n")       // CRLF → LF
+              .replace(/\r/g, "\n")          // CR   → LF
+              .replace(/[ \t]+$/gm, "");     // strip trailing spaces/tabs on every line
+            oldString = normalizeCode(oldString);
+            newString = normalizeCode(newString);
+            normalizedTargetCode = normalizeCode(normalizedTargetCode);
 
             // Log if delimiters were found and stripped
             if (oldString !== instruction.old_string || newString !== instruction.new_string) {
@@ -1536,6 +1543,70 @@ Available functions:
                   oldLength: normalizedTargetCode.length,
                   newLength: newString.length,
                 };
+              }
+            }
+
+            // CASE 2a-fragment: If exact match and full-content tolerance both fail,
+            // try matching with trimmed trailing newlines as a FRAGMENT within the target code.
+            // Per-line trailing whitespace is already handled by the upfront normalizeCode step,
+            // so this only needs to handle trailing newlines at the very end of old_string.
+            if (count === 0) {
+              const trimVariants = [
+                oldString.replace(/\n+$/, ""),         // Trim trailing newlines
+                oldString.replace(/^\n+/, ""),          // Trim leading newlines
+                oldString.replace(/^\n+/, "").replace(/\n+$/, ""),  // Trim both
+              ];
+
+              for (const variant of trimVariants) {
+                if (!variant || variant === oldString) continue;
+
+                let vIndex = 0;
+                let vCount = 0;
+                const vPositions = [];
+
+                while ((vIndex = normalizedTargetCode.indexOf(variant, vIndex)) !== -1) {
+                  vPositions.push(vIndex);
+                  vCount++;
+                  vIndex += variant.length;
+                }
+
+                if (vCount > 0) {
+                  if (vCount > 1 && !instruction.replace_all) {
+                    return {
+                      success: false,
+                      error: `Found ${vCount} matches after trimming edge newlines. Set "replace_all": true or provide more specific old_string.`,
+                    };
+                  }
+
+                  debugLog(`✅ [StringReplacement] Matched with trimmed fragment variant (${variant.length} chars vs original ${oldString.length})`);
+
+                  if (instruction.replace_all) {
+                    let resultCode = normalizedTargetCode;
+                    for (let i = vPositions.length - 1; i >= 0; i--) {
+                      resultCode = resultCode.substring(0, vPositions[i]) +
+                        newString +
+                        resultCode.substring(vPositions[i] + variant.length);
+                    }
+                    return {
+                      success: true,
+                      newCode: resultCode,
+                      location: `${vPositions.length} location(s) (trimmed-fragment)`,
+                      oldLength: normalizedTargetCode.length,
+                      newLength: resultCode.length,
+                    };
+                  } else {
+                    const newCode = normalizedTargetCode.substring(0, vPositions[0]) +
+                      newString +
+                      normalizedTargetCode.substring(vPositions[0] + variant.length);
+                    return {
+                      success: true,
+                      newCode,
+                      location: "1 location (trimmed-fragment)",
+                      oldLength: normalizedTargetCode.length,
+                      newLength: newCode.length,
+                    };
+                  }
+                }
               }
             }
 

@@ -1404,12 +1404,6 @@ Available functions:
             let oldString = this.stripDelimiters(instruction.old_string, instruction.target_type);
             let newString = this.stripDelimiters(instruction.new_string, instruction.target_type);
 
-            // Normalize escaped characters (handle JSON-escaped newlines, tabs, etc.)
-            // This ensures oldString and targetCode are in the same format for comparison
-            oldString = this.normalizeEscapedCharacters(oldString);
-            newString = this.normalizeEscapedCharacters(newString);
-            let normalizedTargetCode = this.normalizeEscapedCharacters(targetCode);
-
             // Normalize line endings (CRLF/CR -> LF) and strip trailing whitespace per line.
             // Trailing spaces/tabs at line ends are semantically meaningless in HTML/CSS/JS
             // and are the most common source of AI old_string mismatches — normalizing them
@@ -1420,22 +1414,13 @@ Available functions:
               .replace(/[ \t]+$/gm, "");     // strip trailing spaces/tabs on every line
             oldString = normalizeCode(oldString);
             newString = normalizeCode(newString);
-            normalizedTargetCode = normalizeCode(normalizedTargetCode);
+            let normalizedTargetCode = normalizeCode(targetCode);
 
             // Log if delimiters were found and stripped
             if (oldString !== instruction.old_string || newString !== instruction.new_string) {
               debugLog("🔧 [StringReplacement] Stripped delimiters from AI response:", {
                 oldStringChanged: oldString !== instruction.old_string,
                 newStringChanged: newString !== instruction.new_string,
-                targetType: instruction.target_type
-              });
-            }
-
-            // Log if escaped characters were normalized
-            if (oldString !== instruction.old_string || normalizedTargetCode !== targetCode) {
-              debugLog("🔧 [StringReplacement] Normalized escaped characters:", {
-                oldStringNormalized: oldString !== instruction.old_string,
-                targetCodeNormalized: normalizedTargetCode !== targetCode,
                 targetType: instruction.target_type
               });
             }
@@ -1969,29 +1954,6 @@ Available functions:
             });
           }
 
-          /**
-           * Normalize escaped characters in strings
-           * Converts escaped sequences like \\n, \\t, \\r to actual characters
-           * This handles cases where JSON parsing leaves escaped characters as literal strings
-           * @param {string} str - String that might contain escaped characters
-           * @returns {string} String with escaped characters normalized
-           */
-          normalizeEscapedCharacters(str) {
-            if (!str || typeof str !== 'string') {
-              return str;
-            }
-
-            // Replace common escaped sequences with actual characters
-            // Handle double backslashes first (mark them temporarily) to avoid double-processing
-            return str
-              .replace(/\\\\/g, '\u0001') // Temporary marker for literal double backslash
-              .replace(/\\n/g, '\n')      // Escaped newline -> actual newline
-              .replace(/\\t/g, '\t')      // Escaped tab -> actual tab
-              .replace(/\\r/g, '\r')      // Escaped carriage return -> actual CR
-              .replace(/\\"/g, '"')       // Escaped quote -> actual quote
-              .replace(/\\'/g, "'")       // Escaped apostrophe -> actual apostrophe
-              .replace(/\u0001/g, '\\');  // Restore literal double backslashes
-          }
 
           /**
            * Strip delimiter comments from code strings

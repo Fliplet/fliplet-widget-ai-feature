@@ -2813,7 +2813,7 @@ Available functions:
 
           DOM.resetBtn.style.display = "none";
 
-          var modelName = Fliplet.Helper.field("openaiModel").get() || "gpt-5.2-reasoning-none";
+          var modelName = Fliplet.Helper.field("openaiModel").get() || "gpt-5.5-reasoning-none";
           document.querySelector(".model-name").textContent = "Model: " + modelName;
 
           // Initialize textarea styling and behavior

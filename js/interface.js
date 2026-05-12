@@ -75,11 +75,9 @@ Fliplet.Widget.generateInterface({
         "gpt-5.1-reasoning-none",
         "gpt-5.1-reasoning-low",
         "gpt-5.1-reasoning-medium",
-        "gpt-5.1-reasoning-high",
-        "gpt-5.1-codex",
-        "gpt-5.1-codex-mini",
+        "gpt-5.1-reasoning-high"
       ],
-      default: "gpt-5.2-reasoning-none",
+      default: "gpt-5.5-reasoning-none",
       required: true,
     },
     {

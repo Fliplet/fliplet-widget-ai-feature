@@ -61,7 +61,7 @@ Fliplet.Widget.generateInterface({
       type: "html",
       html: `<p style="position: absolute; top: -45px; right: 15px; margin: 0; color: #666; font-size: 12px;">Version 3.0.0 (latest)</p>`,
     },
-    // Hidden for production launch - model is set to gpt-5.2-reasoning-none by default
+    // Hidden for production launch - model is set to gpt-5.5-reasoning-low by default
     {
       type: "dropdown",
       name: "openaiModel",
@@ -72,12 +72,16 @@ Fliplet.Widget.generateInterface({
         "gpt-5.2-reasoning-low",
         "gpt-5.2-reasoning-medium",
         "gpt-5.2-reasoning-high",
+        "gpt-5.5-reasoning-none",
+        "gpt-5.5-reasoning-low",
+        "gpt-5.5-reasoning-medium",
+        "gpt-5.5-reasoning-high",
         "gpt-5.1-reasoning-none",
         "gpt-5.1-reasoning-low",
         "gpt-5.1-reasoning-medium",
         "gpt-5.1-reasoning-high"
       ],
-      default: "gpt-5.5-reasoning-none",
+      default: "gpt-5.5-reasoning-low",
       required: true,
     },
     {
@@ -2813,7 +2817,7 @@ Available functions:
 
           DOM.resetBtn.style.display = "none";
 
-          var modelName = Fliplet.Helper.field("openaiModel").get() || "gpt-5.5-reasoning-none";
+          var modelName = Fliplet.Helper.field("openaiModel").get() || "gpt-5.5-reasoning-low";
           document.querySelector(".model-name").textContent = "Model: " + modelName;
 
           // Initialize textarea styling and behavior
@@ -3550,10 +3554,10 @@ Available functions:
         ) {
           debugLog("🌐 [AI] Making API call with optimized context...");
 
-          // Get current model selection from dropdown (hidden for production, defaults to gpt-5.2-reasoning-none)
+          // Get current model selection from dropdown (hidden for production, defaults to gpt-5.2-reasoning-low)
           const selectedModel =
             Fliplet.Helper.field("openaiModel").get() ||
-            "gpt-5.2-reasoning-none";
+            "gpt-5.2-reasoning-low";
 
           // Parse model name and reasoning level
           let modelName = selectedModel;

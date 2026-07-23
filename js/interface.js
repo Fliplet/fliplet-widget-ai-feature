@@ -4003,6 +4003,10 @@ Available functions:
           const requestBody = {
             model: modelName,
             input: messages,
+            // Fliplet-internal flag: exempts this widget's authoring calls from
+            // per-app AI rate limits (DEV-926). Stripped by the API before the
+            // request is proxied to the AI provider.
+            _widgetPackage: "com.fliplet.ai-feature",
             // max_tokens: CONFIG.MAX_TOKENS,
             text: {
               verbosity: "low",

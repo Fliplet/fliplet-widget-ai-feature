@@ -131,7 +131,7 @@ Available functions:
             <div class="ai-scope-info">
                 <i class="fa fa-info-circle"></i>
                 <div class="ai-scope-info-text">
-                    This AI Feature only edits the code it generated here &mdash; it can't see other pages, outside code, or the actual result. Try Fliplet V3 for a live preview as you build.
+                    This AI Feature only edits code it generated here &mdash; it can't access other pages or outside code, and it can't test or visually verify its own output. Fliplet V3's AI can see and test what it builds.
                 </div>
             </div>
             <div id="chat-messages" class="chat-messages">

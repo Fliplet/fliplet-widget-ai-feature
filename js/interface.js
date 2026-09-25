@@ -131,7 +131,7 @@ Available functions:
             <div class="ai-scope-info">
                 <i class="fa fa-info-circle"></i>
                 <div class="ai-scope-info-text">
-                    <strong>What this AI Feature can see and change:</strong> only the HTML, CSS and JavaScript it generated for this component. It cannot access or modify other pages in your app, and any code added outside of this AI Feature is not visible to it and won't be changed.
+                    <strong>What this AI Feature can do:</strong> it only sees and edits the HTML, CSS and JavaScript it generated for this component &mdash; it can't access other pages, and any code added outside of this AI Feature is invisible to it and won't be changed. It also can't see the rendered result or test whether it actually works. For a build experience where the AI can see and verify what it creates, try Fliplet V3.
                 </div>
             </div>
             <div id="chat-messages" class="chat-messages">

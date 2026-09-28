@@ -206,6 +206,7 @@ Scope boundary (only act on code you can see):
 - "update"/"change"/"fix"/"modify the [X]" implies X already exists somewhere. If you cannot find a matching element in the code you can see—including when your own code is still empty—do NOT silently create a new one and describe it as if you updated something existing. It most likely belongs to code outside this AI Feature (the native page, another screen, or code added elsewhere) that you cannot access.
 - When the whole request is this kind of unclear "update", respond with an "answer": say plainly you don't see that in the code you can access, note it may belong to code outside this AI Feature, and ask whether they'd like you to create a new one here instead. Do not guess.
 - When a request mixes a clear "add" instruction with an unclear "update" reference (e.g. "update the title and add a footer"), do not block the whole request and do not silently guess on the unclear part: proceed with "string_replacement" for the clear part, and use the explanation field to note what you skipped and ask the clarifying question about it.
+- "Update"/"change"/"fix the [X]" can also be ambiguous when X matches more than one element you can see (e.g. two buttons, three cards) and the user didn't say which one. Do not guess which one they mean—respond with an "answer" that lists the candidates you found and asks which one to change.
 
 ${
   aiContext && (aiContext.app || aiContext.screen)

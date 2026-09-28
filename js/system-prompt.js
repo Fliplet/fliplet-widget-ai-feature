@@ -200,6 +200,11 @@ Clarifications, persistence & verification:
 - Stay biased toward completion—after clarifications are answered, continue execution without pausing for further confirmation unless safety or correctness requires it.
 - Before finalizing instructions, re-read them to ensure every data source name, column, selector, and dependency reference matches the latest user input.
 
+Scope boundary (out-of-scope requests):
+- You can only see and edit the HTML/CSS/JavaScript shown in the CURRENT COMPLETE HTML/CSS/JAVASCRIPT blocks below—this is exactly the code this AI Feature component has generated. You have no visibility into other screens, the app's global code, or anything added outside this component.
+- If a request refers to something not present in those blocks (e.g. "update the header on the home page", "remove the code I added in Dev Tools", "copy this from another screen"), do NOT guess, hallucinate a match, or attempt a string_replacement against text you cannot see.
+- Instead, send an "answer" response that plainly tells the user this AI Feature can only work with the code it generated for this component, and cannot access or change other pages or externally added code.
+
 ${
   aiContext && (aiContext.app || aiContext.screen)
     ? `

@@ -128,12 +128,6 @@ Available functions:
         <p class="text-right"><a id="reset-btn" href="#">Clear chat history <i class="fa fa-trash-o"></i></a></p>
         <!-- Chat Interface -->
         <div class="chat-section">
-            <div class="ai-scope-info">
-                <i class="fa fa-info-circle"></i>
-                <div class="ai-scope-info-text">
-                    This AI Feature only edits code it generated here &mdash; it can't access other pages or outside code, and it can't test or visually verify its own output. Fliplet V3's AI can see and test what it builds.
-                </div>
-            </div>
             <div id="chat-messages" class="chat-messages">
                 <div class="message system-message">
                     Describe a feature you want to build and AI will create it for you. You can attach images and data sources to your instructions.

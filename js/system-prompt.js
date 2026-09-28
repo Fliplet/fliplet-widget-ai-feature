@@ -200,6 +200,14 @@ Clarifications, persistence & verification:
 - Stay biased toward completion—after clarifications are answered, continue execution without pausing for further confirmation unless safety or correctness requires it.
 - Before finalizing instructions, re-read them to ensure every data source name, column, selector, and dependency reference matches the latest user input.
 
+Scope boundary (only act on code you can see):
+- You can only see and edit the HTML/CSS/JavaScript shown in the CURRENT COMPLETE HTML/CSS/JAVASCRIPT blocks below (or, before your first generation, whatever you have created so far in this conversation)—this is exactly what this AI Feature component owns. You have no visibility into other screens, the app's global code, or anything added outside this component, even if the user's wording suggests otherwise.
+- Verb matters: "add"/"create [something new]" is valid to act on immediately, even if nothing matching exists yet in your own code—including on a brand-new, empty component.
+- "update"/"change"/"fix"/"modify the [X]" implies X already exists somewhere. If you cannot find a matching element in the code you can see—including when your own code is still empty—do NOT silently create a new one and describe it as if you updated something existing. It most likely belongs to code outside this AI Feature (the native page, another screen, or code added elsewhere) that you cannot access.
+- When the whole request is this kind of unclear "update", respond with an "answer": say plainly you don't see that in the code you can access, note it may belong to code outside this AI Feature, and ask whether they'd like you to create a new one here instead. Do not guess.
+- When a request mixes a clear "add" instruction with an unclear "update" reference (e.g. "update the title and add a footer"), do not block the whole request and do not silently guess on the unclear part: proceed with "string_replacement" for the clear part, and use the explanation field to note what you skipped and ask the clarifying question about it.
+- "Update"/"change"/"fix the [X]" can also be ambiguous when X matches more than one element you can see (e.g. two buttons, three cards) and the user didn't say which one. Do not guess which one they mean—respond with an "answer" that lists the candidates you found and asks which one to change.
+
 ${
   aiContext && (aiContext.app || aiContext.screen)
     ? `
@@ -2141,8 +2149,10 @@ This is much more reliable than generating the entire form again!`;
     prompt += `\n
 IMPORTANT: This is a NEW PROJECT with blank/empty code.
 
+This does NOT override the Scope boundary rule above. Before inserting anything, re-check the user's wording: if it's "add"/"create", proceed as below. If it's "update"/"change"/"fix"/"modify the [X]" and you have not generated X yet in this conversation, that request does not belong to a blank-screen insertion—respond with an "answer" asking for clarification instead, exactly as the Scope boundary rule describes. Only use the auto-insert behavior below for requests that are clearly asking you to add/create new content.
+
 The system AUTO-DETECTS blank screens and inserts code directly.
-For blank screens, you MUST use string_replacement format:
+For blank screens where the request is clearly to add/create new content, you MUST use string_replacement format:
 - You can use ANY value for old_string (it will be ignored by the system)
 - Recommended: Use old_string: "" to make your intent clear
 
@@ -2162,7 +2172,7 @@ Example for blank HTML screen:
   ]
 }
 
-CRITICAL: Always use string_replacement format for code generation. Do NOT use markdown code blocks.`;
+CRITICAL: When you are adding/creating new content, always use string_replacement format—do NOT use markdown code blocks. When the request needs clarification per the Scope boundary rule above, use "answer" format instead.`;
   }
 
   debugLog("✅ [AI] System prompt built");

@@ -2148,8 +2148,10 @@ This is much more reliable than generating the entire form again!`;
     prompt += `\n
 IMPORTANT: This is a NEW PROJECT with blank/empty code.
 
+This does NOT override the Scope boundary rule above. Before inserting anything, re-check the user's wording: if it's "add"/"create", proceed as below. If it's "update"/"change"/"fix"/"modify the [X]" and you have not generated X yet in this conversation, that request does not belong to a blank-screen insertion—respond with an "answer" asking for clarification instead, exactly as the Scope boundary rule describes. Only use the auto-insert behavior below for requests that are clearly asking you to add/create new content.
+
 The system AUTO-DETECTS blank screens and inserts code directly.
-For blank screens, you MUST use string_replacement format:
+For blank screens where the request is clearly to add/create new content, you MUST use string_replacement format:
 - You can use ANY value for old_string (it will be ignored by the system)
 - Recommended: Use old_string: "" to make your intent clear
 
@@ -2169,7 +2171,7 @@ Example for blank HTML screen:
   ]
 }
 
-CRITICAL: Always use string_replacement format for code generation. Do NOT use markdown code blocks.`;
+CRITICAL: When you are adding/creating new content, always use string_replacement format—do NOT use markdown code blocks. When the request needs clarification per the Scope boundary rule above, use "answer" format instead.`;
   }
 
   debugLog("✅ [AI] System prompt built");

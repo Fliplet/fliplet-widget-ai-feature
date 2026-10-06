@@ -80,12 +80,12 @@ Fliplet.Widget.generateInterface({
         "gpt-5.1-reasoning-low",
         "gpt-5.1-reasoning-medium",
         "gpt-5.1-reasoning-high",
-        "gpt-6-sol-reasoning-none",
-        "gpt-6-sol-reasoning-low",
-        "gpt-6-sol-reasoning-medium",
-        "gpt-6-sol-reasoning-high"
+        "gpt-6.1-sol-reasoning-none",
+        "gpt-6.1-sol-reasoning-low",
+        "gpt-6.1-sol-reasoning-medium",
+        "gpt-6.1-sol-reasoning-high"
       ],
-      default: "gpt-6-sol-reasoning-medium",
+      default: "gpt-6.1-sol-reasoning-medium",
       required: true,
     },
     {
@@ -2821,7 +2821,7 @@ Available functions:
 
           DOM.resetBtn.style.display = "none";
 
-          var modelName = Fliplet.Helper.field("openaiModel").get() || "gpt-6-sol-reasoning-medium";
+          var modelName = Fliplet.Helper.field("openaiModel").get() || "gpt-6.1-sol-reasoning-medium";
           document.querySelector(".model-name").textContent = "Model: " + modelName;
 
           // Initialize textarea styling and behavior
@@ -3558,10 +3558,10 @@ Available functions:
         ) {
           debugLog("🌐 [AI] Making API call with optimized context...");
 
-          // Get current model selection from dropdown (hidden for production, defaults to gpt-6-sol-reasoning-medium)
+          // Get current model selection from dropdown (hidden for production, defaults to gpt-6.1-sol-reasoning-medium)
           const selectedModel =
             Fliplet.Helper.field("openaiModel").get() ||
-            "gpt-6-sol-reasoning-medium";
+            "gpt-6.1-sol-reasoning-medium";
 
           // Parse model name and reasoning level
           let modelName = selectedModel;

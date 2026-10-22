@@ -1,6 +1,9 @@
 var selectedDataSourceId = null;
 var selectedDataSourceName = null;
 var cachedAIContext = null; // Cache AI context for the session (loaded once when first needed)
+var currentScreenName = ""; // Name of the screen this component lives on (for scope boundary context)
+var lastSavedCode = null; // Last code saved to hidden fields, until the page reflects it (stale-read guard)
+var saveSequence = 0; // Monotonic save counter, so an older save's completion can't clear a newer save's regenerateCode flag
 var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 const appId = Fliplet.Env.get("appId");
@@ -2808,8 +2811,6 @@ Available functions:
          * Initialize the application
          */
         async function initializeApp() {
-          var data = Fliplet.Widget.getData();
-          await Fliplet.Widget.save(data.fields);
           debugLog("🚀 Initializing AI Coding Tool Test App");
 
           // Get DOM element references
@@ -3670,7 +3671,8 @@ Available functions:
             dataSourceColumns,
             selectedDataSourceName,
             getGuidFromComponent(),
-            aiContext            
+            aiContext,
+            currentScreenName
           );
 
           // Build complete conversation history
@@ -5790,6 +5792,11 @@ async function populateCurrentPageContent() {
     const currentSettings = await getCurrentPageSettings();
 
     if (currentSettings && currentSettings.page) {
+      currentScreenName =
+        currentSettings.page.title ||
+        currentSettings.page.name ||
+        currentScreenName;
+
       // Extract widget-specific HTML content from richLayout
       const htmlFromPage = extractHtmlContent(
         currentSettings.page.richLayout || "",
@@ -5845,10 +5852,40 @@ async function populateCurrentPageContent() {
           jsFromPage.length === 0 && existingJsInHelper.length > 0,
       });
 
+      // Backstop for quick follow-up prompts: if the page does not yet
+      // reflect the last saved code (injection still in flight or failed),
+      // the page is stale — use the saved code instead of reading the
+      // previous version back
+      let finalHtml = htmlContent;
+      let finalCss = cssContent;
+      let finalJs = jsContent;
+
+      if (lastSavedCode) {
+        const pageMatchesLastSave =
+          normalizeCodeForComparison(htmlFromPage, true) ===
+            normalizeCodeForComparison(lastSavedCode.html, true) &&
+          normalizeCodeForComparison(cssFromPage) ===
+            normalizeCodeForComparison(lastSavedCode.css) &&
+          normalizeCodeForComparison(jsFromPage) ===
+            normalizeCodeForComparison(lastSavedCode.js);
+
+        if (pageMatchesLastSave) {
+          // injection confirmed on the page, which is authoritative again
+          lastSavedCode = null;
+        } else {
+          debugLog(
+            "⏳ [populateCurrentPageContent] Page does not reflect the last save yet; using saved code",
+          );
+          finalHtml = lastSavedCode.html;
+          finalCss = lastSavedCode.css;
+          finalJs = lastSavedCode.js;
+        }
+      }
+
       // Populate the Helper fields with widget-specific content
-      Fliplet.Helper.field("layoutHTML").set(htmlContent);
-      Fliplet.Helper.field("css").set(cssContent);
-      Fliplet.Helper.field("javascript").set(jsContent);
+      Fliplet.Helper.field("layoutHTML").set(finalHtml);
+      Fliplet.Helper.field("css").set(finalCss);
+      Fliplet.Helper.field("javascript").set(finalJs);
     }
   } catch (error) {
     debugError("❌ [populateCurrentPageContent] Error:", error);
@@ -5981,6 +6018,15 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("regenerateCode").set(true);
   Fliplet.Helper.field("dataSourceId").set("");
 
+  // Guard for quick follow-up prompts: until the page reflects this save,
+  // populateCurrentPageContent must not read the old code back from it
+  lastSavedCode = {
+    html: parsedContent.html,
+    css: parsedContent.css,
+    js: parsedContent.javascript,
+  };
+  var saveToken = ++saveSequence;
+
   var data = Fliplet.Widget.getData();
   data.fields.dataSourceId = "";
   data.fields.dataSourceName = "";
@@ -5991,8 +6037,143 @@ function saveGeneratedCode(parsedContent) {
   data.fields.guid = Fliplet.Helper.field("guid").get();
   data.fields.chatHistory = Fliplet.Helper.field("chatHistory").get();
 
-  return Fliplet.Widget.save(data.fields).then(function () {
-    // Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    Fliplet.Studio.emit("reload-page-preview");
+  return Fliplet.Widget.save(data.fields)
+    .then(function () {
+      // Inject into developer options now, so the page is already current
+      // when a quick follow-up prompt reads it back. build.js's
+      // regenerateCode path remains the fallback when this fails or the
+      // panel is closed mid-flight.
+      return injectGeneratedCodeIntoDeveloperOptions(parsedContent)
+        .then(function () {
+          // A newer save may have started while injecting; its
+          // regenerateCode flag must stay set for its own fallback
+          if (saveToken !== saveSequence) {
+            return;
+          }
+
+          Fliplet.Helper.field("regenerateCode").set(false);
+
+          var fields = Fliplet.Widget.getData().fields;
+          fields.regenerateCode = false;
+          fields.layoutHTML = Fliplet.Helper.field("layoutHTML").get();
+          fields.css = Fliplet.Helper.field("css").get();
+          fields.javascript = Fliplet.Helper.field("javascript").get();
+          fields.guid = Fliplet.Helper.field("guid").get();
+          fields.chatHistory = Fliplet.Helper.field("chatHistory").get();
+          return Fliplet.Widget.save(fields);
+        })
+        .catch(function (error) {
+          debugWarn(
+            "⚠️ [AI] Direct injection failed; build.js will inject on next render:",
+            error,
+          );
+        });
+    })
+    .then(function () {
+      // Fliplet.Studio.emit("reload-widget-instance", widgetId);
+      Fliplet.Studio.emit("reload-page-preview");
+    });
+}
+
+/**
+ * Inject the generated code into the page's developer options
+ * (richLayout + customSCSS/customJS), mirroring build.js's injection
+ * @param {Object} parsedContent - { html, css, javascript }
+ * @returns {Promise}
+ */
+async function injectGeneratedCodeIntoDeveloperOptions(parsedContent) {
+  const currentSettings = await getCurrentPageSettings();
+
+  if (!currentSettings || !currentSettings.page) {
+    throw new Error("Could not load current page settings");
+  }
+
+  const guid = getGuidFromComponent();
+
+  // Build the updated layout and validate it before writing anything, so a
+  // missing placeholder can't leave CSS/JS updated but HTML stale
+  const $wrapper = $("<div>").html(currentSettings.page.richLayout || "");
+  $wrapper.find(`.ai-feature-${guid}`).remove();
+  $wrapper
+    .find(`fl-ai-feature[cid="${widgetId}"]`)
+    .after(`<div class="ai-feature-${guid}">${parsedContent.html}</div>`);
+  const updatedLayout = $wrapper.html();
+
+  if (!updatedLayout.includes(`ai-feature-${guid}`)) {
+    throw new Error("Component placeholder not found in screen layout");
+  }
+
+  await Fliplet.API.request({
+    url: `v1/apps/${appId}/pages/${pageId}/settings`,
+    method: "POST",
+    data: {
+      customSCSS: updateCodeWithinDelimiters(
+        "css",
+        parsedContent.css,
+        currentSettings.page.settings.customSCSS || "",
+      ),
+      customJS: updateCodeWithinDelimiters(
+        "js",
+        parsedContent.javascript,
+        currentSettings.page.settings.customJS || "",
+      ),
+    },
   });
+
+  await Fliplet.API.request({
+    url: `v1/apps/${appId}/pages/${pageId}/rich-layout`,
+    method: "PUT",
+    data: { richLayout: updatedLayout },
+  });
+}
+
+/**
+ * Replace or append this component's delimited code block
+ * @param {string} type - "css" or "js"
+ * @param {string} newCode - Code to place between the delimiters
+ * @param {string} oldCode - Existing developer options code
+ * @returns {string} Updated code
+ */
+function updateCodeWithinDelimiters(type, newCode, oldCode = "") {
+  let start, end;
+
+  if (type === "js") {
+    start = `// start-ai-feature ${getGuidFromComponent()}`;
+    end = `// end-ai-feature ${getGuidFromComponent()}`;
+  } else {
+    start = `/* start-ai-feature ${getGuidFromComponent()} */`;
+    end = `/* end-ai-feature ${getGuidFromComponent()} */`;
+  }
+
+  if (oldCode.includes(start) && oldCode.includes(end)) {
+    const pattern = new RegExp(
+      escapeRegExp(start) + "[\\s\\S]*?" + escapeRegExp(end),
+      "g",
+    );
+
+    // Function form so "$"-sequences in the generated code are kept literal
+    return oldCode.replace(pattern, function () {
+      return start + "\n" + newCode + "\n" + end;
+    });
+  }
+
+  return oldCode + "\n\n" + start + "\n" + newCode + "\n" + end;
+}
+
+/**
+ * Normalize code for stale-page comparison. HTML goes through a jQuery
+ * parse/serialize cycle during injection and extraction, which can change
+ * attribute quoting and tag forms — round-trip both sides the same way
+ * @param {string} code - Code to normalize
+ * @param {boolean} isHtml - Whether to round-trip through the HTML parser
+ * @returns {string} Normalized code
+ */
+function normalizeCodeForComparison(code, isHtml) {
+  var value = code || "";
+
+  if (isHtml) {
+    value = $("<div>").html(value).html() || "";
+  }
+
+  return value.replace(/\s+/g, " ").trim();
 }

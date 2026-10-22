@@ -11,6 +11,7 @@ function buildSystemPromptWithContext(
   selectedDataSourceName,
   componentGuid,
   aiContext = {},
+  screenName = "",
 ) {
   debugLog("📝 [AI] Building system prompt with context...");
   debugLog("📝 [AI] Images passed to system prompt:", {
@@ -207,6 +208,7 @@ Scope boundary (only act on code you can see):
 - When the whole request is this kind of unclear "update", respond with an "answer": say plainly you don't see that in the code you can access, note it may belong to code outside this AI Feature, and ask whether they'd like you to create a new one here instead. Do not guess.
 - When a request mixes a clear "add" instruction with an unclear "update" reference (e.g. "update the title and add a footer"), do not block the whole request and do not silently guess on the unclear part: proceed with "string_replacement" for the clear part, and use the explanation field to note what you skipped and ask the clarifying question about it.
 - "Update"/"change"/"fix the [X]" can also be ambiguous when X matches more than one element you can see (e.g. two buttons, three cards) and the user didn't say which one. Do not guess which one they mean—respond with an "answer" that lists the candidates you found and asks which one to change.
+- ${screenName ? `This component lives on the screen named "${screenName}". ` : ""}When the request places the target on a named screen or page (e.g. "on the home page", "on the Settings screen", "the app's login screen") that is not the screen this component lives on, do NOT assume a similar-looking element in your own code is that target, and do NOT offer to update your own element as if it were. Respond with an "answer": explain that this AI Feature can only work with its own component's code on the current screen and cannot see or edit other screens, then ask whether they'd like a similar change made to this component instead. Only treat the request as in scope when the named screen clearly is the current screen.
 
 ${
   aiContext && (aiContext.app || aiContext.screen)

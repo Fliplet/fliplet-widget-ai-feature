@@ -130,27 +130,6 @@ Fliplet.Widget.instance({
         //Fliplet.Studio.emit("reload-widget-instance", widgetId);
       }
 
-      // Helper function to remove code from screen
-      async function removeCodeFromDeveloperOptions() {
-        try {
-          const currentSettings = await getCurrentPageSettings();
-          const cleanedHtml = removeHtmlCode(currentSettings);
-          const cleanedCss = removeCodeWithinDelimiters(
-            "css",
-            currentSettings.page.settings.customSCSS
-          );
-          const cleanedJs = removeCodeWithinDelimiters(
-            "js",
-            currentSettings.page.settings.customJS
-          );
-
-          await saveLayoutToDeveloperOptions(cleanedHtml);
-          await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
-        } catch (error) {
-          console.error("Error removing code from developer options:", error);
-        }
-      }
-
       async function removeLegacyCodeFromDeveloperOptions(currentSettings) {
         try {
           const cleanedHtml = removeHtmlCode(currentSettings, widgetId);
@@ -509,11 +488,34 @@ Fliplet.Widget.instance({
           const hiddenFieldsCode = getHiddenFieldsCode();
 
           if (duplicates.length > 1) {
+            // Only the duplicated copy regenerates its GUID. The original
+            // (lowest widget id — duplicates are created with newer, higher
+            // ids) keeps its GUID and its injected code untouched.
+            const duplicateIds = duplicates
+              .map(function () {
+                return parseInt($(this).attr("data-ai-feature-id"), 10);
+              })
+              .get()
+              .filter(function (id) {
+                return !isNaN(id);
+              });
+            const isOriginal =
+              duplicateIds.length === duplicates.length
+                ? parseInt(widgetId, 10) === Math.min.apply(null, duplicateIds)
+                : String(duplicates.first().attr("data-ai-feature-id")) ===
+                  String(widgetId);
+
+            if (isOriginal) {
+              return;
+            }
+
             var oldGuid = AI.fields.guid;
             var newGuid = generateGuid();
-            // there are duplicates, so we need to remove the code from developer options and add the new code with a new guid
-            await removeCodeFromDeveloperOptions(); // removing code from developer options for the existing guid
-            AI.fields.guid = newGuid; // generating a new guid
+            // The old guid's developer options block belongs to the original
+            // component, so it must not be removed here. The copy's own code
+            // is injected on the next render, once developer options are
+            // empty for the new guid.
+            AI.fields.guid = newGuid;
             await saveToHiddenFields({
               css: AI.fields.css.replaceAll(oldGuid, newGuid) || '',
               javascript: AI.fields.javascript.replaceAll(oldGuid, newGuid) || '',
@@ -535,11 +537,31 @@ Fliplet.Widget.instance({
                 guid: currentGuid,
               });
             } else {
-              // both developer options and hidden fields are not empty, so we need to save the developer options to the hidden fields and remove the code from screen and add the new code
+              // both developer options and hidden fields are not empty:
+              // developer options win per field, but an empty extracted value
+              // must not wipe a non-empty hidden field — hidden fields are
+              // the source of truth
+              const mergedCode = {
+                html: developerOptionsCode.html || hiddenFieldsCode.html,
+                css: developerOptionsCode.css || hiddenFieldsCode.css,
+                js: developerOptionsCode.js || hiddenFieldsCode.js,
+              };
+
               await saveToHiddenFields({
-                ...developerOptionsCode,
+                ...mergedCode,
                 guid: currentGuid,
               });
+
+              const missingInDeveloperOptions =
+                (!developerOptionsCode.html && mergedCode.html) ||
+                (!developerOptionsCode.css && mergedCode.css) ||
+                (!developerOptionsCode.js && mergedCode.js);
+
+              if (missingInDeveloperOptions) {
+                // restore the blocks that were lost from developer options
+                await addCodeToDeveloperOptions(mergedCode);
+                Fliplet.Studio.emit("reload-page-preview");
+              }
             }
           }
         } catch (error) {

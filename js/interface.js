@@ -2,7 +2,6 @@ var selectedDataSourceId = null;
 var selectedDataSourceName = null;
 var cachedAIContext = null; // Cache AI context for the session (loaded once when first needed)
 var currentScreenName = ""; // Name of the screen this component lives on (for scope boundary context)
-var lastSavedCode = null; // Last code saved to hidden fields, until the page reflects it (stale-read guard)
 var saveSequence = 0; // Monotonic save counter, so an older save's completion can't clear a newer save's regenerateCode flag
 var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
@@ -3412,19 +3411,28 @@ Available functions:
             // Clear pasted images after successful processing (preserve chat history)
             clearPastedImages(true, DOM, AppState);
 
-            // Re-enable user controls after successful AI response
-            enableUserControls();
-
-            // Step 7: Update code and save fields
-            if (!isAnswerType) {
-              updateCode();
-            } else {
-              // For answer type, we still need to save the fields even without code changes
-              saveGeneratedCode({
-                html: AppState.currentHTML || "",
-                css: AppState.currentCSS || "",
-                javascript: AppState.currentJS || "",
-              });
+            // Step 7: Update code and save fields.
+            // Keep the controls disabled until the save AND the developer
+            // options injection have fully completed, so a quick follow-up
+            // prompt cannot be sent while the page still holds the previous
+            // code (the cause of lost edits). enableUserControls runs in the
+            // finally so controls are always restored, even on failure.
+            try {
+              if (!isAnswerType) {
+                await updateCode();
+              } else {
+                // For answer type, we still need to save the fields even without code changes
+                await saveGeneratedCode({
+                  html: AppState.currentHTML || "",
+                  css: AppState.currentCSS || "",
+                  javascript: AppState.currentJS || "",
+                });
+              }
+            } catch (saveError) {
+              debugError("❌ [Main] Error saving generated code:", saveError);
+            } finally {
+              // Re-enable user controls now that the page reflects this edit
+              enableUserControls();
             }
 
             debugLog(
@@ -5095,14 +5103,17 @@ Available functions:
             const cssContent = AppState.currentCSS || "";
             const jsContent = AppState.currentJS || "";
 
-            saveGeneratedCode({
+            // Return the promise so callers can await the save + injection
+            return saveGeneratedCode({
               html: htmlContent,
               css: cssContent,
               javascript: jsContent,
+            }).then(function () {
+              debugLog("✅ Updated successfully");
             });
-            debugLog("✅ Updated successfully");
           } catch (error) {
             debugError("❌ Update failed:", error);
+            return Promise.reject(error);
           }
         }
 
@@ -5852,40 +5863,10 @@ async function populateCurrentPageContent() {
           jsFromPage.length === 0 && existingJsInHelper.length > 0,
       });
 
-      // Backstop for quick follow-up prompts: if the page does not yet
-      // reflect the last saved code (injection still in flight or failed),
-      // the page is stale — use the saved code instead of reading the
-      // previous version back
-      let finalHtml = htmlContent;
-      let finalCss = cssContent;
-      let finalJs = jsContent;
-
-      if (lastSavedCode) {
-        const pageMatchesLastSave =
-          normalizeCodeForComparison(htmlFromPage, true) ===
-            normalizeCodeForComparison(lastSavedCode.html, true) &&
-          normalizeCodeForComparison(cssFromPage) ===
-            normalizeCodeForComparison(lastSavedCode.css) &&
-          normalizeCodeForComparison(jsFromPage) ===
-            normalizeCodeForComparison(lastSavedCode.js);
-
-        if (pageMatchesLastSave) {
-          // injection confirmed on the page, which is authoritative again
-          lastSavedCode = null;
-        } else {
-          debugLog(
-            "⏳ [populateCurrentPageContent] Page does not reflect the last save yet; using saved code",
-          );
-          finalHtml = lastSavedCode.html;
-          finalCss = lastSavedCode.css;
-          finalJs = lastSavedCode.js;
-        }
-      }
-
       // Populate the Helper fields with widget-specific content
-      Fliplet.Helper.field("layoutHTML").set(finalHtml);
-      Fliplet.Helper.field("css").set(finalCss);
-      Fliplet.Helper.field("javascript").set(finalJs);
+      Fliplet.Helper.field("layoutHTML").set(htmlContent);
+      Fliplet.Helper.field("css").set(cssContent);
+      Fliplet.Helper.field("javascript").set(jsContent);
     }
   } catch (error) {
     debugError("❌ [populateCurrentPageContent] Error:", error);
@@ -6018,13 +5999,6 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("regenerateCode").set(true);
   Fliplet.Helper.field("dataSourceId").set("");
 
-  // Guard for quick follow-up prompts: until the page reflects this save,
-  // populateCurrentPageContent must not read the old code back from it
-  lastSavedCode = {
-    html: parsedContent.html,
-    css: parsedContent.css,
-    js: parsedContent.javascript,
-  };
   var saveToken = ++saveSequence;
 
   var data = Fliplet.Widget.getData();
@@ -6158,22 +6132,4 @@ function updateCodeWithinDelimiters(type, newCode, oldCode = "") {
   }
 
   return oldCode + "\n\n" + start + "\n" + newCode + "\n" + end;
-}
-
-/**
- * Normalize code for stale-page comparison. HTML goes through a jQuery
- * parse/serialize cycle during injection and extraction, which can change
- * attribute quoting and tag forms — round-trip both sides the same way
- * @param {string} code - Code to normalize
- * @param {boolean} isHtml - Whether to round-trip through the HTML parser
- * @returns {string} Normalized code
- */
-function normalizeCodeForComparison(code, isHtml) {
-  var value = code || "";
-
-  if (isHtml) {
-    value = $("<div>").html(value).html() || "";
-  }
-
-  return value.replace(/\s+/g, " ").trim();
 }

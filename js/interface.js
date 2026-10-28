@@ -1,6 +1,8 @@
 var selectedDataSourceId = null;
 var selectedDataSourceName = null;
 var cachedAIContext = null; // Cache AI context for the session (loaded once when first needed)
+var currentScreenName = ""; // Name of the screen this component lives on (for scope boundary context)
+var saveSequence = 0; // Monotonic save counter, so an older save's completion can't clear a newer save's regenerateCode flag
 var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 const appId = Fliplet.Env.get("appId");
@@ -2808,8 +2810,6 @@ Available functions:
          * Initialize the application
          */
         async function initializeApp() {
-          var data = Fliplet.Widget.getData();
-          await Fliplet.Widget.save(data.fields);
           debugLog("🚀 Initializing AI Coding Tool Test App");
 
           // Get DOM element references
@@ -3411,19 +3411,28 @@ Available functions:
             // Clear pasted images after successful processing (preserve chat history)
             clearPastedImages(true, DOM, AppState);
 
-            // Re-enable user controls after successful AI response
-            enableUserControls();
-
-            // Step 7: Update code and save fields
-            if (!isAnswerType) {
-              updateCode();
-            } else {
-              // For answer type, we still need to save the fields even without code changes
-              saveGeneratedCode({
-                html: AppState.currentHTML || "",
-                css: AppState.currentCSS || "",
-                javascript: AppState.currentJS || "",
-              });
+            // Step 7: Update code and save fields.
+            // Keep the controls disabled until the save AND the developer
+            // options injection have fully completed, so a quick follow-up
+            // prompt cannot be sent while the page still holds the previous
+            // code (the cause of lost edits). enableUserControls runs in the
+            // finally so controls are always restored, even on failure.
+            try {
+              if (!isAnswerType) {
+                await updateCode();
+              } else {
+                // For answer type, we still need to save the fields even without code changes
+                await saveGeneratedCode({
+                  html: AppState.currentHTML || "",
+                  css: AppState.currentCSS || "",
+                  javascript: AppState.currentJS || "",
+                });
+              }
+            } catch (saveError) {
+              debugError("❌ [Main] Error saving generated code:", saveError);
+            } finally {
+              // Re-enable user controls now that the page reflects this edit
+              enableUserControls();
             }
 
             debugLog(
@@ -3670,7 +3679,8 @@ Available functions:
             dataSourceColumns,
             selectedDataSourceName,
             getGuidFromComponent(),
-            aiContext            
+            aiContext,
+            currentScreenName
           );
 
           // Build complete conversation history
@@ -5093,14 +5103,17 @@ Available functions:
             const cssContent = AppState.currentCSS || "";
             const jsContent = AppState.currentJS || "";
 
-            saveGeneratedCode({
+            // Return the promise so callers can await the save + injection
+            return saveGeneratedCode({
               html: htmlContent,
               css: cssContent,
               javascript: jsContent,
+            }).then(function () {
+              debugLog("✅ Updated successfully");
             });
-            debugLog("✅ Updated successfully");
           } catch (error) {
             debugError("❌ Update failed:", error);
+            return Promise.reject(error);
           }
         }
 
@@ -5790,6 +5803,11 @@ async function populateCurrentPageContent() {
     const currentSettings = await getCurrentPageSettings();
 
     if (currentSettings && currentSettings.page) {
+      currentScreenName =
+        currentSettings.page.title ||
+        currentSettings.page.name ||
+        currentScreenName;
+
       // Extract widget-specific HTML content from richLayout
       const htmlFromPage = extractHtmlContent(
         currentSettings.page.richLayout || "",
@@ -5981,6 +5999,8 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("regenerateCode").set(true);
   Fliplet.Helper.field("dataSourceId").set("");
 
+  var saveToken = ++saveSequence;
+
   var data = Fliplet.Widget.getData();
   data.fields.dataSourceId = "";
   data.fields.dataSourceName = "";
@@ -5991,8 +6011,125 @@ function saveGeneratedCode(parsedContent) {
   data.fields.guid = Fliplet.Helper.field("guid").get();
   data.fields.chatHistory = Fliplet.Helper.field("chatHistory").get();
 
-  return Fliplet.Widget.save(data.fields).then(function () {
-    // Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    Fliplet.Studio.emit("reload-page-preview");
+  return Fliplet.Widget.save(data.fields)
+    .then(function () {
+      // Inject into developer options now, so the page is already current
+      // when a quick follow-up prompt reads it back. build.js's
+      // regenerateCode path remains the fallback when this fails or the
+      // panel is closed mid-flight.
+      return injectGeneratedCodeIntoDeveloperOptions(parsedContent)
+        .then(function () {
+          // A newer save may have started while injecting; its
+          // regenerateCode flag must stay set for its own fallback
+          if (saveToken !== saveSequence) {
+            return;
+          }
+
+          Fliplet.Helper.field("regenerateCode").set(false);
+
+          var fields = Fliplet.Widget.getData().fields;
+          fields.regenerateCode = false;
+          fields.layoutHTML = Fliplet.Helper.field("layoutHTML").get();
+          fields.css = Fliplet.Helper.field("css").get();
+          fields.javascript = Fliplet.Helper.field("javascript").get();
+          fields.guid = Fliplet.Helper.field("guid").get();
+          fields.chatHistory = Fliplet.Helper.field("chatHistory").get();
+          return Fliplet.Widget.save(fields);
+        })
+        .catch(function (error) {
+          debugWarn(
+            "⚠️ [AI] Direct injection failed; build.js will inject on next render:",
+            error,
+          );
+        });
+    })
+    .then(function () {
+      // Fliplet.Studio.emit("reload-widget-instance", widgetId);
+      Fliplet.Studio.emit("reload-page-preview");
+    });
+}
+
+/**
+ * Inject the generated code into the page's developer options
+ * (richLayout + customSCSS/customJS), mirroring build.js's injection
+ * @param {Object} parsedContent - { html, css, javascript }
+ * @returns {Promise}
+ */
+async function injectGeneratedCodeIntoDeveloperOptions(parsedContent) {
+  const currentSettings = await getCurrentPageSettings();
+
+  if (!currentSettings || !currentSettings.page) {
+    throw new Error("Could not load current page settings");
+  }
+
+  const guid = getGuidFromComponent();
+
+  // Build the updated layout and validate it before writing anything, so a
+  // missing placeholder can't leave CSS/JS updated but HTML stale
+  const $wrapper = $("<div>").html(currentSettings.page.richLayout || "");
+  $wrapper.find(`.ai-feature-${guid}`).remove();
+  $wrapper
+    .find(`fl-ai-feature[cid="${widgetId}"]`)
+    .after(`<div class="ai-feature-${guid}">${parsedContent.html}</div>`);
+  const updatedLayout = $wrapper.html();
+
+  if (!updatedLayout.includes(`ai-feature-${guid}`)) {
+    throw new Error("Component placeholder not found in screen layout");
+  }
+
+  await Fliplet.API.request({
+    url: `v1/apps/${appId}/pages/${pageId}/settings`,
+    method: "POST",
+    data: {
+      customSCSS: updateCodeWithinDelimiters(
+        "css",
+        parsedContent.css,
+        currentSettings.page.settings.customSCSS || "",
+      ),
+      customJS: updateCodeWithinDelimiters(
+        "js",
+        parsedContent.javascript,
+        currentSettings.page.settings.customJS || "",
+      ),
+    },
   });
+
+  await Fliplet.API.request({
+    url: `v1/apps/${appId}/pages/${pageId}/rich-layout`,
+    method: "PUT",
+    data: { richLayout: updatedLayout },
+  });
+}
+
+/**
+ * Replace or append this component's delimited code block
+ * @param {string} type - "css" or "js"
+ * @param {string} newCode - Code to place between the delimiters
+ * @param {string} oldCode - Existing developer options code
+ * @returns {string} Updated code
+ */
+function updateCodeWithinDelimiters(type, newCode, oldCode = "") {
+  let start, end;
+
+  if (type === "js") {
+    start = `// start-ai-feature ${getGuidFromComponent()}`;
+    end = `// end-ai-feature ${getGuidFromComponent()}`;
+  } else {
+    start = `/* start-ai-feature ${getGuidFromComponent()} */`;
+    end = `/* end-ai-feature ${getGuidFromComponent()} */`;
+  }
+
+  if (oldCode.includes(start) && oldCode.includes(end)) {
+    const pattern = new RegExp(
+      escapeRegExp(start) + "[\\s\\S]*?" + escapeRegExp(end),
+      "g",
+    );
+
+    // Function form so "$"-sequences in the generated code are kept literal
+    return oldCode.replace(pattern, function () {
+      return start + "\n" + newCode + "\n" + end;
+    });
+  }
+
+  return oldCode + "\n\n" + start + "\n" + newCode + "\n" + end;
 }

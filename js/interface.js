@@ -3379,44 +3379,39 @@ Available functions:
             // Step 6b: User message already added to chat history by addMessageToChat() in handleSendMessage()
             // No need to add it again here
 
-            // Remove loading indicator
-            DOM.chatMessages.removeChild(loadingDiv);
-
-            // Add AI response to chat
+            // Build the AI response text now, but do NOT show it (or remove the
+            // loading indicator) until the save + developer-options injection
+            // below has fully completed. Revealing "Changed…" before the edit is
+            // persisted let a user close the panel during the save window and
+            // lose the change — the message claimed success the save had not yet
+            // delivered (QA defect 4).
             let aiResponseText;
             if (isAnswerType) {
               // For answer type, use the direct answer from the response
               aiResponseText =
                 changeRequest.answer || changeRequest.explanation;
-              debugLog("💬 [Main] Displaying informational answer to user");
+              debugLog("💬 [Main] Prepared informational answer");
             } else {
               // For string_replacement type, show explanation with change summary
               const changesSummary = generateChangesSummary(
                 applicationResult.changeLog,
               );
               aiResponseText = `${changeRequest.explanation}\n\n${changesSummary}`;
-              debugLog("🔧 [Main] Displaying code changes to user");
-            }
-            addMessageToChat(aiResponseText, "ai");
-
-            // AI response already added to chat history by addMessageToChat()
-            // No need to add it again here
-
-            // Mark first generation as complete
-            if (AppState.isFirstGeneration) {
-              AppState.isFirstGeneration = false;
-              debugLog("✅ [Main] First generation completed");
+              debugLog("🔧 [Main] Prepared code-change summary");
             }
 
             // Clear pasted images after successful processing (preserve chat history)
             clearPastedImages(true, DOM, AppState);
 
-            // Step 7: Update code and save fields.
-            // Keep the controls disabled until the save AND the developer
-            // options injection have fully completed, so a quick follow-up
-            // prompt cannot be sent while the page still holds the previous
-            // code (the cause of lost edits). enableUserControls runs in the
-            // finally so controls are always restored, even on failure.
+            // Step 7: Update code and save fields, THEN reveal the reply.
+            // Keep the controls disabled AND the reply hidden until the save AND
+            // the developer options injection have fully completed, so a quick
+            // follow-up prompt cannot be sent while the page still holds the
+            // previous code, and a user who closes the panel never sees a
+            // success message for a change that was not persisted. The loading
+            // indicator stays up for the duration so the save is visibly in
+            // progress. enableUserControls runs in the finally so controls are
+            // always restored, even on failure.
             try {
               if (!isAnswerType) {
                 await updateCode();
@@ -3428,8 +3423,25 @@ Available functions:
                   javascript: AppState.currentJS || "",
                 });
               }
+
+              // Persisted and injected — now it is safe to confirm to the user.
+              DOM.chatMessages.removeChild(loadingDiv);
+              addMessageToChat(aiResponseText, "ai");
+
+              // Mark first generation as complete
+              if (AppState.isFirstGeneration) {
+                AppState.isFirstGeneration = false;
+                debugLog("✅ [Main] First generation completed");
+              }
             } catch (saveError) {
               debugError("❌ [Main] Error saving generated code:", saveError);
+              // The edit was not persisted — surface a failure instead of a
+              // phantom success so the user knows the change did not stick.
+              DOM.chatMessages.removeChild(loadingDiv);
+              addMessageToChat(
+                "Something went wrong while saving your changes. Please try again.",
+                "system",
+              );
             } finally {
               // Re-enable user controls now that the page reflects this edit
               enableUserControls();
@@ -6019,6 +6031,21 @@ function saveGeneratedCode(parsedContent) {
       // panel is closed mid-flight.
       return injectGeneratedCodeIntoDeveloperOptions(parsedContent)
         .then(function () {
+          // Emit the "code-save" usage log here. It used to be written by
+          // build.js's regenerateCode render path, which no longer fires on the
+          // happy path now that injection happens synchronously above. Fire and
+          // forget so it never adds latency to the save window; the build.js
+          // path remains the fallback (and its own log) when injection fails.
+          logAiComponentUsage({
+            aiCssResponse: parsedContent.css,
+            aiJsResponse: parsedContent.javascript,
+            aiLayoutResponse: parsedContent.html,
+            widgetId: widgetId,
+            type: "code-save",
+          }).catch(function (error) {
+            debugWarn("⚠️ [AI] Failed to write code-save usage log:", error);
+          });
+
           // A newer save may have started while injecting; its
           // regenerateCode flag must stay set for its own fallback
           if (saveToken !== saveSequence) {

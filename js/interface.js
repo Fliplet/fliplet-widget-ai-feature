@@ -63,12 +63,14 @@ Fliplet.Widget.generateInterface({
       type: "html",
       html: `<p style="position: absolute; top: -45px; right: 15px; margin: 0; color: #666; font-size: 12px;">Version 3.0.0 (latest)</p>`,
     },
-    // Hidden for production launch - model is set to gpt-5.5-reasoning-low by default
+    // TEMPORARY: unhidden to debug the staging 403 on /ai/completions — lets us
+    // switch models in the UI to confirm gpt-6.1-sol isn't allowlisted on
+    // staging. Revert to `hidden: true` before merging to production.
     {
       type: "dropdown",
       name: "openaiModel",
       label: "OpenAI Model",
-      hidden: true,
+      hidden: false,
       options: [
         "gpt-5.2-reasoning-none",
         "gpt-5.2-reasoning-low",

@@ -612,48 +612,54 @@ Fliplet.Widget.instance({
                   ).length > 0,
               };
 
+              // A field is only worth restoring when it is empty in developer
+              // options, its delimiters/wrapper still exist, AND the hidden
+              // fields actually hold content to put back. The last check
+              // matters: updateCodeWithinDelimiters always writes delimiters, so
+              // a component with no JS still has an empty JS block. Without the
+              // `&& mergedCode.X` guard, restore.js would be "" (not null) for
+              // that empty block, pass the check below, and re-post + reload on
+              // every render — an infinite loop. Empty strings must not count.
               const restore = {
                 css:
-                  !developerOptionsCode.css && hasDelimiters.css
+                  !developerOptionsCode.css &&
+                  hasDelimiters.css &&
+                  mergedCode.css
                     ? mergedCode.css
                     : null,
                 js:
-                  !developerOptionsCode.js && hasDelimiters.js
+                  !developerOptionsCode.js && hasDelimiters.js && mergedCode.js
                     ? mergedCode.js
                     : null,
                 html:
-                  !developerOptionsCode.html && hasDelimiters.html
+                  !developerOptionsCode.html &&
+                  hasDelimiters.html &&
+                  mergedCode.html
                     ? mergedCode.html
                     : null,
               };
 
-              if (
-                restore.css !== null ||
-                restore.js !== null ||
-                restore.html !== null
-              ) {
+              if (restore.css || restore.js || restore.html) {
                 // Only touch the fields being restored; leave any deliberately
                 // removed block exactly as the user left it.
-                const newCss =
-                  restore.css !== null
-                    ? updateCodeWithinDelimiters(
-                        "css",
-                        restore.css,
-                        rawScreenCode.css,
-                      )
-                    : rawScreenCode.css;
-                const newJs =
-                  restore.js !== null
-                    ? updateCodeWithinDelimiters(
-                        "js",
-                        restore.js,
-                        rawScreenCode.js,
-                      )
-                    : rawScreenCode.js;
+                const newCss = restore.css
+                  ? updateCodeWithinDelimiters(
+                      "css",
+                      restore.css,
+                      rawScreenCode.css,
+                    )
+                  : rawScreenCode.css;
+                const newJs = restore.js
+                  ? updateCodeWithinDelimiters(
+                      "js",
+                      restore.js,
+                      rawScreenCode.js,
+                    )
+                  : rawScreenCode.js;
 
                 await saveCssAndJsToDeveloperOptions(newCss, newJs);
 
-                if (restore.html !== null) {
+                if (restore.html) {
                   const newHtml = injectHtmlCode(
                     { page: { richLayout: rawScreenCode.html } },
                     { layoutHTML: restore.html },

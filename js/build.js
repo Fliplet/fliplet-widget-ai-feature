@@ -553,10 +553,32 @@ Fliplet.Widget.instance({
                 js: developerOptionsCode.js || hiddenFieldsCode.js,
               };
 
-              await saveToHiddenFields({
-                ...mergedCode,
-                guid: currentGuid,
-              });
+              // Only write the hidden fields when they would actually change.
+              // saveToHiddenFields emits "reload-page-preview", which re-runs
+              // this function. If someone deletes a whole block in developer
+              // options (deliberate removal), mergedCode keeps the hidden-field
+              // value, so developer options and hidden fields never become equal
+              // (isCodeEqual stays false) and we land in this branch on every
+              // render. Saving unconditionally would then reload → re-render →
+              // save → reload forever. Skipping the no-op save breaks that loop
+              // while still preserving the hidden fields as the source of truth.
+              // Compare with the same whitespace normalization isCodeEqual
+              // uses, so a purely cosmetic difference in the extracted code does
+              // not count as a change and trigger a save + reload.
+              const hiddenChanged =
+                normalizeWhitespace(mergedCode.html) !==
+                  normalizeWhitespace(hiddenFieldsCode.html) ||
+                normalizeWhitespace(mergedCode.css) !==
+                  normalizeWhitespace(hiddenFieldsCode.css) ||
+                normalizeWhitespace(mergedCode.js) !==
+                  normalizeWhitespace(hiddenFieldsCode.js);
+
+              if (hiddenChanged) {
+                await saveToHiddenFields({
+                  ...mergedCode,
+                  guid: currentGuid,
+                });
+              }
 
               // An extracted value is empty in two different situations, and
               // only one of them should be restored:

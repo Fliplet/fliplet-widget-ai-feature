@@ -1,6 +1,8 @@
 var selectedDataSourceId = null;
 var selectedDataSourceName = null;
 var cachedAIContext = null; // Cache AI context for the session (loaded once when first needed)
+var currentScreenName = ""; // Name of the screen this component lives on (for scope boundary context)
+var saveSequence = 0; // Monotonic save counter, so an older save's completion can't clear a newer save's regenerateCode flag
 var widgetId = Fliplet.Widget.getDefaultId();
 var dataSourceColumns = [];
 const appId = Fliplet.Env.get("appId");
@@ -61,7 +63,6 @@ Fliplet.Widget.generateInterface({
       type: "html",
       html: `<p style="position: absolute; top: -45px; right: 15px; margin: 0; color: #666; font-size: 12px;">Version 3.0.0 (latest)</p>`,
     },
-    // Hidden for production launch - model is set to gpt-5.5-reasoning-low by default
     {
       type: "dropdown",
       name: "openaiModel",
@@ -79,9 +80,13 @@ Fliplet.Widget.generateInterface({
         "gpt-5.1-reasoning-none",
         "gpt-5.1-reasoning-low",
         "gpt-5.1-reasoning-medium",
-        "gpt-5.1-reasoning-high"
+        "gpt-5.1-reasoning-high",
+        "gpt-6.1-sol-reasoning-none",
+        "gpt-6.1-sol-reasoning-low",
+        "gpt-6.1-sol-reasoning-medium",
+        "gpt-6.1-sol-reasoning-high"
       ],
-      default: "gpt-5.5-reasoning-low",
+      default: "gpt-6.1-sol-reasoning-medium",
       required: true,
     },
     {
@@ -2804,8 +2809,6 @@ Available functions:
          * Initialize the application
          */
         async function initializeApp() {
-          var data = Fliplet.Widget.getData();
-          await Fliplet.Widget.save(data.fields);
           debugLog("🚀 Initializing AI Coding Tool Test App");
 
           // Get DOM element references
@@ -2817,7 +2820,7 @@ Available functions:
 
           DOM.resetBtn.style.display = "none";
 
-          var modelName = Fliplet.Helper.field("openaiModel").get() || "gpt-5.5-reasoning-low";
+          var modelName = Fliplet.Helper.field("openaiModel").get() || "gpt-6.1-sol-reasoning-medium";
           document.querySelector(".model-name").textContent = "Model: " + modelName;
 
           // Initialize textarea styling and behavior
@@ -3375,51 +3378,102 @@ Available functions:
             // Step 6b: User message already added to chat history by addMessageToChat() in handleSendMessage()
             // No need to add it again here
 
-            // Remove loading indicator
-            DOM.chatMessages.removeChild(loadingDiv);
-
-            // Add AI response to chat
+            // Build the AI response text now, but do NOT show it (or remove the
+            // loading indicator) until the save + developer-options injection
+            // below has fully completed. Revealing "Changed…" before the edit is
+            // persisted let a user close the panel during the save window and
+            // lose the change — the message claimed success the save had not yet
+            // delivered (QA defect 4).
             let aiResponseText;
             if (isAnswerType) {
               // For answer type, use the direct answer from the response
               aiResponseText =
                 changeRequest.answer || changeRequest.explanation;
-              debugLog("💬 [Main] Displaying informational answer to user");
+              debugLog("💬 [Main] Prepared informational answer");
             } else {
               // For string_replacement type, show explanation with change summary
               const changesSummary = generateChangesSummary(
                 applicationResult.changeLog,
               );
               aiResponseText = `${changeRequest.explanation}\n\n${changesSummary}`;
-              debugLog("🔧 [Main] Displaying code changes to user");
-            }
-            addMessageToChat(aiResponseText, "ai");
-
-            // AI response already added to chat history by addMessageToChat()
-            // No need to add it again here
-
-            // Mark first generation as complete
-            if (AppState.isFirstGeneration) {
-              AppState.isFirstGeneration = false;
-              debugLog("✅ [Main] First generation completed");
+              debugLog("🔧 [Main] Prepared code-change summary");
             }
 
             // Clear pasted images after successful processing (preserve chat history)
             clearPastedImages(true, DOM, AppState);
 
-            // Re-enable user controls after successful AI response
-            enableUserControls();
+            // Step 7: Update code and save fields, THEN reveal the reply.
+            // Keep the controls disabled AND the reply hidden until the save AND
+            // the developer options injection have fully completed, so a quick
+            // follow-up prompt cannot be sent while the page still holds the
+            // previous code, and a user who closes the panel never sees a
+            // success message for a change that was not persisted. The loading
+            // indicator stays up for the duration so the save is visibly in
+            // progress. enableUserControls runs in the finally so controls are
+            // always restored, even on failure.
+            try {
+              // Record the AI reply in chat history BEFORE the save so the
+              // widget save below snapshots it — otherwise the reply (including
+              // any scope-rule clarifying question) is only held in the DOM and
+              // is lost when the panel is closed and reopened. The DOM reveal is
+              // still deferred until after the save completes (QA defect 4).
+              pushChatHistory(aiResponseText, "ai");
 
-            // Step 7: Update code and save fields
-            if (!isAnswerType) {
-              updateCode();
-            } else {
-              // For answer type, we still need to save the fields even without code changes
-              saveGeneratedCode({
-                html: AppState.currentHTML || "",
-                css: AppState.currentCSS || "",
-                javascript: AppState.currentJS || "",
-              });
+              if (!isAnswerType) {
+                await updateCode();
+              } else {
+                // Answer type changes no code. Persist only chatHistory rather
+                // than running the full code save (two widget saves, a settings
+                // GET/POST and a rich-layout PUT, plus a misleading "code-save"
+                // usage log) to rewrite code that did not change.
+                const answerFields = Fliplet.Widget.getData().fields;
+                answerFields.chatHistory =
+                  Fliplet.Helper.field("chatHistory").get();
+                await Fliplet.Widget.save(answerFields);
+              }
+
+              // Persisted and injected — now it is safe to confirm to the user.
+              // skipStorage: already recorded in history above.
+              DOM.chatMessages.removeChild(loadingDiv);
+              addMessageToChat(aiResponseText, "ai", [], true);
+
+              // Mark first generation as complete
+              if (AppState.isFirstGeneration) {
+                AppState.isFirstGeneration = false;
+                debugLog("✅ [Main] First generation completed");
+              }
+            } catch (saveError) {
+              debugError("❌ [Main] Error saving generated code:", saveError);
+              // The edit was not persisted. Roll AppState back to the snapshot
+              // taken before the replacements were applied, so a retry runs
+              // against the code that is actually saved — otherwise currentHTML/
+              // CSS/JS hold the unsaved edit and the retry's old_string fails to
+              // match or the change is applied twice.
+              if (!isAnswerType) {
+                AppState.currentHTML = AppState.previousHTML;
+                AppState.currentCSS = AppState.previousCSS;
+                AppState.currentJS = AppState.previousJS;
+              }
+              // The reply was recorded in history before the (failed) save;
+              // drop it so a stale success message is not persisted or shown.
+              if (
+                AppState.chatHistory.length &&
+                AppState.chatHistory[AppState.chatHistory.length - 1].message ===
+                  aiResponseText
+              ) {
+                AppState.chatHistory.pop();
+                saveChatHistoryToStorage();
+              }
+              // Surface a failure instead of a phantom success so the user
+              // knows the change did not stick.
+              DOM.chatMessages.removeChild(loadingDiv);
+              addMessageToChat(
+                "Something went wrong while saving your changes. Please try again.",
+                "system",
+              );
+            } finally {
+              // Re-enable user controls now that the page reflects this edit
+              enableUserControls();
             }
 
             debugLog(
@@ -3554,10 +3608,10 @@ Available functions:
         ) {
           debugLog("🌐 [AI] Making API call with optimized context...");
 
-          // Get current model selection from dropdown (hidden for production, defaults to gpt-5.2-reasoning-low)
+          // Get current model selection from dropdown (hidden for production, defaults to gpt-6.1-sol-reasoning-medium)
           const selectedModel =
             Fliplet.Helper.field("openaiModel").get() ||
-            "gpt-5.2-reasoning-low";
+            "gpt-6.1-sol-reasoning-medium";
 
           // Parse model name and reasoning level
           let modelName = selectedModel;
@@ -3666,7 +3720,8 @@ Available functions:
             dataSourceColumns,
             selectedDataSourceName,
             getGuidFromComponent(),
-            aiContext            
+            aiContext,
+            currentScreenName
           );
 
           // Build complete conversation history
@@ -5089,14 +5144,17 @@ Available functions:
             const cssContent = AppState.currentCSS || "";
             const jsContent = AppState.currentJS || "";
 
-            saveGeneratedCode({
+            // Return the promise so callers can await the save + injection
+            return saveGeneratedCode({
               html: htmlContent,
               css: cssContent,
               javascript: jsContent,
+            }).then(function () {
+              debugLog("✅ Updated successfully");
             });
-            debugLog("✅ Updated successfully");
           } catch (error) {
             debugError("❌ Update failed:", error);
+            return Promise.reject(error);
           }
         }
 
@@ -5336,68 +5394,78 @@ Available functions:
 
           // Add to history (unless skipStorage is true)
           if (!skipStorage) {
-            // Create a deep copy of images to avoid reference issues when AppState.pastedImages is cleared
-            const imagesCopy = images
-              ? images.map((img) => {
-                  const copy = {
-                    id: img.id,
-                    name: img.name,
-                    size: img.size,
-                    status: img.status,
-                    flipletFileId: img.flipletFileId,
-                    flipletUrl: img.flipletUrl,
-                  };
+            pushChatHistory(message, type, images);
+          }
+        }
 
-                  // Log the copy to verify it's complete
-                  if (images && images.length > 0) {
-                    debugLog("💾 Creating deep copy for chat history:", {
-                      original: {
-                        id: img.id,
-                        name: img.name,
-                        flipletUrl: img.flipletUrl,
-                      },
-                      copy: {
-                        id: copy.id,
-                        name: copy.name,
-                        flipletUrl: copy.flipletUrl,
-                      },
-                    });
-                  }
-
-                  return copy;
-                })
-              : [];
-
-            const historyItem = {
-              message,
-              type,
-              timestamp: new Date().toISOString(),
-              images: imagesCopy, // Store copy of images in history
-              dataSourceId: selectedDataSourceId,
-              dataSourceName: selectedDataSourceName,
-              dataSourceColumns: dataSourceColumns
-                ? [...dataSourceColumns]
-                : [],
-            };
-
-            AppState.chatHistory.push(historyItem);
-
-            // Log what we're storing in history
-            if (images && images.length > 0) {
-              debugLog("💾 Storing message in chat history with images:", {
-                messageType: type,
-                imageCount: images.length,
-                imageIds: images.map((img) => ({
+        /**
+         * Record a message in chat history and persist it to the Fliplet field,
+         * WITHOUT rendering it to the DOM. Split out of addMessageToChat so a
+         * reply can be persisted before the code save runs (so a widget save
+         * snapshots it) while the DOM reveal is deferred until the save
+         * completes (QA defect 4). addMessageToChat(..., skipStorage=true) then
+         * renders it without double-recording.
+         */
+        function pushChatHistory(message, type, images = []) {
+          // Create a deep copy of images to avoid reference issues when AppState.pastedImages is cleared
+          const imagesCopy = images
+            ? images.map((img) => {
+                const copy = {
                   id: img.id,
                   name: img.name,
-                  type: typeof img.id,
-                })),
-              });
-            }
+                  size: img.size,
+                  status: img.status,
+                  flipletFileId: img.flipletFileId,
+                  flipletUrl: img.flipletUrl,
+                };
 
-            // Save to Fliplet field
-            saveChatHistoryToStorage();
+                // Log the copy to verify it's complete
+                if (images && images.length > 0) {
+                  debugLog("💾 Creating deep copy for chat history:", {
+                    original: {
+                      id: img.id,
+                      name: img.name,
+                      flipletUrl: img.flipletUrl,
+                    },
+                    copy: {
+                      id: copy.id,
+                      name: copy.name,
+                      flipletUrl: copy.flipletUrl,
+                    },
+                  });
+                }
+
+                return copy;
+              })
+            : [];
+
+          const historyItem = {
+            message,
+            type,
+            timestamp: new Date().toISOString(),
+            images: imagesCopy, // Store copy of images in history
+            dataSourceId: selectedDataSourceId,
+            dataSourceName: selectedDataSourceName,
+            dataSourceColumns: dataSourceColumns ? [...dataSourceColumns] : [],
+          };
+
+          AppState.chatHistory.push(historyItem);
+
+          // Log what we're storing in history
+          if (images && images.length > 0) {
+            debugLog("💾 Storing message in chat history with images:", {
+              messageType: type,
+              imageCount: images.length,
+              imageIds: images.map((img) => ({
+                id: img.id,
+                name: img.name,
+                type: typeof img.id,
+              })),
+            });
           }
+
+          // Save to Fliplet field
+          saveChatHistoryToStorage();
         }
 
         /**
@@ -5786,6 +5854,11 @@ async function populateCurrentPageContent() {
     const currentSettings = await getCurrentPageSettings();
 
     if (currentSettings && currentSettings.page) {
+      currentScreenName =
+        currentSettings.page.title ||
+        currentSettings.page.name ||
+        currentScreenName;
+
       // Extract widget-specific HTML content from richLayout
       const htmlFromPage = extractHtmlContent(
         currentSettings.page.richLayout || "",
@@ -5977,6 +6050,8 @@ function saveGeneratedCode(parsedContent) {
   Fliplet.Helper.field("regenerateCode").set(true);
   Fliplet.Helper.field("dataSourceId").set("");
 
+  var saveToken = ++saveSequence;
+
   var data = Fliplet.Widget.getData();
   data.fields.dataSourceId = "";
   data.fields.dataSourceName = "";
@@ -5987,8 +6062,152 @@ function saveGeneratedCode(parsedContent) {
   data.fields.guid = Fliplet.Helper.field("guid").get();
   data.fields.chatHistory = Fliplet.Helper.field("chatHistory").get();
 
-  return Fliplet.Widget.save(data.fields).then(function () {
-    // Fliplet.Studio.emit("reload-widget-instance", widgetId);
-    Fliplet.Studio.emit("reload-page-preview");
+  return Fliplet.Widget.save(data.fields)
+    .then(function () {
+      // Inject into developer options now, so the page is already current
+      // when a quick follow-up prompt reads it back. build.js's
+      // regenerateCode path remains the fallback when this fails or the
+      // panel is closed mid-flight.
+      return injectGeneratedCodeIntoDeveloperOptions(parsedContent)
+        .then(function () {
+          // Emit the "code-save" usage log here. It used to be written by
+          // build.js's regenerateCode render path, which no longer fires on the
+          // happy path now that injection happens synchronously above. Fire and
+          // forget so it never adds latency to the save window; the build.js
+          // path remains the fallback (and its own log) when injection fails.
+          logAiComponentUsage({
+            aiCssResponse: parsedContent.css,
+            aiJsResponse: parsedContent.javascript,
+            aiLayoutResponse: parsedContent.html,
+            widgetId: widgetId,
+            type: "code-save",
+          }).catch(function (error) {
+            debugWarn("⚠️ [AI] Failed to write code-save usage log:", error);
+          });
+
+          // A newer save may have started while injecting; its
+          // regenerateCode flag must stay set for its own fallback
+          if (saveToken !== saveSequence) {
+            return;
+          }
+
+          Fliplet.Helper.field("regenerateCode").set(false);
+
+          var fields = Fliplet.Widget.getData().fields;
+          fields.regenerateCode = false;
+          fields.layoutHTML = Fliplet.Helper.field("layoutHTML").get();
+          fields.css = Fliplet.Helper.field("css").get();
+          fields.javascript = Fliplet.Helper.field("javascript").get();
+          fields.guid = Fliplet.Helper.field("guid").get();
+          fields.chatHistory = Fliplet.Helper.field("chatHistory").get();
+          return Fliplet.Widget.save(fields);
+        })
+        .catch(function (error) {
+          debugWarn(
+            "⚠️ [AI] Direct injection failed; build.js will inject on next render:",
+            error,
+          );
+        });
+    })
+    .then(function () {
+      // Fliplet.Studio.emit("reload-widget-instance", widgetId);
+      Fliplet.Studio.emit("reload-page-preview");
+    });
+}
+
+/**
+ * Inject the generated code into the page's developer options
+ * (richLayout + customSCSS/customJS), mirroring build.js's injection
+ * @param {Object} parsedContent - { html, css, javascript }
+ * @returns {Promise}
+ */
+async function injectGeneratedCodeIntoDeveloperOptions(parsedContent) {
+  const currentSettings = await getCurrentPageSettings();
+
+  if (!currentSettings || !currentSettings.page) {
+    throw new Error("Could not load current page settings");
+  }
+
+  const guid = getGuidFromComponent();
+
+  // Build the updated layout and validate it before writing anything, so a
+  // missing placeholder can't leave CSS/JS updated but HTML stale
+  const $wrapper = $("<div>").html(currentSettings.page.richLayout || "");
+  $wrapper.find(`.ai-feature-${guid}`).remove();
+  $wrapper
+    .find(`fl-ai-feature[cid="${widgetId}"]`)
+    .after(`<div class="ai-feature-${guid}">${parsedContent.html}</div>`);
+  const updatedLayout = $wrapper.html();
+
+  if (!updatedLayout.includes(`ai-feature-${guid}`)) {
+    throw new Error("Component placeholder not found in screen layout");
+  }
+
+  await Fliplet.API.request({
+    url: `v1/apps/${appId}/pages/${pageId}/settings`,
+    method: "POST",
+    data: {
+      customSCSS: updateCodeWithinDelimiters(
+        "css",
+        parsedContent.css,
+        currentSettings.page.settings.customSCSS || "",
+      ),
+      customJS: updateCodeWithinDelimiters(
+        "js",
+        parsedContent.javascript,
+        currentSettings.page.settings.customJS || "",
+      ),
+    },
   });
+
+  await Fliplet.API.request({
+    url: `v1/apps/${appId}/pages/${pageId}/rich-layout`,
+    method: "PUT",
+    data: { richLayout: updatedLayout },
+  });
+}
+
+/**
+ * Replace or append this component's delimited code block
+ * NOTE: mirrors build.js updateCodeWithinDelimiters — keep the two in sync.
+ * @param {string} type - "css" or "js"
+ * @param {string} newCode - Code to place between the delimiters
+ * @param {string} oldCode - Existing developer options code
+ * @returns {string} Updated code
+ */
+function updateCodeWithinDelimiters(type, newCode, oldCode = "") {
+  let start, end;
+
+  if (type === "js") {
+    start = `// start-ai-feature ${getGuidFromComponent()}`;
+    end = `// end-ai-feature ${getGuidFromComponent()}`;
+  } else {
+    start = `/* start-ai-feature ${getGuidFromComponent()} */`;
+    end = `/* end-ai-feature ${getGuidFromComponent()} */`;
+  }
+
+  if (oldCode.includes(start) && oldCode.includes(end)) {
+    const pattern = new RegExp(
+      escapeRegExp(start) + "[\\s\\S]*?" + escapeRegExp(end),
+      "g",
+    );
+
+    // Function form so "$"-sequences in the generated code are kept literal
+    return oldCode.replace(pattern, function () {
+      return start + "\n" + newCode + "\n" + end;
+    });
+  }
+
+  // No delimiters found. If the developer options already hold code, the
+  // delimiters were stripped (manually or by a lost-GUID migration) and this
+  // appends a SECOND delimited block beside the orphaned one — the page then
+  // runs both copies and nothing can clean up the orphan. Warn so it shows up
+  // in the logs; a full auto-heal is out of scope here.
+  if (oldCode.trim()) {
+    debugWarn(
+      `⚠️ [AI] No ${type} delimiters for guid ${getGuidFromComponent()} in non-empty developer options; appending a new block (possible orphaned duplicate).`,
+    );
+  }
+
+  return oldCode + "\n\n" + start + "\n" + newCode + "\n" + end;
 }

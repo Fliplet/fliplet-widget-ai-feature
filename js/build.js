@@ -130,27 +130,6 @@ Fliplet.Widget.instance({
         //Fliplet.Studio.emit("reload-widget-instance", widgetId);
       }
 
-      // Helper function to remove code from screen
-      async function removeCodeFromDeveloperOptions() {
-        try {
-          const currentSettings = await getCurrentPageSettings();
-          const cleanedHtml = removeHtmlCode(currentSettings);
-          const cleanedCss = removeCodeWithinDelimiters(
-            "css",
-            currentSettings.page.settings.customSCSS
-          );
-          const cleanedJs = removeCodeWithinDelimiters(
-            "js",
-            currentSettings.page.settings.customJS
-          );
-
-          await saveLayoutToDeveloperOptions(cleanedHtml);
-          await saveCssAndJsToDeveloperOptions(cleanedCss, cleanedJs);
-        } catch (error) {
-          console.error("Error removing code from developer options:", error);
-        }
-      }
-
       async function removeLegacyCodeFromDeveloperOptions(currentSettings) {
         try {
           const cleanedHtml = removeHtmlCode(currentSettings, widgetId);
@@ -455,9 +434,15 @@ Fliplet.Widget.instance({
             patternStart = `/\\* start-ai-feature ${getGuidFromComponent()} \\*/`;
             patternEnd = `/\\* end-ai-feature ${getGuidFromComponent()} \\*/`;
 
+            // Function form so "$"-sequences in the generated CSS (e.g. "$&",
+            // "$1") are kept literal — a string replacement would treat them as
+            // special patterns and corrupt the output. Keep in sync with
+            // interface.js updateCodeWithinDelimiters.
             return oldCode.replace(
               new RegExp(patternStart + "[\\s\\S]*?" + patternEnd, "g"),
-              start + "\n" + newCode + "\n" + end
+              function () {
+                return start + "\n" + newCode + "\n" + end;
+              }
             );
           } else {
             // Append new code with delimiters at the end
@@ -509,11 +494,34 @@ Fliplet.Widget.instance({
           const hiddenFieldsCode = getHiddenFieldsCode();
 
           if (duplicates.length > 1) {
+            // Only the duplicated copy regenerates its GUID. The original
+            // (lowest widget id — duplicates are created with newer, higher
+            // ids) keeps its GUID and its injected code untouched.
+            const duplicateIds = duplicates
+              .map(function () {
+                return parseInt($(this).attr("data-ai-feature-id"), 10);
+              })
+              .get()
+              .filter(function (id) {
+                return !isNaN(id);
+              });
+            const isOriginal =
+              duplicateIds.length === duplicates.length
+                ? parseInt(widgetId, 10) === Math.min.apply(null, duplicateIds)
+                : String(duplicates.first().attr("data-ai-feature-id")) ===
+                  String(widgetId);
+
+            if (isOriginal) {
+              return;
+            }
+
             var oldGuid = AI.fields.guid;
             var newGuid = generateGuid();
-            // there are duplicates, so we need to remove the code from developer options and add the new code with a new guid
-            await removeCodeFromDeveloperOptions(); // removing code from developer options for the existing guid
-            AI.fields.guid = newGuid; // generating a new guid
+            // The old guid's developer options block belongs to the original
+            // component, so it must not be removed here. The copy's own code
+            // is injected on the next render, once developer options are
+            // empty for the new guid.
+            AI.fields.guid = newGuid;
             await saveToHiddenFields({
               css: AI.fields.css.replaceAll(oldGuid, newGuid) || '',
               javascript: AI.fields.javascript.replaceAll(oldGuid, newGuid) || '',
@@ -535,11 +543,132 @@ Fliplet.Widget.instance({
                 guid: currentGuid,
               });
             } else {
-              // both developer options and hidden fields are not empty, so we need to save the developer options to the hidden fields and remove the code from screen and add the new code
-              await saveToHiddenFields({
-                ...developerOptionsCode,
-                guid: currentGuid,
-              });
+              // both developer options and hidden fields are not empty:
+              // developer options win per field, but an empty extracted value
+              // must not wipe a non-empty hidden field — hidden fields are
+              // the source of truth
+              const mergedCode = {
+                html: developerOptionsCode.html || hiddenFieldsCode.html,
+                css: developerOptionsCode.css || hiddenFieldsCode.css,
+                js: developerOptionsCode.js || hiddenFieldsCode.js,
+              };
+
+              // Only write the hidden fields when they would actually change.
+              // saveToHiddenFields emits "reload-page-preview", which re-runs
+              // this function. If someone deletes a whole block in developer
+              // options (deliberate removal), mergedCode keeps the hidden-field
+              // value, so developer options and hidden fields never become equal
+              // (isCodeEqual stays false) and we land in this branch on every
+              // render. Saving unconditionally would then reload → re-render →
+              // save → reload forever. Skipping the no-op save breaks that loop
+              // while still preserving the hidden fields as the source of truth.
+              // Compare with the same whitespace normalization isCodeEqual
+              // uses, so a purely cosmetic difference in the extracted code does
+              // not count as a change and trigger a save + reload.
+              const hiddenChanged =
+                normalizeWhitespace(mergedCode.html) !==
+                  normalizeWhitespace(hiddenFieldsCode.html) ||
+                normalizeWhitespace(mergedCode.css) !==
+                  normalizeWhitespace(hiddenFieldsCode.css) ||
+                normalizeWhitespace(mergedCode.js) !==
+                  normalizeWhitespace(hiddenFieldsCode.js);
+
+              if (hiddenChanged) {
+                await saveToHiddenFields({
+                  ...mergedCode,
+                  guid: currentGuid,
+                });
+              }
+
+              // An extracted value is empty in two different situations, and
+              // only one of them should be restored:
+              //   a) the delimiters/wrapper are still in developer options but
+              //      the content between them is empty — the code was lost
+              //      (QA defect 1), so restore it from the hidden fields.
+              //   b) the whole delimited block was removed — e.g. someone
+              //      deleted the AI's CSS in Custom CSS to turn it off. That is
+              //      deliberate: developer options win, so leave it removed.
+              // Re-injecting a block whose delimiters were deleted would also
+              // re-add empty delimiters, which would then look like case (a) on
+              // the next render and resurrect the code — so only ever restore
+              // fields whose delimiters still exist.
+              const rawScreenCode = await getCodeFromScreen();
+              const hasDelimiters = {
+                css:
+                  rawScreenCode.css.includes(
+                    `/* start-ai-feature ${currentGuid} */`,
+                  ) &&
+                  rawScreenCode.css.includes(
+                    `/* end-ai-feature ${currentGuid} */`,
+                  ),
+                js:
+                  rawScreenCode.js.includes(
+                    `// start-ai-feature ${currentGuid}`,
+                  ) &&
+                  rawScreenCode.js.includes(`// end-ai-feature ${currentGuid}`),
+                html:
+                  $("<div>").html(rawScreenCode.html).find(
+                    `.ai-feature-${currentGuid}`,
+                  ).length > 0,
+              };
+
+              // A field is only worth restoring when it is empty in developer
+              // options, its delimiters/wrapper still exist, AND the hidden
+              // fields actually hold content to put back. The last check
+              // matters: updateCodeWithinDelimiters always writes delimiters, so
+              // a component with no JS still has an empty JS block. Without the
+              // `&& mergedCode.X` guard, restore.js would be "" (not null) for
+              // that empty block, pass the check below, and re-post + reload on
+              // every render — an infinite loop. Empty strings must not count.
+              const restore = {
+                css:
+                  !developerOptionsCode.css &&
+                  hasDelimiters.css &&
+                  mergedCode.css
+                    ? mergedCode.css
+                    : null,
+                js:
+                  !developerOptionsCode.js && hasDelimiters.js && mergedCode.js
+                    ? mergedCode.js
+                    : null,
+                html:
+                  !developerOptionsCode.html &&
+                  hasDelimiters.html &&
+                  mergedCode.html
+                    ? mergedCode.html
+                    : null,
+              };
+
+              if (restore.css || restore.js || restore.html) {
+                // Only touch the fields being restored; leave any deliberately
+                // removed block exactly as the user left it.
+                const newCss = restore.css
+                  ? updateCodeWithinDelimiters(
+                      "css",
+                      restore.css,
+                      rawScreenCode.css,
+                    )
+                  : rawScreenCode.css;
+                const newJs = restore.js
+                  ? updateCodeWithinDelimiters(
+                      "js",
+                      restore.js,
+                      rawScreenCode.js,
+                    )
+                  : rawScreenCode.js;
+
+                await saveCssAndJsToDeveloperOptions(newCss, newJs);
+
+                if (restore.html) {
+                  const newHtml = injectHtmlCode(
+                    { page: { richLayout: rawScreenCode.html } },
+                    { layoutHTML: restore.html },
+                  );
+                  await saveLayoutToDeveloperOptions(newHtml);
+                }
+
+                Fliplet.Studio.emit("reload-page-preview");
+              }
             }
           }
         } catch (error) {

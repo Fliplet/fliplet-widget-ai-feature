@@ -434,9 +434,15 @@ Fliplet.Widget.instance({
             patternStart = `/\\* start-ai-feature ${getGuidFromComponent()} \\*/`;
             patternEnd = `/\\* end-ai-feature ${getGuidFromComponent()} \\*/`;
 
+            // Function form so "$"-sequences in the generated CSS (e.g. "$&",
+            // "$1") are kept literal — a string replacement would treat them as
+            // special patterns and corrupt the output. Keep in sync with
+            // interface.js updateCodeWithinDelimiters.
             return oldCode.replace(
               new RegExp(patternStart + "[\\s\\S]*?" + patternEnd, "g"),
-              start + "\n" + newCode + "\n" + end
+              function () {
+                return start + "\n" + newCode + "\n" + end;
+              }
             );
           } else {
             // Append new code with delimiters at the end
@@ -552,14 +558,87 @@ Fliplet.Widget.instance({
                 guid: currentGuid,
               });
 
-              const missingInDeveloperOptions =
-                (!developerOptionsCode.html && mergedCode.html) ||
-                (!developerOptionsCode.css && mergedCode.css) ||
-                (!developerOptionsCode.js && mergedCode.js);
+              // An extracted value is empty in two different situations, and
+              // only one of them should be restored:
+              //   a) the delimiters/wrapper are still in developer options but
+              //      the content between them is empty — the code was lost
+              //      (QA defect 1), so restore it from the hidden fields.
+              //   b) the whole delimited block was removed — e.g. someone
+              //      deleted the AI's CSS in Custom CSS to turn it off. That is
+              //      deliberate: developer options win, so leave it removed.
+              // Re-injecting a block whose delimiters were deleted would also
+              // re-add empty delimiters, which would then look like case (a) on
+              // the next render and resurrect the code — so only ever restore
+              // fields whose delimiters still exist.
+              const rawScreenCode = await getCodeFromScreen();
+              const hasDelimiters = {
+                css:
+                  rawScreenCode.css.includes(
+                    `/* start-ai-feature ${currentGuid} */`,
+                  ) &&
+                  rawScreenCode.css.includes(
+                    `/* end-ai-feature ${currentGuid} */`,
+                  ),
+                js:
+                  rawScreenCode.js.includes(
+                    `// start-ai-feature ${currentGuid}`,
+                  ) &&
+                  rawScreenCode.js.includes(`// end-ai-feature ${currentGuid}`),
+                html:
+                  $("<div>").html(rawScreenCode.html).find(
+                    `.ai-feature-${currentGuid}`,
+                  ).length > 0,
+              };
 
-              if (missingInDeveloperOptions) {
-                // restore the blocks that were lost from developer options
-                await addCodeToDeveloperOptions(mergedCode);
+              const restore = {
+                css:
+                  !developerOptionsCode.css && hasDelimiters.css
+                    ? mergedCode.css
+                    : null,
+                js:
+                  !developerOptionsCode.js && hasDelimiters.js
+                    ? mergedCode.js
+                    : null,
+                html:
+                  !developerOptionsCode.html && hasDelimiters.html
+                    ? mergedCode.html
+                    : null,
+              };
+
+              if (
+                restore.css !== null ||
+                restore.js !== null ||
+                restore.html !== null
+              ) {
+                // Only touch the fields being restored; leave any deliberately
+                // removed block exactly as the user left it.
+                const newCss =
+                  restore.css !== null
+                    ? updateCodeWithinDelimiters(
+                        "css",
+                        restore.css,
+                        rawScreenCode.css,
+                      )
+                    : rawScreenCode.css;
+                const newJs =
+                  restore.js !== null
+                    ? updateCodeWithinDelimiters(
+                        "js",
+                        restore.js,
+                        rawScreenCode.js,
+                      )
+                    : rawScreenCode.js;
+
+                await saveCssAndJsToDeveloperOptions(newCss, newJs);
+
+                if (restore.html !== null) {
+                  const newHtml = injectHtmlCode(
+                    { page: { richLayout: rawScreenCode.html } },
+                    { layoutHTML: restore.html },
+                  );
+                  await saveLayoutToDeveloperOptions(newHtml);
+                }
+
                 Fliplet.Studio.emit("reload-page-preview");
               }
             }
